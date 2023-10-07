@@ -1,0 +1,50 @@
+@import "./variables";
+
+$color: rgba(255, 255, 255, 0.5);
+
+
+.LayerPropertyGroup {
+    position: relative;
+    margin: 7px 5px;
+    padding: 5px;
+    border: 1px solid $color;
+    border-radius: 5px;
+
+    .title {
+        position: absolute;
+        top: -6px;
+        height: 13px;
+
+        display: flex;
+        align-items: center;
+        background: $layerBg;
+        font-size: 10px;
+        padding: 0 3px;
+
+        color: $color;
+        cursor: pointer;
+
+        &:hover {
+
+            &,
+            span.Icon {
+                color: white;
+            }
+        }
+
+        button {
+            padding: 0;
+            margin: 0 0 0 5px;
+            background-color: rgba(0, 0, 0, 0) !important;
+            font-size: 15px !important;
+            line-height: 15px;
+            border-bottom: none;
+        }
+
+        span.Icon {
+            color: $color;
+            background-color: none !important;
+            font-size: 15px !important;
+        }
+    }
+}

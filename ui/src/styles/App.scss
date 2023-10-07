@@ -1,0 +1,13 @@
+.App {
+    border: 12px color blue;
+
+    .AppContainer {
+        display: flex;
+        justify-content: space-between;
+
+        &>* {
+            height: calc(100vh - 50px);
+        }
+    }
+
+}

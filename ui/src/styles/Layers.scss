@@ -1,0 +1,44 @@
+@import "./variables";
+
+.Layers {
+    flex: 0 0 300px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    box-sizing: border-box;
+    margin: 0 5px 5px 5px;
+    padding: 5px 8px 5px 5px;
+    background-color: #222;
+    box-shadow: 0 0 50px 0 #000 inset;
+    border-radius: 5px;
+
+    .layerItem {
+
+        opacity: 1;
+        transition: opacity 0.25s;
+
+        &.layerHidden {
+            opacity: 0.5;
+        }
+
+        width: 100%;
+        margin-bottom: 5px;
+        background-color: $layerBg;
+        border-radius: 5px;
+        padding: 2px;
+
+        &.layerAdd,
+        &.layerBackground {
+            color: white;
+            text-align: center;
+        }
+
+        input[type=text] {
+            width: 2rem;
+            text-align: center;
+        }
+
+    }
+
+}

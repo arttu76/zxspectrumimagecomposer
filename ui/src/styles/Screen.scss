@@ -1,0 +1,18 @@
+.Screen {
+    flex: 1 1 auto;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    overflow: auto;
+    background: linear-gradient(180deg, #222 0%, #333 100%);
+
+    .ScreenCanvasContainer {
+        display: inline-block;
+
+        canvas {
+            box-shadow: 0 0 150px 0 rgba(0, 0, 0, 0.5);
+        }
+    }
+}

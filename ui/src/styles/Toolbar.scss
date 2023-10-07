@@ -1,0 +1,15 @@
+.Toolbar {
+    box-sizing: border-box;
+    padding: 10px;
+    height: 50px;
+
+    .reset {
+        float: right;
+        background-color: #900;
+
+        &:hover {
+            color: white;
+            background-color: red;
+        }
+    }
+}
