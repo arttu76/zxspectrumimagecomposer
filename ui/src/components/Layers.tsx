@@ -11,6 +11,7 @@ import {
     changeBackground,
     changeLayerOrdering
 } from "../store/layersSlice";
+import { Undefinable } from '../types';
 import { Icon } from './Icon';
 
 export const Layers = () => {
@@ -28,7 +29,7 @@ export const Layers = () => {
         }
     };
 
-    const getItemStyle = (isDragging: boolean, draggableStyle: DraggingStyle | NotDraggingStyle | undefined): any => ({
+    const getItemStyle = (isDragging: boolean, draggableStyle: Undefinable<DraggingStyle | NotDraggingStyle>): any => ({
         ...draggableStyle,
         userSelect: "none",
         opacity: isDragging ? "0.75" : "1",

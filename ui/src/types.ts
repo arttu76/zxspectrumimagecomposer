@@ -1,18 +1,21 @@
 export interface ExtendedWindow extends Window {
-    _maskData: boolean[][]; // [layer id][x*y]
+    _maskData: GrowableGrid<boolean>[]; // [layer id]
     _imageData: { [key: string]: number[] }; // { layer.src: [r,g,b,a, r,g,b,a ...] }
 }
 
+export type Undefinable<T> = T | undefined;
+export type Nullable<T> = T | null;
+
 export type DragState = {
     dragging: boolean,
-    dragPreviousX: undefined | number,
-    dragPreviousY: undefined | number
+    dragPreviousX: Undefinable<number>,
+    dragPreviousY: Undefinable<number>
 }
 
 export interface GrowableGrid<T> {
     offsetX: number;
     offsetY: number;
-    pixels: T[][];
+    data: (Nullable<T>)[][];
 }
 
 export interface ImageFileData {
@@ -27,6 +30,7 @@ export enum PixelationType {
     none = 'none',
     simple = 'simple',
     noise = 'noise',
+    floydsteinberg = 'Floyd–Steinberg',
     pattern = 'pattern'
 }
 
@@ -43,10 +47,10 @@ export interface Layer {
     src: string;
     loading: boolean;
     loaded: boolean;
-    originalHeight: number | undefined;
-    originalWidth: number | undefined;
-    height: number | undefined;
-    width: number | undefined;
+    originalHeight: Undefinable<number>;
+    originalWidth: Undefinable<number>;
+    height: Undefinable<number>;
+    width: Undefinable<number>;
     preserveLayerAspectRatio: boolean;
     x: number;
     y: number;

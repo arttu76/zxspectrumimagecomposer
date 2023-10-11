@@ -13,8 +13,9 @@ import {
     setTool,
     setZoom
 } from "../store/toolsSlice";
-import { BrushShape, ToolType } from "../types";
+import { BrushShape, Nullable, ToolType, Undefinable } from "../types";
 import { getWindow, safeZero } from '../utils';
+import { getGridData, setGridData } from '../utils/growableGridManager';
 import { Button, Input } from './CustomElements';
 
 export const Toolbar = () => {
@@ -30,7 +31,8 @@ export const Toolbar = () => {
 
     const dispatch = useAppDispatch();
 
-    const updateMaskData = (updateFunc: (previousValue: boolean) => boolean) => {
+    const updateMaskData = (updateFunc: (previousValue: Nullable<boolean>) => Undefinable<boolean>) => {
+        console.log("update");
         const activeLayer = R.find(
             layer => layer.active,
             layers
@@ -38,29 +40,30 @@ export const Toolbar = () => {
 
         const win = getWindow();
 
-        if (
-            activeLayer
-            && win._maskData
-            && win._maskData[activeLayer.id]
-        ) {
+        if (activeLayer && win?._maskData[activeLayer.id]) {
             for (let y = 0; y < safeZero(activeLayer.originalHeight); y++) {
                 for (let x = 0; x < safeZero(activeLayer.originalWidth); x++) {
-                    win._maskData[activeLayer.id][x + y * safeZero(activeLayer.originalWidth)] =
-                        updateFunc(
-                            win._maskData[activeLayer.id][x + y * safeZero(activeLayer.originalWidth)]
-                        );
+                    setGridData(
+                        win._maskData[activeLayer.id],
+                        x,
+                        y,
+                        updateFunc(getGridData(win._maskData[activeLayer.id], x, y))
+                    );
                 }
             }
             dispatch(repaint());
+        } else {
+            console.log("no");
         }
+
     }
 
     const invertActiveLayerMaskData = () => {
-        updateMaskData((previousValue) => !previousValue);
+        updateMaskData((previousValue) => !previousValue ? true : undefined);
     }
 
     const clearActiveLayerMaskData = () => {
-        updateMaskData(() => false);
+        updateMaskData(() => undefined);
     }
 
     const reset = () => {

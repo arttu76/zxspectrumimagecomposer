@@ -1,4 +1,4 @@
-import { ExtendedWindow, Layer } from "./types";
+import { ExtendedWindow, Layer, Undefinable } from "./types";
 
 export const getWindow = () => window as unknown as ExtendedWindow;
 
@@ -13,16 +13,16 @@ export const getJson = async <T>(url: string): Promise<T> => {
 }
 
 export const debounce = (func: Function, wait: number) => {
-    let timeout: number | undefined;
+    let timeout: Undefinable<ReturnType<typeof setTimeout>>;
     return (...args: any[]) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(this, args), wait);
     };
 }
 
-const safe = (value: number | undefined, fallback: number) => value || fallback;
-export const safeZero = (value: number | undefined) => safe(value, 0);
-export const safeOne = (value: number | undefined) => safe(value, 1);
+const safe = (value: Undefinable<number>, fallback: number) => value || fallback;
+export const safeZero = (value: Undefinable<number>) => safe(value, 0);
+export const safeOne = (value: Undefinable<number>) => safe(value, 1);
 
 export const getOriginalAspectRatio = (layer: Layer): number => (
     safeZero(layer.originalWidth) / safeOne(layer.originalHeight)

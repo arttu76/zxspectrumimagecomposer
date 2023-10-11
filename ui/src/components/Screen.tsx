@@ -6,8 +6,9 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 import * as R from "ramda";
 
 import { repaint, setLayerX, setLayerY } from "../store/layersSlice";
-import { DragState, Layer, PixelationType, ToolType } from "../types";
+import { DragState, Layer, PixelationType, ToolType, Undefinable } from "../types";
 import { getWindow, safeOne, safeZero } from "../utils";
+import { getGridData, setGridData } from '../utils/growableGridManager';
 
 const win = getWindow();
 
@@ -72,6 +73,8 @@ export const Screen = () => {
             );
         }
 
+        let ditheringErrorBuffer: number[][] = Array.from({ length: 192 + 2 }, () => Array(256 + 2).fill(0));
+
         for (let y = 0; y < 192; y++) {
             for (let x = 0; x < 255; x++) {
 
@@ -97,11 +100,7 @@ export const Screen = () => {
                         && layerY < safeZero(layer.originalHeight)
                         && (
                             currentTool === ToolType.mask
-                            || (
-                                win._maskData
-                                && win._maskData[layer.id]
-                                && !win._maskData[layer.id][layerX + layerY * safeZero(layer.originalWidth)]
-                            )
+                            || !getGridData(win._maskData[layer.id], layerX, layerY)
                         )
                     ) {
                         const layerOffset = (layerX + layerY * safeZero(layer.originalWidth)) * 3;
@@ -157,8 +156,20 @@ export const Screen = () => {
                         }
                         if (layer.pixelate === PixelationType.noise) {
                             const deterministic = Math.sin(x + y * 255) * 10000;
-                            const pixel = (deterministic - Math.floor(deterministic)) * 255 > intensity ? 0 : 255;
-                            rgb = [pixel, pixel, pixel];
+                            const value = (deterministic - Math.floor(deterministic)) * 255 > intensity ? 0 : 255;
+                            rgb = [value, value, value];
+                        }
+                        if (layer.pixelate === PixelationType.floydsteinberg) {
+                            // error buffer has one pixel margin so we don't need to check for x>0 or y<192 etc
+                            const errorBufferX = x + 1;
+                            const errorBufferY = y + 1;
+                            const value = ((ditheringErrorBuffer[errorBufferY][errorBufferX] || 0) + intensity) > 128 ? 255 : 0;
+                            const error = intensity - value;
+                            ditheringErrorBuffer[errorBufferY][errorBufferX + 1] = error * 7 / 16;
+                            ditheringErrorBuffer[errorBufferY + 1][errorBufferX - 1] = error * 3 / 16;
+                            ditheringErrorBuffer[errorBufferY + 1][errorBufferX] = error * 5 / 16;
+                            ditheringErrorBuffer[errorBufferY + 1][errorBufferX + 1] = error * 1 / 16;
+                            rgb = [value, value, value];
                         }
                         if (layer.pixelate === PixelationType.pattern) {
                             const correctPattern = layerPatternCache[idx][Math.round(intensity)];
@@ -174,7 +185,7 @@ export const Screen = () => {
 
                         if (
                             currentTool === ToolType.mask
-                            && win._maskData[layer.id][layerX + layerY * safeZero(layer.originalWidth)]
+                            && getGridData(win._maskData[layer.id], x, y)
                         ) {
                             rgb = [
                                 Math.round(255 * 0.8 + rgb[0] * 0.2),
@@ -231,7 +242,7 @@ export const Screen = () => {
         dragPreviousY: undefined
     })
 
-    const handleMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>, mouseDown: boolean | undefined = undefined) => {
+    const handleMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>, mouseDown: Undefinable<boolean> = undefined) => {
         if (!activeLayer) {
             return;
         }
@@ -263,9 +274,14 @@ export const Screen = () => {
                                 ) < halfBrushSize
                             )
                         ) {
-                            win._maskData[layer.id][
-                                layerX + layerY * safeZero(layer.originalWidth)
-                            ] = !(event.button !== 0 || event.altKey);
+                            setGridData(
+                                win._maskData[layer.id],
+                                layerX,
+                                layerY,
+                                !(event.button !== 0 || event.altKey)
+                                    ? true
+                                    : undefined
+                            );
                         }
                     }
                 }

@@ -2,13 +2,13 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import localStorageMiddleware from "./localStorageMiddleware";
 
-import tools from "./toolsSlice";
 import layers, { loadLayerSrc } from "./layersSlice";
+import tools from "./toolsSlice";
 
-import { Layer, State } from "../types";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
+import { Layer, State, Undefinable } from "../types";
 
-const preloadedState = JSON.parse('' + localStorage.getItem("state")) as State || undefined;
+const preloadedState = JSON.parse('' + localStorage.getItem("state")) as Undefinable<State>;
 
 const store = configureStore({
     preloadedState,

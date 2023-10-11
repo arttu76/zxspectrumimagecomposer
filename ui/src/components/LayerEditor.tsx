@@ -5,7 +5,7 @@ import { useAppDispatch } from "../store/store";
 import { LayerPropertyEditor } from "./LayerPropertyEditor";
 import { PatternEditor } from "./PatternEditor";
 
-import { Layer, PixelationType } from "../types";
+import { Layer, PixelationType, Undefinable } from "../types";
 
 import {
     addLayerPattern,
@@ -61,8 +61,8 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
         }
     }
 
-    const safeZero = (value: number | undefined) => typeof value === "undefined" ? 0 : value;
-    const safeOne = (value: number | undefined) => typeof value === "undefined" ? 1 : value;
+    const safeZero = (value: Undefinable<number>) => typeof value === "undefined" ? 0 : value;
+    const safeOne = (value: Undefinable<number>) => typeof value === "undefined" ? 1 : value;
 
     return (
         <div
@@ -239,6 +239,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             <option value={PixelationType.none}>None</option>
                             <option value={PixelationType.simple}>Simple</option>
                             <option value={PixelationType.noise}>Noise</option>
+                            <option value={PixelationType.floydsteinberg}>Floyd-Steinberg</option>
                             <option value={PixelationType.pattern}>Custom</option>
                         </select>
                     </div>

@@ -272,8 +272,11 @@ const layersSlice = createSlice({
                 if (!win._maskData) {
                     win._maskData = [];
                 }
-                win._maskData[state.layers[idx]!.id] = action.payload.data.map(() => false);
-
+                win._maskData[state.layers[idx]!.id] = {
+                    offsetX: 0,
+                    offsetY: 0,
+                    data: []
+                }
                 state.layers[idx]!.loading = false;
                 state.layers[idx]!.loaded = true;
                 state.repaint = Date.now();
