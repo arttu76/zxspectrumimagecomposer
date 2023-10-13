@@ -1,11 +1,12 @@
-import * as R from "ramda";
 import { GrowableGrid, Nullable } from "../types";
 
 const getExistingRowSize = <T>(grid: GrowableGrid<T>): number => grid.data[0]?.length || 0;
 
+const cloneGrid = <T>(grid: GrowableGrid<T>) => JSON.parse(JSON.stringify(grid)) as GrowableGrid<T>;
+
 const growIfRequired = <T>(grid: GrowableGrid<T>, x: number, y: number): GrowableGrid<T> => {
 
-    const newGrid = R.clone(grid);
+    const newGrid = cloneGrid(grid);
     const existingRowSize = getExistingRowSize(grid);
 
     // grow up
@@ -51,7 +52,7 @@ const growIfRequired = <T>(grid: GrowableGrid<T>, x: number, y: number): Growabl
 };
 
 const shrinkGridIfPossible = <T>(grid: GrowableGrid<T>): GrowableGrid<T> => {
-    let newGrid = R.clone(grid);
+    let newGrid = cloneGrid(grid);
 
     // shrink topmost row
     while (

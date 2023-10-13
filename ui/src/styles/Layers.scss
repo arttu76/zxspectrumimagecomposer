@@ -1,3 +1,4 @@
+@import "../main";
 @import "./variables";
 
 .Layers {
@@ -26,17 +27,33 @@
         margin-bottom: 5px;
         background-color: $layerBg;
         border-radius: 5px;
-        padding: 2px;
+        padding: 6px 2px 1px;
+        color: $borderColor;
 
         &.layerAdd,
         &.layerBackground {
-            color: white;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            .Icon {
+                margin-right: 5px;
+            }
+
+            padding-bottom: 5px;
+
+            button,
+            input,
+            select {
+                @extend .small;
+            }
         }
 
         input[type=text] {
-            width: 2rem;
             text-align: center;
+            border-top: 0;
+            border-right: 0;
+            border-left: 0;
         }
 
     }

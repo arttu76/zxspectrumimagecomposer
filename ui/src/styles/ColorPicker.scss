@@ -1,0 +1,33 @@
+@import "variables";
+
+.ColorPicker {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 10px;
+
+    .ColorItem {
+        display: contents;
+
+        &>*:nth-child(1) {
+            text-align: right;
+        }
+
+        &>*:nth-child(2) {
+            text-align: left;
+        }
+
+        .ColorItemCheckbox {
+            cursor: pointer;
+            position: relative;
+            top: -8px;
+
+            .ColorSample {
+                float: right;
+                position: absolute;
+                right: 0;
+                top: 15px;
+            }
+        }
+    }
+
+}

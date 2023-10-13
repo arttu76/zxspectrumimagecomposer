@@ -1,0 +1,71 @@
+@import "variables.scss";
+
+button.CustomElements {
+    display: inline-block;
+    padding: 3px 5px 1px;
+    font-size: 25px;
+    line-height: 20px;
+    border: none;
+    border-radius: 2px;
+    margin-right: 1px;
+    cursor: pointer;
+
+    span {
+        display: inline-block;
+        font-size: 20px;
+        line-height: 19px;
+    }
+
+    border-bottom: 1px solid black;
+}
+
+.LayerEditor button.CustomElements {
+    position: relative;
+    top: -2px;
+    color: $layerBg;
+    background: $borderColor;
+    border-radius: 15px;
+    font-size: 10px;
+    line-height: 18px;
+    padding: 0 4px 0 5px;
+    margin-left: 1px;
+
+
+    &:hover {
+        background-color: white;
+        color: black;
+    }
+
+    .Icon {
+        position: relative;
+        top: 4px;
+        font-size: 16px;
+        line-height: 10px;
+        padding: 0;
+    }
+}
+
+
+input.CustomElements {
+    border: none;
+    border-radius: 2px;
+    margin-right: 1px;
+}
+
+.CustomElements.Icon {
+    &:hover {
+        color: white;
+    }
+}
+
+.LayerEditor input.CustomElements {
+    border: 1px solid $borderColor;
+    color: $borderColor;
+    background: none;
+    outline: none;
+
+    &:focus {
+        border-color: white;
+        color: white;
+    }
+}

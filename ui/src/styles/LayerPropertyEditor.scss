@@ -1,0 +1,29 @@
+.LayerPropertyEditor {
+
+    .extra {
+        &::before {
+            content: '('
+        }
+
+        &::after {
+            content: ')'
+        }
+
+        margin-left: 5px;
+        font-size: 12px;
+        position: relative;
+        top: -1px;
+        opacity: 0.75;
+    }
+
+    .textFields {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .range {
+        display: flex;
+
+    }
+
+}

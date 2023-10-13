@@ -1,0 +1,24 @@
+@import "../main";
+
+.LayerEditor {
+
+    button,
+    input,
+    select {
+        @extend .small;
+    }
+
+    .range {
+        display: flex;
+        align-items: center;
+
+        input[type=range] {
+            flex: 1 1 auto;
+            margin: 0 0 5px 0;
+        }
+    }
+
+    .patterns {
+        text-align-last: center;
+    }
+}
