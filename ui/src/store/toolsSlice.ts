@@ -2,9 +2,7 @@ import {
     PayloadAction,
     createSlice,
 } from "@reduxjs/toolkit";
-import { ToolType } from "../types";
-import { BrushShape } from "../types";
-import { ToolsSliceState } from "../types";
+import { BrushShape, ToolType, ToolsSliceState } from "../types";
 
 const initialState: ToolsSliceState = {
     tool: ToolType.nudge,
@@ -12,7 +10,7 @@ const initialState: ToolsSliceState = {
     brushShape: BrushShape.block,
     zoom: 1,
     crisp: true,
-    attributeGridOpacity: 0.8
+    attributeGridOpacity: 0
 }
 
 const toolsSlice = createSlice({
@@ -29,7 +27,7 @@ const toolsSlice = createSlice({
             state.brushShape = action.payload;
         },
         setZoom: (state, action: PayloadAction<number>) => {
-            state.zoom = action.payload;
+            state.zoom = action.payload || 1;
         },
         setCrispScaling: (state, action: PayloadAction<boolean>) => {
             state.crisp = action.payload;

@@ -6,6 +6,9 @@
     .reset {
         float: right;
         background-color: #900;
+        border: none;
+        border-radius: 5px;
+        border-bottom: 1px solid black;
 
         &:hover {
             color: white;

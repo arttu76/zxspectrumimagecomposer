@@ -1,3 +1,11 @@
+import { MouseEventHandler } from "react";
+import { Undefinable } from "../types";
+
 export const Icon: React.FC<{
     icon: string;
-}> = ({ icon }) => <span className="Icon material-symbols-outlined">{icon}</span>
+    onClick?: Undefinable<MouseEventHandler>;
+    className?: string;
+}> = ({ icon, onClick, className }) => <span
+    className={`Icon material-symbols-outlined ${className || ''}`}
+    onClick={e => onClick && onClick(e)}
+>{icon}</span>

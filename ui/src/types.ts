@@ -1,15 +1,45 @@
-export interface ExtendedWindow extends Window {
-    _maskData: GrowableGrid<boolean>[]; // [layer id]
-    _imageData: { [key: string]: number[] }; // { layer.src: [r,g,b,a, r,g,b,a ...] }
-}
-
 export type Undefinable<T> = T | undefined;
 export type Nullable<T> = T | null;
+
+export type Percentage = number;
+
+export type Distance = number;
+
+export type Id = string;
+
+export type Rgb = [number, number, number];
+export type Hsl = Rgb;
+
+export type Grid<T> = T[][]
+
+export type FlatRgbData = number[];
+
+export type RgbImage = Grid<Rgb>;
+
+export type BitImage = Grid<boolean>;
+
+export type ErrorValueImage = Grid<number>;
+export type AttributeImage = Grid<Nullable<Color>>;
+
+export interface withId {
+    id: Id;
+}
+
+export interface ExtendedWindow extends Window {
+    _maskData: { [key: Id]: GrowableGrid<boolean>; }; // [layer id]
+    _imageData: { [key: string]: FlatRgbData }; // { layer.src: [r,g,b,a, r,g,b,a ...] }
+}
 
 export type DragState = {
     dragging: boolean,
     dragPreviousX: Undefinable<number>,
     dragPreviousY: Undefinable<number>
+}
+
+export interface Color {
+    ink: number;
+    paper: number;
+    bright: boolean;
 }
 
 export interface GrowableGrid<T> {
@@ -23,7 +53,7 @@ export interface ImageFileData {
     timestamp: number;
     width: number;
     height: number;
-    data: number[];
+    data: number[]; // r,g,b,r,g,b,r,g,b,r,g,b...
 }
 
 export enum PixelationType {
@@ -34,13 +64,18 @@ export enum PixelationType {
     pattern = 'pattern'
 }
 
-export interface PixelationPattern {
-    limit: number;
-    pattern: boolean[][];
+export enum PixelationSource {
+    targetColor = 'targetColor',
+    autoColor = 'autoColor'
 }
 
-export interface Layer {
-    id: number;
+
+export interface PixelationPattern extends withId {
+    limit: number;
+    pattern: BitImage;
+}
+
+export interface Layer extends withId {
     active: boolean;
     shown: boolean;
     expanded: boolean;
@@ -55,6 +90,7 @@ export interface Layer {
     x: number;
     y: number;
     rotate: number;
+    hue: number;
     saturation: number;
     red: number;
     green: number;
@@ -64,6 +100,9 @@ export interface Layer {
     invert: boolean;
     pixelate: PixelationType;
     patterns: PixelationPattern[];
+    pixelateSource: PixelationSource;
+    pixelateTargetColor: Color;
+    brightnessThreshold: number;
 }
 export interface LayersSliceState {
     repaint: number;

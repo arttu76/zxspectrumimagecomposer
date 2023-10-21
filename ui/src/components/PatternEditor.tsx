@@ -1,4 +1,4 @@
-import '../styles/PatternEditor.scss'
+import '../styles/PatternEditor.scss';
 
 import React from "react";
 
@@ -7,11 +7,13 @@ import { useAppDispatch } from "../store/store";
 import * as R from "ramda";
 
 import {
-    updateLayerPattern,
-    removeLayerPattern
+    removeLayerPattern,
+    updateLayerPattern
 } from "../store/layersSlice";
 
 import { Layer, PixelationPattern } from "../types";
+import { Button, Input } from './CustomElements';
+import { LayerProperyGroup } from './LayerPropertyGroup';
 
 export const PatternEditor: React.FC<{
     layer: Layer,
@@ -77,16 +79,26 @@ export const PatternEditor: React.FC<{
     }
 
     const swapPattern = (a: number, b: number) => {
-        const patternClone = R.clone(layer.patterns[a]);
+        const patternA = R.clone(layer.patterns[a]);
+        const patternB = R.clone(layer.patterns[b]);
+
+        const aLimit = layer.patterns[a].limit;
+        const bLimit = layer.patterns[b].limit;
 
         dispatch(updateLayerPattern({
             layer,
-            pattern: R.clone(layer.patterns[b]),
+            pattern: {
+                ...patternB,
+                limit: aLimit
+            },
             idx: a
         }));
         dispatch(updateLayerPattern({
             layer,
-            pattern: patternClone,
+            pattern: {
+                ...patternA,
+                limit: bLimit
+            },
             idx: b
         }));
     }
@@ -96,61 +108,89 @@ export const PatternEditor: React.FC<{
             layer,
             pattern: R.assoc(
                 'limit',
-                Math.round(parseInt('' + limit, 10)) || 0,
+                Math.min(Math.round(parseInt('' + limit, 10) || 0), 255),
                 pattern
             ),
             idx
         }));
     }
 
+    const layerStartIntensity = idx === 0 ? 0 : layer.patterns[idx - 1].limit;
+    const layerEndIntensity = last ? 255 : layer.patterns[idx].limit;
+    const coveragePercentage = Math.round((layerEndIntensity - layerStartIntensity) / 255 * 100);
+
+    const warning = layerStartIntensity === layerEndIntensity || layerStartIntensity >= layerEndIntensity;
+
     return (
-        <div className="PatternEditor" style={{ margin: '2px 0 0 145px', border: '1px solid rgba(0,0,0,0.5)' }}>
-
-            <button style={{ float: "right" }} onClick={() => removePattern()}>X</button>
-
-            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-                <div>
-                    {!first ? <button onClick={() => swapPattern(idx - 1, idx)}>^</button> : <span>&nbsp;&nbsp;</span>}
-                    {!last ? <button onClick={() => swapPattern(idx + 1, idx)}>V</button> : <span>&nbsp;&nbsp;</span>}
-                </div>
-                <div>
-                    <span style={{ visibility: last ? 'hidden' : 'inherit' }}>
-                        <button onClick={() => setLimit(pattern.limit - 1)}>-1</button>
-                        <button onClick={() => setLimit(Math.max(0, pattern.limit - 8))}>-8</button>
-                        <input type="number"
-                            style={{ textAlign: 'center' }}
-                            size={4}
-                            value={pattern.limit}
-                            onChange={e => setLimit(e.target.value)} />
-                        <button onClick={() => setLimit(Math.min(255, pattern.limit + 8))}>+8</button>
-                        <button onClick={() => setLimit(pattern.limit + 1)}>+1</button>
-                    </span>
-
-                </div>
-                <div>
-                    {pattern.pattern.map((row, y) => <div key={y} style={{ height: '15px', whiteSpace: 'nowrap' }}>
-                        {row.map((pixel, x) => <div key={y + '_' + x} onClick={() => togglePatternPixel(x, y)} style={{
-                            cursor: 'pointer',
-                            background: pixel ? 'white' : 'black',
-                            display: 'inline-block',
-                            height: '15px',
-                            width: '15px',
-                            margin: 'margin:0 1px 1px 0'
-                        }}></div>)}
-                        <br />
-                    </div>)}
-                </div>
-                <div>
-                    Width:
-                    <button onClick={() => adjustWidth(-1)}>-1</button>
-                    <button onClick={() => adjustWidth(1)}>+1</button>
-                    <br />
-                    Height:
-                    <button onClick={() => adjustHeight(-1)}>-1</button>
-                    <button onClick={() => adjustHeight(1)}>+1</button>
+        <LayerProperyGroup
+            title={last ? `Pattern for other values (${coveragePercentage}%)` : `Pattern for ${layerStartIntensity}...${layerEndIntensity} (${coveragePercentage}%)`}
+            cornerIcon="delete"
+            cornerIconTooltip="Remove this pattern"
+            cornerIconOnClick={removePattern}>
+            <div className="PatternEditor">
+                <div className="patternTools">
+                    <div className="movePattern">
+                        {!first && <Button
+                            tooltip="Move up"
+                            icon="north"
+                            onClick={() => swapPattern(idx - 1, idx)} />}
+                        {!last && <Button
+                            tooltip="Move down"
+                            icon="south"
+                            onClick={() => swapPattern(idx + 1, idx)} />}
+                    </div>
+                    <div className={"patternLimits" + (warning ? " warning" : "")}>
+                        {!last && <>
+                            <Button
+                                tooltip="Limit -1"
+                                onClick={() => setLimit(Math.max(0, pattern.limit - 1))} >-1</Button>
+                            <Button
+                                tooltip="Limit -8"
+                                onClick={() => setLimit(Math.max(0, pattern.limit - 8))} >-8</Button>
+                            <Input type="text"
+                                tooltip="Highest intensity for this pattern"
+                                size={4}
+                                value={pattern.limit}
+                                onChange={e => setLimit(e.target.value)} />
+                            <Button
+                                tooltip="Limit +8"
+                                onClick={() => setLimit(Math.min(255, pattern.limit + 8))} >+8</Button>
+                            <Button
+                                tooltip="Limit +1"
+                                onClick={() => setLimit(Math.min(255, pattern.limit + 1))} >+1</Button>
+                        </>}
+                        <div className="patternPixels">
+                            {pattern.pattern.map((row, y) => <div
+                                key={pattern.id + y}
+                                className="pixelRow">
+                                {row.map((pixel, x) => <div
+                                    key={pattern.id + y + '_' + x}
+                                    className={pixel ? "pixel set" : "pixel"}
+                                    onClick={() => togglePatternPixel(x, y)}></div>)}
+                            </div>)}
+                        </div>
+                    </div>
+                    <div className="patternSize">
+                        <div>
+                            <Button
+                                tooltip="Increase pattern width"
+                                onClick={() => adjustWidth(+1)} >X+</Button>
+                            <Button
+                                tooltip="Increase pattern height"
+                                onClick={() => adjustHeight(+1)} >Y+</Button>
+                        </div>
+                        {pattern.pattern[0].length > 1 && <Button
+                            tooltip="Decrease pattern width"
+                            onClick={() => adjustWidth(-1)} >X-</Button>}
+                        {pattern.pattern.length > 1 && <Button
+                            tooltip="Decrease pattern height"
+                            onClick={() => adjustHeight(-1)} >Y-</Button>}
+                        <div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </LayerProperyGroup >
     );
 }
 

@@ -12,6 +12,7 @@ import {
     changeLayerOrdering
 } from "../store/layersSlice";
 import { Undefinable } from '../types';
+import { Button } from './CustomElements';
 import { Icon } from './Icon';
 
 export const Layers = () => {
@@ -38,9 +39,13 @@ export const Layers = () => {
 
     return (
         <div className="Layers">
-            <button className="layerItem layerAdd"
-                onClick={() => dispatch(addLayer())}><Icon icon='add_circle' /> Add layer
-            </button>
+            <div className="layerItem layerAdd">
+                <Button
+                    icon='add_circle'
+                    content='Add layer'
+                    tooltip="Add a new layer"
+                    onClick={() => dispatch(addLayer())} >Add layer</Button>
+            </div>
             <div>
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="droppable">
@@ -50,7 +55,9 @@ export const Layers = () => {
                                 {...provided.droppableProps}
                             >
                                 {layers.map((layer, index) => (
-                                    <Draggable key={layer.id} draggableId={'layer_' + layer.id} index={index}>
+                                    <Draggable key={layer.id}
+                                        draggableId={'layer_' + layer.id}
+                                        index={index}>
                                         {(provided, snapshot) => (
                                             <div
                                                 ref={provided.innerRef}

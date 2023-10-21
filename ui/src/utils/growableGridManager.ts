@@ -91,7 +91,7 @@ const shrinkGridIfPossible = <T>(grid: GrowableGrid<T>): GrowableGrid<T> => {
     return newGrid;
 };
 
-export const setGridData = <T>(grid: GrowableGrid<T>, x: number, y: number, value: Nullable<T>): GrowableGrid<T> => {
+export const setGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: number, value: Nullable<T>): GrowableGrid<T> => {
     if (grid.data.length === 0) {
         return {
             offsetX: x,
@@ -110,7 +110,7 @@ export const setGridData = <T>(grid: GrowableGrid<T>, x: number, y: number, valu
     }
 };
 
-export const getGridData = <T>(grid: GrowableGrid<T>, x: number, y: number): Nullable<T> => {
+export const getGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: number): Nullable<T> => {
     const existingSize = getExistingRowSize(grid);
     return (
         x < grid.offsetX

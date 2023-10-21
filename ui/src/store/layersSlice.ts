@@ -2,8 +2,9 @@ import { PayloadAction, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import * as R from "ramda";
 
-import { ImageFileData, Layer, LayersSliceState, PixelationPattern, PixelationType } from "../types";
-import { getHeightForAspectRatio, getJson, getWidthForAspectRatio, getWindow } from "../utils";
+import { Color, ImageFileData, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
+import { fetchJson, getHeightForAspectRatio, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
+import { RootState } from "./store";
 
 export type ActionWithLayer = {
     meta?: { arg?: Layer },
@@ -25,23 +26,37 @@ const getLayerIndex = (state: LayersSliceState, action: ActionWithLayer): number
     return index;
 };
 
-const getNextLayerId = (state: LayersSliceState): number => (
-    (
-        (state.layers || [])
-            .map((layer: Layer) => layer.id)
-            .reduce((acc, val) => Math.max(acc, val), 0)
-    ) || 0
-) + 1;
-
-export const loadLayerSrc = createAsyncThunk(
+export const loadLayerSrc = createAsyncThunk<ImageFileData | undefined, Layer>(
     'layers/loadLayerSrc',
-    async (layer: Layer) => await getJson<ImageFileData>(
-        window.location.protocol
-        + '//'
-        + window.location.hostname
-        + ':13000'
-        + '/?url=' + encodeURIComponent(layer.src)
-    )
+    async (layer: Layer, thunkAPI) => {
+
+        const state = thunkAPI.getState() as RootState;
+
+        const src = (
+            '' + state.layers.layers.find(l => l.id === layer.id)!.src
+        ).toLowerCase().trim();
+
+        if (!src) {
+            alert("Layer source address must not be empty!");
+            return;
+        }
+
+        if (!src.startsWith("http")) {
+            alert(
+                "Layer source address must start with http(s)://\n\n"
+                + "You have set layer source address to be:\n\n" + src
+            );
+            return;
+        }
+
+        return await fetchJson<ImageFileData>(
+            window.location.protocol
+            + '//'
+            + window.location.hostname
+            + ':13000'
+            + '/?url=' + encodeURIComponent(src)
+        )
+    }
 );
 
 const initialState: LayersSliceState = {
@@ -68,7 +83,7 @@ const layersSlice = createSlice({
 
             state.layers = [
                 {
-                    id: getNextLayerId(state),
+                    id: getUuid(),
                     active: true,
                     shown: true,
                     expanded: true,
@@ -83,6 +98,7 @@ const layersSlice = createSlice({
                     x: 0,
                     y: 0,
                     rotate: 0,
+                    hue: 0,
                     saturation: 100,
                     red: 100,
                     green: 100,
@@ -91,7 +107,10 @@ const layersSlice = createSlice({
                     contrast: 0,
                     invert: false,
                     pixelate: PixelationType.none,
-                    patterns: []
+                    patterns: [],
+                    pixelateSource: PixelationSource.autoColor,
+                    pixelateTargetColor: { ink: 7, paper: 0, bright: false },
+                    brightnessThreshold: 50
                 },
                 ...state.layers.map((layer) => { layer.active = false; return layer })
             ];
@@ -140,12 +159,21 @@ const layersSlice = createSlice({
             }
         },
         preserveLayerAspectRatio: (state, action: PayloadAction<{ layer: Layer, preserveLayerAspectRatio: boolean }>) => {
-            state.layers[getLayerIndex(state, action)].preserveLayerAspectRatio =
+            const idx = getLayerIndex(state, action);
+            state.layers[idx].preserveLayerAspectRatio =
                 action.payload.preserveLayerAspectRatio;
+
+            if (action.payload.preserveLayerAspectRatio) {
+                state.layers[idx]!.height = getHeightForAspectRatio(action.payload.layer);
+            }
         },
         setLayerRotate: (state, action: PayloadAction<{ layer: Layer, rotate: number }>) => {
             state.layers[getLayerIndex(state, action)].rotate =
                 action.payload.rotate;
+        },
+        setLayerHue: (state, action: PayloadAction<{ layer: Layer, hue: number }>) => {
+            state.layers[getLayerIndex(state, action)].hue =
+                action.payload.hue;
         },
         setLayerSaturation: (state, action: PayloadAction<{ layer: Layer, saturation: number }>) => {
             state.layers[getLayerIndex(state, action)].saturation =
@@ -179,18 +207,57 @@ const layersSlice = createSlice({
             state.layers[getLayerIndex(state, action)].pixelate =
                 action.payload.pixelate;
         },
-        addLayerPattern: (state, action: PayloadAction<{ layer: Layer }>) => {
+        setLayerPixelateSource: (state, action: PayloadAction<{ layer: Layer, pixelateSource: PixelationSource }>) => {
+            state.layers[getLayerIndex(state, action)].pixelateSource = action.payload.pixelateSource;
+        },
+        setLayerPixelateTargetColor: (state, action: PayloadAction<{ layer: Layer, color: Color }>) => {
+            state.layers[getLayerIndex(state, action)].pixelateTargetColor = action.payload.color;
+        },
+        setLayerBrightnessThreshold: (state, action: PayloadAction<{ layer: Layer, brightnessThreshold: number }>) => {
+            state.layers[getLayerIndex(state, action)].brightnessThreshold =
+                action.payload.brightnessThreshold;
+        },
+        addLayerPattern: (state, action: PayloadAction<{ layer: Layer, insertBefore: number }>) => {
             const idx = getLayerIndex(state, action);
-            const limit = state.layers[idx]!.patterns.length === 0
-                ? 50
-                : Math.round(50 + (state.layers[idx]!.patterns.map(p => p.limit).reduce((acc, val) => Math.max(acc, val)) || 0));
-            state.layers[getLayerIndex(state, action)].patterns.push({
-                limit,
-                pattern: [[true, false], [false, true]]
-            });
+
+            const existingPatterns = state.layers[idx].patterns;
+            const firstPattern = !existingPatterns.length;
+            const insertAtEnd = action.payload.insertBefore === existingPatterns.length;
+
+            const newLayer = {
+                id: getUuid(),
+                limit: firstPattern
+                    ? 128
+                    : insertAtEnd
+                        ? Math.round((255 + existingPatterns[existingPatterns.length - 1].limit) / 2)
+                        : action.payload.insertBefore > 1
+                            ? Math.round((existingPatterns[action.payload.insertBefore! - 1].limit + existingPatterns[action.payload.insertBefore!].limit) / 2)
+                            : Math.round(existingPatterns[action.payload.insertBefore!].limit / 2),
+                pattern: insertAtEnd
+                    ? [[true, true], [true, true]]
+                    : firstPattern
+                        ? [[false, false]]
+                        : JSON.parse(JSON.stringify(action.payload.layer.patterns[action.payload.insertBefore!].pattern))
+            };
+
+            if (insertAtEnd) {
+                // insert at end
+                state.layers[getLayerIndex(state, action)].patterns.push(newLayer);
+            } else {
+                // insert before something
+                state.layers[getLayerIndex(state, action)].patterns.splice(
+                    action.payload.insertBefore!,
+                    0,
+                    newLayer
+                );
+            }
+
         },
         updateLayerPattern: (state, action: PayloadAction<{ layer: Layer, idx: number, pattern: PixelationPattern }>) => {
-            state.layers[getLayerIndex(state, action)].patterns[action.payload.idx] = action.payload.pattern;
+            state.layers[getLayerIndex(state, action)].patterns[action.payload.idx] = {
+                ...action.payload.pattern,
+                limit: Math.min(action.payload.pattern.limit, 255)
+            }
         },
         removeLayerPattern: (state, action: PayloadAction<{ layer: Layer, idx: number }>) => {
             state.layers[getLayerIndex(state, action)].patterns.splice(action.payload.idx, 1);
@@ -230,7 +297,7 @@ const layersSlice = createSlice({
             const win = getWindow();
 
             const newLayer = R.mergeRight(state.layers[idx]!, {
-                id: getNextLayerId(state),
+                id: getUuid(),
                 active: true,
             });
 
@@ -239,7 +306,7 @@ const layersSlice = createSlice({
             );
 
             state.layers = [
-                ...state.layers.map((layer) => { layer.active = false; return layer; }),
+                ...state.layers.map(layer => ({ ...layer, active: false })),
                 newLayer
             ];
         },
@@ -254,8 +321,14 @@ const layersSlice = createSlice({
                 state.layers[idx]!.loading = true;
             })
             .addCase(loadLayerSrc.fulfilled, (state, action) => {
+
                 const idx = getLayerIndex(state, action);
                 state.layers[idx]!.loading = false;
+
+                if (action.payload === undefined) {
+                    console.log("loadLayerSrc.fulfilled got undefined payload");
+                    return;
+                }
 
                 state.layers[idx]!.originalHeight = action.payload.height;
                 state.layers[idx]!.height = action.payload.height;
@@ -270,7 +343,7 @@ const layersSlice = createSlice({
                 win._imageData[state.layers[idx]!.src] = action.payload.data;
 
                 if (!win._maskData) {
-                    win._maskData = [];
+                    win._maskData = {};
                 }
                 win._maskData[state.layers[idx]!.id] = {
                     offsetX: 0,
@@ -285,7 +358,7 @@ const layersSlice = createSlice({
                 const idx = getLayerIndex(state, action);
                 const layer = state.layers[idx]!;
                 layer.loading = false;
-                console.log('Can not load this layer! ' + layer.src);
+                alert(`Can not load this layer!\n${layer.src}`);
             })
 
     }
@@ -305,6 +378,7 @@ export const {
     setLayerWidth,
     setLayerRotate,
     preserveLayerAspectRatio,
+    setLayerHue,
     setLayerSaturation,
     setLayerRed,
     setLayerGreen,
@@ -313,6 +387,9 @@ export const {
     setLayerContrast,
     setLayerInvert,
     setLayerPixelate,
+    setLayerPixelateSource,
+    setLayerPixelateTargetColor,
+    setLayerBrightnessThreshold,
     removeLayer,
     duplicateLayer,
     addLayerPattern,

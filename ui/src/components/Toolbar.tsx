@@ -14,8 +14,8 @@ import {
     setZoom
 } from "../store/toolsSlice";
 import { BrushShape, Nullable, ToolType, Undefinable } from "../types";
-import { getWindow, safeZero } from '../utils';
-import { getGridData, setGridData } from '../utils/growableGridManager';
+import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
+import { getWindow, safeZero } from '../utils/utils';
 import { Button, Input } from './CustomElements';
 
 export const Toolbar = () => {
@@ -32,7 +32,6 @@ export const Toolbar = () => {
     const dispatch = useAppDispatch();
 
     const updateMaskData = (updateFunc: (previousValue: Nullable<boolean>) => Undefinable<boolean>) => {
-        console.log("update");
         const activeLayer = R.find(
             layer => layer.active,
             layers
@@ -43,11 +42,11 @@ export const Toolbar = () => {
         if (activeLayer && win?._maskData[activeLayer.id]) {
             for (let y = 0; y < safeZero(activeLayer.originalHeight); y++) {
                 for (let x = 0; x < safeZero(activeLayer.originalWidth); x++) {
-                    setGridData(
+                    setGrowableGridData(
                         win._maskData[activeLayer.id],
                         x,
                         y,
-                        updateFunc(getGridData(win._maskData[activeLayer.id], x, y))
+                        updateFunc(getGrowableGridData(win._maskData[activeLayer.id], x, y))
                     );
                 }
             }
@@ -113,9 +112,8 @@ export const Toolbar = () => {
                 {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
                     key={newBrushSize}
                     dimmed={brushSize !== newBrushSize}
-                    content={`${newBrushSize}`}
                     tooltip={`Use ${newBrushSize}x${newBrushSize} brush`}
-                    onClick={() => dispatch(setBrushSize(newBrushSize))} />)}
+                    onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
 
                 &nbsp;
 
@@ -134,9 +132,8 @@ export const Toolbar = () => {
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((zoomLevel) => <Button
                 key={zoomLevel}
                 dimmed={zoom !== zoomLevel}
-                content={`${zoomLevel}`}
                 tooltip={`Show picture using ${zoomLevel}x${zoomLevel} pixels`}
-                onClick={() => dispatch(setZoom(zoomLevel))} />
+                onClick={() => dispatch(setZoom(zoomLevel))} >{zoomLevel}</Button>
             )}
 
             <Button

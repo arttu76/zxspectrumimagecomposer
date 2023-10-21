@@ -5,8 +5,9 @@ import { useAppDispatch } from "../store/store";
 import { LayerPropertyEditor } from "./LayerPropertyEditor";
 import { PatternEditor } from "./PatternEditor";
 
-import { Layer, PixelationType, Undefinable } from "../types";
+import { Layer, PixelationSource, PixelationType, Undefinable } from "../types";
 
+import React from 'react';
 import {
     addLayerPattern,
     duplicateLayer,
@@ -17,11 +18,15 @@ import {
     setActive,
     setLayerBlue,
     setLayerBrightness,
+    setLayerBrightnessThreshold,
     setLayerContrast,
     setLayerGreen,
     setLayerHeight,
+    setLayerHue,
     setLayerInvert,
     setLayerPixelate,
+    setLayerPixelateSource,
+    setLayerPixelateTargetColor,
     setLayerRed,
     setLayerRotate,
     setLayerSaturation,
@@ -29,9 +34,10 @@ import {
     setLayerWidth,
     setLayerX,
     setLayerY,
-    showHideLayer,
+    showHideLayer
 } from "../store/layersSlice";
-import { Button } from './CustomElements';
+import { ColorPicker } from './ColorPicker';
+import { Button, Input } from './CustomElements';
 import { Icon } from './Icon';
 import { LayerProperyGroup } from './LayerPropertyGroup';
 
@@ -111,6 +117,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         layer={layer}
                         fieldName="x"
                         change={change(setLayerX)}
+                        reset={0}
                         min={-safeZero(layer.width)}
                         max={255}
                     />
@@ -119,6 +126,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         layer={layer}
                         fieldName="y"
                         change={change(setLayerY)}
+                        reset={0}
                         min={0}
                         max={192}
                     />
@@ -138,6 +146,13 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             "%"
                         }
                     />
+                    <div style={{ textAlign: "center" }}>
+                        <Button
+                            tooltip={layer.preserveLayerAspectRatio ? 'Preserve original aspect ratio' : 'Do not preserve aspect ratio'}
+                            icon={layer.preserveLayerAspectRatio ? 'lock' : 'lock_open_right'}
+                            onClick={() => change(preserveLayerAspectRatio)(layer, 'preserveLayerAspectRatio', !layer.preserveLayerAspectRatio)}
+                        ></Button>
+                    </div>
                     <LayerPropertyEditor
                         title="Height"
                         layer={layer}
@@ -154,11 +169,6 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             "%"
                         }
                     />
-                    <div style={{ paddingLeft: '75px' }}>
-                        Preserve aspect ratio: <input type="checkbox"
-                            defaultChecked={layer.preserveLayerAspectRatio}
-                            onChange={e => change(preserveLayerAspectRatio)(layer, 'preserveLayerAspectRatio', e.target.checked)}
-                        /></div>
                     <LayerPropertyEditor
                         title="Rotate"
                         layer={layer}
@@ -171,20 +181,13 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                 </LayerProperyGroup>
                 <LayerProperyGroup title="Hue & Saturation">
                     <div style={{ paddingLeft: '75px' }}>
-                        Invert colors:&nbsp;&nbsp;
-                        <input type="checkbox"
-                            defaultChecked={layer.invert}
-                            onChange={e => change(setLayerInvert)(layer, 'invert', e.target.checked)}
+                        Invert colors:&nbsp;
+                        <Input
+                            tooltip="Invert source image colors"
+                            type="checkbox"
+                            checked={layer.invert}
+                            onClick={() => change(setLayerInvert)(layer, 'invert', !layer.invert)}
                         /></div>
-                    <LayerPropertyEditor
-                        title="Saturation"
-                        layer={layer}
-                        fieldName="saturation"
-                        change={change(setLayerSaturation)}
-                        reset={100}
-                        min={0}
-                        max={500}
-                    />
                     <LayerPropertyEditor
                         title="Red"
                         layer={layer}
@@ -192,7 +195,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         change={change(setLayerRed)}
                         reset={100}
                         min={0}
-                        max={1000}
+                        max={200}
                     />
                     <LayerPropertyEditor
                         title="Green"
@@ -201,7 +204,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         change={change(setLayerGreen)}
                         reset={100}
                         min={0}
-                        max={1000}
+                        max={200}
                     />
                     <LayerPropertyEditor
                         title="Blue"
@@ -210,7 +213,25 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         change={change(setLayerBlue)}
                         reset={100}
                         min={0}
-                        max={1000}
+                        max={200}
+                    />
+                    <LayerPropertyEditor
+                        title="Hue"
+                        layer={layer}
+                        fieldName="hue"
+                        change={change(setLayerHue)}
+                        reset={0}
+                        min={-360}
+                        max={360}
+                    />
+                    <LayerPropertyEditor
+                        title="Saturation"
+                        layer={layer}
+                        fieldName="saturation"
+                        change={change(setLayerSaturation)}
+                        reset={0}
+                        min={-100}
+                        max={100}
                     />
                     <LayerPropertyEditor
                         title="Brightness"
@@ -218,8 +239,8 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         fieldName="brightness"
                         change={change(setLayerBrightness)}
                         reset={0}
-                        min={-255}
-                        max={255}
+                        min={-100}
+                        max={100}
                     />
                     <LayerPropertyEditor
                         title="Contrast"
@@ -227,36 +248,85 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         fieldName="contrast"
                         change={change(setLayerContrast)}
                         reset={0}
-                        min={-255}
-                        max={255}
+                        min={0}
+                        max={500}
                     />
                 </LayerProperyGroup>
                 <LayerProperyGroup title="Dithering">
                     <div style={{ textAlign: 'center' }}>
-                        <Icon icon="gradient" /> Gradient:
-                        <select value={layer.pixelate}
-                            onChange={(e) => dispatch(setLayerPixelate({ layer, pixelate: e.currentTarget.value as PixelationType }))}>
-                            <option value={PixelationType.none}>None</option>
-                            <option value={PixelationType.simple}>Simple</option>
-                            <option value={PixelationType.noise}>Noise</option>
-                            <option value={PixelationType.floydsteinberg}>Floyd-Steinberg</option>
-                            <option value={PixelationType.pattern}>Custom</option>
-                        </select>
+                        Algorithm:<br />
+                        <Button
+                            tooltip='Show source image'
+                            dimmed={layer.pixelate !== PixelationType.none}
+                            onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.none }))}>None</Button>
+                        <Button
+                            tooltip='Two-tone pixelation'
+                            dimmed={layer.pixelate !== PixelationType.simple}
+                            onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.simple }))}>Simple</Button>
+                        <Button
+                            tooltip='Probability noise pixelation'
+                            dimmed={layer.pixelate !== PixelationType.noise}
+                            onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.noise }))}>Noise</Button>
+                        <Button
+                            tooltip='Floyd-Steinberg pixelation'
+                            dimmed={layer.pixelate !== PixelationType.floydsteinberg}
+                            onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.floydsteinberg }))}>Floyd-Steinberg</Button>
+                        <Button
+                            tooltip='User-defined pixelation'
+                            dimmed={layer.pixelate !== PixelationType.pattern}
+                            onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.pattern }))}>Pattern</Button>
                     </div>
-                    {layer.pixelate === 'pattern' && <div>
+                    {layer.pixelate !== PixelationType.none && <>
+                        <div style={{ textAlign: 'center' }}>
+                            Color:<br />
+                            <Button
+                                tooltip='Dither based on the difference between source image and optimal per-attribute-block Spectrum palette'
+                                dimmed={layer.pixelateSource !== PixelationSource.autoColor}
+                                onClick={() => dispatch(setLayerPixelateSource({ layer, pixelateSource: PixelationSource.autoColor }))}>Source image color(s)</Button>
+                            <Button
+                                tooltip='Dither based on the difference between source image and specific target color'
+                                dimmed={layer.pixelateSource !== PixelationSource.targetColor}
+                                onClick={() => dispatch(setLayerPixelateSource({ layer, pixelateSource: PixelationSource.targetColor }))}>Manually selected color</Button>
+                        </div>
+                        {layer.pixelateSource === PixelationSource.targetColor && <div style={{ textAlign: 'center' }}>
+                            <ColorPicker
+                                title="Manually selected color"
+                                color={layer.pixelateTargetColor}
+                                chooseColor={color => dispatch(setLayerPixelateTargetColor({ layer, color }))} />
+                        </div>}
+                        <LayerPropertyEditor
+                            title="Brightness"
+                            layer={layer}
+                            fieldName="brightnessThreshold"
+                            change={change(setLayerBrightnessThreshold)}
+                            reset={50}
+                            min={0}
+                            max={100}
+                        />
+                    </>}
+
+                    {layer.pixelate === 'pattern' && <div className="patterns">
                         {!layer.patterns.length
                             ? <div><i>No patterns defined, using "simple" rendering method as placeholder</i></div>
-                            : layer.patterns.map((pattern, idx) => <PatternEditor
-                                key={idx}
-                                layer={layer}
-                                pattern={pattern}
-                                idx={idx}
-                                first={idx === 0}
-                                last={idx === layer.patterns.length - 1}></PatternEditor>)
+                            : layer.patterns.map((pattern, idx) => <React.Fragment key={pattern.id}>
+                                <Button
+                                    tooltip='Add a new pattern'
+                                    onClick={() => dispatch(addLayerPattern({ layer, insertBefore: idx }))}>
+                                    <Icon icon="add_circle" /> Add pattern
+                                </Button>
+                                <PatternEditor
+                                    layer={layer}
+                                    pattern={pattern}
+                                    idx={idx}
+                                    first={idx === 0}
+                                    last={idx === layer.patterns.length - 1}></PatternEditor>
+                            </React.Fragment>)
                         }
-                        <button onClick={() => dispatch(addLayerPattern({ layer }))}>
+                        <Button
+                            tooltip='Add a new pattern'
+                            onClick={() => dispatch(addLayerPattern({ layer, insertBefore: layer.patterns.length }))}>
                             <Icon icon="add_circle" /> Add pattern
-                        </button>
+                        </Button>
                     </div>}
                 </LayerProperyGroup>
 

@@ -1,3 +1,5 @@
+@import "styles/variables";
+
 body {
   background-color: #333;
   font-family: 'Roboto', sans-serif;
@@ -19,40 +21,31 @@ body {
   border-radius: 5px;
 }
 
-input,
-button {
-  border: none;
-  border-radius: 2px;
-  margin-right: 1px;
-}
-
-button {
-  cursor: pointer;
-}
-
 
 select {
   background-color: none;
   border: 2px solid white;
   border-radius: 5px;
+  margin-left: 5px;
+  position: relative;
+  top: -1px;
+  color: black;
+
+  &.small {
+    border: 1px solid $borderColor;
+    color: $borderColor;
+    background: none;
+    outline: none;
+
+    &:focus {
+      border-color: white;
+      color: black;
+    }
+  }
+
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
-}
-
-button {
-  display: inline-block;
-  padding: 3px 5px 1px;
-  font-size: 25px !important;
-  line-height: 20px;
-
-  span {
-    display: inline-block;
-    font-size: 20px !important;
-    line-height: 19px !important;
-  }
-
-  border-bottom: 1px solid black;
 }

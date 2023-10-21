@@ -8,7 +8,7 @@ import tools from "./toolsSlice";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import { Layer, State, Undefinable } from "../types";
 
-const preloadedState = JSON.parse('' + localStorage.getItem("state")) as Undefinable<State>;
+const preloadedState = JSON.parse('' + localStorage.getItem("state")) as Undefinable<State> || undefined;
 
 const store = configureStore({
     preloadedState,

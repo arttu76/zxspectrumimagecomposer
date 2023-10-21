@@ -1,4 +1,4 @@
-import { debounce, getWindow } from "../utils";
+import { debounce, getWindow } from "../utils/utils";
 
 import store from "./store";
 
