@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import { AttributeImage, BitImage, Color, Grid, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb, ToolType } from '../types';
-import { gaussianBlur, getColorAdjusted, getInverted, sharpen } from './colors';
+import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from './colors';
 import { computeAttributeBlockColor } from './dithering';
 import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb } from './utils';
 
@@ -38,6 +38,10 @@ export const initializeLayerContext = (layer: Layer, currentTool: ToolType): Lay
     }
     if (layer.blur < 0) {
         adjustedPixels = sharpen(adjustedPixels, -layer.blur / 100);
+    }
+
+    if (layer.edgeEnhance) {
+        adjustedPixels = edgeEnhance(adjustedPixels, layer.edgeEnhance / 100);
     }
 
     return {

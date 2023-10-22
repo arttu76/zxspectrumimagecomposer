@@ -99,6 +99,7 @@ const layersSlice = createSlice({
                     y: 0,
                     rotate: 0,
                     blur: 0,
+                    edgeEnhance: 0,
                     hue: 0,
                     saturation: 100,
                     red: 100,
@@ -164,70 +165,58 @@ const layersSlice = createSlice({
         },
         preserveLayerAspectRatio: (state, action: PayloadAction<{ layer: Layer, preserveLayerAspectRatio: boolean }>) => {
             const idx = getLayerIndex(state, action);
-            state.layers[idx].preserveLayerAspectRatio =
-                action.payload.preserveLayerAspectRatio;
+            state.layers[idx].preserveLayerAspectRatio = action.payload.preserveLayerAspectRatio;
 
             if (action.payload.preserveLayerAspectRatio) {
                 state.layers[idx]!.height = getHeightForAspectRatio(action.payload.layer);
             }
         },
         setLayerRotate: (state, action: PayloadAction<{ layer: Layer, rotate: number }>) => {
-            state.layers[getLayerIndex(state, action)].rotate =
-                action.payload.rotate;
+            state.layers[getLayerIndex(state, action)].rotate = action.payload.rotate;
         },
         setLayerBlur: (state, action: PayloadAction<{ layer: Layer, blur: number }>) => {
-            state.layers[getLayerIndex(state, action)].blur =
-                action.payload.blur;
+            state.layers[getLayerIndex(state, action)].blur = action.payload.blur;
+        },
+        setLayerEdgeEnhance: (state, action: PayloadAction<{ layer: Layer, edgeEnhance: number }>) => {
+            state.layers[getLayerIndex(state, action)].edgeEnhance = action.payload.edgeEnhance;
         },
         setLayerHue: (state, action: PayloadAction<{ layer: Layer, hue: number }>) => {
-            state.layers[getLayerIndex(state, action)].hue =
-                action.payload.hue;
+            state.layers[getLayerIndex(state, action)].hue = action.payload.hue;
         },
         setLayerSaturation: (state, action: PayloadAction<{ layer: Layer, saturation: number }>) => {
-            state.layers[getLayerIndex(state, action)].saturation =
-                action.payload.saturation;
+            state.layers[getLayerIndex(state, action)].saturation = action.payload.saturation;
         },
         setLayerRed: (state, action: PayloadAction<{ layer: Layer, red: number }>) => {
-            state.layers[getLayerIndex(state, action)].red =
-                action.payload.red;
+            state.layers[getLayerIndex(state, action)].red = action.payload.red;
         },
         setLayerGreen: (state, action: PayloadAction<{ layer: Layer, green: number }>) => {
-            state.layers[getLayerIndex(state, action)].green =
-                action.payload.green;
+            state.layers[getLayerIndex(state, action)].green = action.payload.green;
         },
         setLayerBlue: (state, action: PayloadAction<{ layer: Layer, blue: number }>) => {
-            state.layers[getLayerIndex(state, action)].blue =
-                action.payload.blue;
+            state.layers[getLayerIndex(state, action)].blue = action.payload.blue;
         },
         setLayerBrightness: (state, action: PayloadAction<{ layer: Layer, brightness: number }>) => {
-            state.layers[getLayerIndex(state, action)].brightness =
-                action.payload.brightness;
+            state.layers[getLayerIndex(state, action)].brightness = action.payload.brightness;
         },
         setLayerContrast: (state, action: PayloadAction<{ layer: Layer, contrast: number }>) => {
-            state.layers[getLayerIndex(state, action)].contrast =
-                action.payload.contrast;
+            state.layers[getLayerIndex(state, action)].contrast = action.payload.contrast;
         },
         setLayerInvert: (state, action: PayloadAction<{ layer: Layer, invert: boolean }>) => {
-            state.layers[getLayerIndex(state, action)].invert =
-                action.payload.invert;
+            state.layers[getLayerIndex(state, action)].invert = action.payload.invert;
         },
 
         setLayerShadows: (state, action: PayloadAction<{ layer: Layer, shadows: number }>) => {
-            state.layers[getLayerIndex(state, action)].shadows =
-                action.payload.shadows;
+            state.layers[getLayerIndex(state, action)].shadows = action.payload.shadows;
         },
         setLayerMidtones: (state, action: PayloadAction<{ layer: Layer, midtones: number }>) => {
-            state.layers[getLayerIndex(state, action)].midtones =
-                action.payload.midtones;
+            state.layers[getLayerIndex(state, action)].midtones = action.payload.midtones;
         },
         setLayerHighlights: (state, action: PayloadAction<{ layer: Layer, highlights: number }>) => {
-            state.layers[getLayerIndex(state, action)].highlights =
-                action.payload.highlights;
+            state.layers[getLayerIndex(state, action)].highlights = action.payload.highlights;
         },
 
         setLayerPixelate: (state, action: PayloadAction<{ layer: Layer, pixelate: PixelationType }>) => {
-            state.layers[getLayerIndex(state, action)].pixelate =
-                action.payload.pixelate;
+            state.layers[getLayerIndex(state, action)].pixelate = action.payload.pixelate;
         },
         setLayerPixelateSource: (state, action: PayloadAction<{ layer: Layer, pixelateSource: PixelationSource }>) => {
             state.layers[getLayerIndex(state, action)].pixelateSource = action.payload.pixelateSource;
@@ -236,8 +225,7 @@ const layersSlice = createSlice({
             state.layers[getLayerIndex(state, action)].pixelateTargetColor = action.payload.color;
         },
         setLayerBrightnessThreshold: (state, action: PayloadAction<{ layer: Layer, brightnessThreshold: number }>) => {
-            state.layers[getLayerIndex(state, action)].brightnessThreshold =
-                action.payload.brightnessThreshold;
+            state.layers[getLayerIndex(state, action)].brightnessThreshold = action.payload.brightnessThreshold;
         },
         addLayerPattern: (state, action: PayloadAction<{ layer: Layer, insertBefore: number }>) => {
             const idx = getLayerIndex(state, action);
@@ -401,6 +389,7 @@ export const {
     setLayerRotate,
     preserveLayerAspectRatio,
     setLayerBlur,
+    setLayerEdgeEnhance,
     setLayerHue,
     setLayerSaturation,
     setLayerRed,

@@ -241,3 +241,34 @@ export const sharpen = (image: PartialRgbImage, amount: Percentage): PartialRgbI
     );
 
 }
+
+export const edgeEnhance = (image: PartialRgbImage, amount: Percentage): PartialRgbImage => {
+
+    return map2D(
+        image,
+        (pixel, x, y) => {
+            if (
+                pixel === null
+                || image[y][x] === null
+                || x > 254
+                || image[y][x + 1] === null
+                || y > 190
+                || image[y + 1][x] === null
+            ) {
+                return pixel;
+            }
+
+            const current = getIntensity(image[y][x]!);
+            const right = getIntensity(image[y][x + 1]!);
+            const down = getIntensity(image[y + 1][x]!);
+
+            const gradient = (
+                x === 254 ? 0 : Math.abs(right - current)
+                    + y === 191 ? 0 : Math.abs(down - current)
+            ) * Math.abs(amount) * 1024;
+
+            return pixel.map(val => clamp8Bit(val + gradient * (amount > 0 ? 1 : -1))) as Rgb;
+        }
+    );
+
+}

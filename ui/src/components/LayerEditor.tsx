@@ -21,6 +21,7 @@ import {
     setLayerBrightness,
     setLayerBrightnessThreshold,
     setLayerContrast,
+    setLayerEdgeEnhance,
     setLayerGreen,
     setLayerHeight,
     setLayerHighlights,
@@ -197,6 +198,15 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         layer={layer}
                         fieldName="blur"
                         change={change(setLayerBlur)}
+                        reset={0}
+                        min={-100}
+                        max={100}
+                    />
+                    <LayerPropertyEditor
+                        title="Edges"
+                        layer={layer}
+                        fieldName="edgeEnhance"
+                        change={change(setLayerEdgeEnhance)}
                         reset={0}
                         min={-100}
                         max={100}
