@@ -1,4 +1,5 @@
-import { ExtendedWindow, Grid, Layer, Nullable, Rgb, ToolType, Undefinable } from "../types";
+import * as R from 'ramda';
+import { ExtendedWindow, Grid, Layer, Nullable, Percentage, Rgb, ToolType, Undefinable } from "../types";
 import { getGrowableGridData } from "./growableGridManager";
 
 export const getWindow = () => window as unknown as ExtendedWindow;
@@ -60,18 +61,32 @@ export const debounce = (func: Function, wait: number) => {
 }
 
 const safe = (value: Undefinable<number>, fallback: number) => value || fallback;
-export const safeZero = (value: Undefinable<number>) => safe(value, 0);
-export const safeOne = (value: Undefinable<number>) => safe(value, 1);
+export const safeZero = (value: Undefinable<number>): number => safe(value, 0);
+export const safeOne = (value: Undefinable<number>): number => safe(value, 1);
 
-export const limit8Bit = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+export const bias = (a: number, b: number, bias: Percentage) => a * bias + b * (1 - bias);
 
-export const clampOneZero = (value: number) => Math.max(0, Math.min(1, value));
+export const clamp8Bit = (value: number): number => Math.max(0, Math.min(255, Math.round(value)));
 
-export const rangeExclusive = (maxValueExclusive: number, callback: (value: number) => void) => {
+export const clampOneZero = (value: number): number => Math.max(0, Math.min(1, value));
+
+export const rangeExclusive = (maxValueExclusive: number): number[] => R.range(0, maxValueExclusive);
+
+export const applyRangeExclusive = (maxValueExclusive: number, callback: (value: number) => void) => {
     for (let i = 0; i < maxValueExclusive; i++) {
         callback(i);
     }
 }
+
+export const applyRange2DExclusive = (maxOuterExclusive: number, maxInnerExclusive: number, callback: (outer: number, inner: number) => void) => {
+    applyRangeExclusive(maxOuterExclusive, (outer) => {
+        applyRangeExclusive(maxInnerExclusive, (inner) => {
+            callback(outer, inner);
+        });
+    });
+}
+
+export const map2D = <T>(grid: Grid<T>, mapper: (value: T, x: number, y: number) => T): Grid<T> => grid.map((row, y) => row.map((value, x) => mapper(value, x, y)));
 
 export const getOriginalAspectRatio = (layer: Layer): number => (
     safeZero(layer.originalWidth) / safeOne(layer.originalHeight)

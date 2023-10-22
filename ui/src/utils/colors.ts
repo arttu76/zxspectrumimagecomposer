@@ -1,5 +1,5 @@
-import { Color, Hsl, Layer, Percentage, Rgb } from "../types";
-import { limit8Bit } from "./utils";
+import { Color, Hsl, ImageFilterKernel, Layer, Nullable, PartialRgbImage, Percentage, Rgb, RgbImage } from "../types";
+import { applyRange2DExclusive, bias, clamp8Bit, map2D, rangeExclusive } from "./utils";
 
 export const spectrumColor: Readonly<{ normal: Rgb[], bright: Rgb[] }> = {
     normal: [
@@ -93,7 +93,6 @@ export const fromHslToRgb = (hsl: Hsl): Rgb => {
 
 }
 
-
 export const getIntensity = (rgb: Rgb): Percentage => {
     return (rgb[0] + rgb[1] + rgb[2]) / 3 / 255;
 }
@@ -123,9 +122,9 @@ export const getInverted = (layer: Layer, rgb: Rgb): Rgb => {
 export const getColorAdjusted = (layer: Layer, rgb: Rgb): Rgb => {
 
     let newColor: Rgb = [
-        limit8Bit(rgb[0] * layer.red / 100),
-        limit8Bit(rgb[1] * layer.green / 100),
-        limit8Bit(rgb[2] * layer.blue / 100)
+        clamp8Bit(rgb[0] * layer.red / 100),
+        clamp8Bit(rgb[1] * layer.green / 100),
+        clamp8Bit(rgb[2] * layer.blue / 100)
     ];
 
     if (
@@ -140,34 +139,105 @@ export const getColorAdjusted = (layer: Layer, rgb: Rgb): Rgb => {
         hsl[0] += layer.hue || 0;
 
         // saturation
-        if (layer.saturation > 0) hsl[1] += (layer.saturation / 100);
+        if (layer.saturation > 0) {
+            hsl[1] += (layer.saturation / 100);
+        }
+        // desaturation
+        if (layer.saturation < 0) {
+            hsl[1] = bias(0, hsl[1], -layer.saturation / 100);
+        }
 
         // brightness/lightness
-        hsl[2] += (layer.brightness / 100);
+        if (layer.brightness !== 0) {
+            hsl[2] += (layer.brightness / 100);
+        }
 
         // add contrast
         if (layer.contrast > 0) {
             hsl[2] = 0.5 + (hsl[2] - 0.5) * (1 + layer.contrast / 100);
         }
 
+        if (layer.shadows && hsl[2] < 1 / 3) {
+            const adjustmentPointDistance = 1 / 3 / 2 - Math.abs(hsl[2] - 1 / 3 / 2);
+            hsl[2] += adjustmentPointDistance * layer.shadows / 50;
+        }
+        if (layer.midtones && hsl[2] >= 1 / 3 && hsl[2] <= 2 / 3) {
+            const adjustmentPointDistance = 1 / 3 / 2 - Math.abs(hsl[2] - 1 / 3 - 1 / 3 / 2);
+            hsl[2] += adjustmentPointDistance * layer.midtones / 50;
+        }
+        if (layer.highlights && hsl[2] > 2 / 3) {
+            const adjustmentPointDistance = 1 / 3 / 2 - Math.abs(hsl[2] - 2 / 3 - 1 / 3 / 2);
+            hsl[2] += adjustmentPointDistance * layer.highlights / 50;
+        }
+
         newColor = fromHslToRgb(hsl);
 
-        // desaturation
-        if (layer.saturation < 0) {
-            const desaturationPercentage = -layer.saturation / 100;
-            const inverseDesaturationPercentage = 1 - desaturationPercentage;
-            const brightness = (rgb[0] + rgb[1] + rgb[2]) / 3;
-            newColor = [
-                brightness * desaturationPercentage + newColor[0] * inverseDesaturationPercentage,
-                brightness * desaturationPercentage + newColor[1] * inverseDesaturationPercentage,
-                brightness * desaturationPercentage + newColor[2] * inverseDesaturationPercentage
-            ];
-        }
     }
 
     return [
-        limit8Bit(newColor[0] * layer.red / 100),
-        limit8Bit(newColor[1] * layer.green / 100),
-        limit8Bit(newColor[2] * layer.blue / 100)
+        clamp8Bit(newColor[0] * layer.red / 100),
+        clamp8Bit(newColor[1] * layer.green / 100),
+        clamp8Bit(newColor[2] * layer.blue / 100)
     ]
+}
+
+const applyKernel = (image: PartialRgbImage, kernel: ImageFilterKernel): PartialRgbImage => {
+    const applyKernelAt = (x: number, y: number): Nullable<Rgb> => {
+        if (image[y][x] === null) {
+            return null;
+        }
+
+        let r = 0, g = 0, b = 0;
+        const kernelSize = kernel.length;
+        const mu = Math.floor(kernelSize / 2);
+        applyRange2DExclusive(kernelSize, kernelSize, (ky, kx) => {
+            const pixel = image[y + ky - mu]?.[x + kx - mu] || [0, 0, 0];
+            r += pixel[0] * kernel[ky][kx];
+            g += pixel[1] * kernel[ky][kx];
+            b += pixel[2] * kernel[ky][kx];
+        });
+        return [r, g, b].map(clamp8Bit) as Rgb;
+    }
+
+    return map2D(image, (_, x, y) => applyKernelAt(x, y)) as RgbImage;
+}
+
+export const gaussianBlur = (image: PartialRgbImage, amount: Percentage): PartialRgbImage => {
+
+    const getKernel = (size: number, sigma: number): ImageFilterKernel => {
+        const mu = Math.floor(size / 2);
+        let sum = 0;
+        const unnormalizedKernel = rangeExclusive(size).map(y => rangeExclusive(size).map(x => {
+            const value = (1 / (2 * Math.PI * sigma * sigma))
+                * Math.exp(-((x - mu) ** 2 + (y - mu) ** 2) / (2 * sigma * sigma));
+            sum += value;
+            return value;
+        }));
+
+        return map2D(unnormalizedKernel, value => value / sum);
+    }
+
+    return applyKernel(image, getKernel(Math.ceil(amount * 20), amount * 100));
+}
+
+export const sharpen = (image: PartialRgbImage, amount: Percentage): PartialRgbImage => {
+
+    const maximumSharpnessImage = applyKernel(
+        image,
+        [
+            [-1, -1, -1],
+            [-1, 9, -1],
+            [-1, -1, -1]
+        ]
+    );
+
+    return map2D(
+        image,
+        (pixel, x, y) => pixel === null || maximumSharpnessImage[y][x] === null
+            ? null
+            : pixel.map(
+                (sourceImagePixelColor, rgbIdx) => bias(maximumSharpnessImage[y][x]![rgbIdx], sourceImagePixelColor, amount * 3)
+            ) as Rgb
+    );
+
 }

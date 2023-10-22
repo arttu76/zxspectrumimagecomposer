@@ -15,10 +15,12 @@ export type Grid<T> = T[][]
 export type FlatRgbData = number[];
 
 export type RgbImage = Grid<Rgb>;
+export type PartialRgbImage = Grid<Nullable<Rgb>>; // partial = image can have "holes" (nulls)
 
 export type BitImage = Grid<boolean>;
 
 export type ErrorValueImage = Grid<number>;
+export type ImageFilterKernel = Grid<number>;
 export type AttributeImage = Grid<Nullable<Color>>;
 
 export interface withId {
@@ -26,7 +28,7 @@ export interface withId {
 }
 
 export interface ExtendedWindow extends Window {
-    _maskData: { [key: Id]: GrowableGrid<boolean>; }; // [layer id]
+    _maskData: { [key: Id]: GrowableGrid<boolean>; }; // key = layer id
     _imageData: { [key: string]: FlatRgbData }; // { layer.src: [r,g,b,a, r,g,b,a ...] }
 }
 
@@ -90,6 +92,7 @@ export interface Layer extends withId {
     x: number;
     y: number;
     rotate: number;
+    blur: number;
     hue: number;
     saturation: number;
     red: number;
@@ -97,6 +100,9 @@ export interface Layer extends withId {
     blue: number;
     brightness: number;
     contrast: number;
+    shadows: number;
+    midtones: number;
+    highlights: number;
     invert: boolean;
     pixelate: PixelationType;
     patterns: PixelationPattern[];

@@ -17,19 +17,23 @@ import {
     removeLayer,
     setActive,
     setLayerBlue,
+    setLayerBlur,
     setLayerBrightness,
     setLayerBrightnessThreshold,
     setLayerContrast,
     setLayerGreen,
     setLayerHeight,
+    setLayerHighlights,
     setLayerHue,
     setLayerInvert,
+    setLayerMidtones,
     setLayerPixelate,
     setLayerPixelateSource,
     setLayerPixelateTargetColor,
     setLayerRed,
     setLayerRotate,
     setLayerSaturation,
+    setLayerShadows,
     setLayerSrc,
     setLayerWidth,
     setLayerX,
@@ -189,31 +193,13 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             onClick={() => change(setLayerInvert)(layer, 'invert', !layer.invert)}
                         /></div>
                     <LayerPropertyEditor
-                        title="Red"
+                        title="Blur"
                         layer={layer}
-                        fieldName="red"
-                        change={change(setLayerRed)}
-                        reset={100}
-                        min={0}
-                        max={200}
-                    />
-                    <LayerPropertyEditor
-                        title="Green"
-                        layer={layer}
-                        fieldName="green"
-                        change={change(setLayerGreen)}
-                        reset={100}
-                        min={0}
-                        max={200}
-                    />
-                    <LayerPropertyEditor
-                        title="Blue"
-                        layer={layer}
-                        fieldName="blue"
-                        change={change(setLayerBlue)}
-                        reset={100}
-                        min={0}
-                        max={200}
+                        fieldName="blur"
+                        change={change(setLayerBlur)}
+                        reset={0}
+                        min={-100}
+                        max={100}
                     />
                     <LayerPropertyEditor
                         title="Hue"
@@ -250,6 +236,60 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         reset={0}
                         min={0}
                         max={500}
+                    />
+                    <LayerPropertyEditor
+                        title="Highlights"
+                        layer={layer}
+                        fieldName="highlights"
+                        change={change(setLayerHighlights)}
+                        reset={0}
+                        min={-100}
+                        max={100}
+                    />
+                    <LayerPropertyEditor
+                        title="Midtones"
+                        layer={layer}
+                        fieldName="midtones"
+                        change={change(setLayerMidtones)}
+                        reset={0}
+                        min={-100}
+                        max={100}
+                    />
+                    <LayerPropertyEditor
+                        title="Shadows"
+                        layer={layer}
+                        fieldName="shadows"
+                        change={change(setLayerShadows)}
+                        reset={0}
+                        min={-100}
+                        max={100}
+                    />
+                    <LayerPropertyEditor
+                        title="Red"
+                        layer={layer}
+                        fieldName="red"
+                        change={change(setLayerRed)}
+                        reset={100}
+                        min={0}
+                        max={200}
+                    />
+                    <LayerPropertyEditor
+                        title="Green"
+                        layer={layer}
+                        fieldName="green"
+                        change={change(setLayerGreen)}
+                        reset={100}
+                        min={0}
+                        max={200}
+                    />
+                    <LayerPropertyEditor
+                        title="Blue"
+                        layer={layer}
+                        fieldName="blue"
+                        change={change(setLayerBlue)}
+                        reset={100}
+                        min={0}
+                        max={200}
                     />
                 </LayerProperyGroup>
                 <LayerProperyGroup title="Dithering">

@@ -98,6 +98,7 @@ const layersSlice = createSlice({
                     x: 0,
                     y: 0,
                     rotate: 0,
+                    blur: 0,
                     hue: 0,
                     saturation: 100,
                     red: 100,
@@ -105,6 +106,9 @@ const layersSlice = createSlice({
                     blue: 100,
                     brightness: 0,
                     contrast: 0,
+                    shadows: 0,
+                    midtones: 0,
+                    highlights: 0,
                     invert: false,
                     pixelate: PixelationType.none,
                     patterns: [],
@@ -171,6 +175,10 @@ const layersSlice = createSlice({
             state.layers[getLayerIndex(state, action)].rotate =
                 action.payload.rotate;
         },
+        setLayerBlur: (state, action: PayloadAction<{ layer: Layer, blur: number }>) => {
+            state.layers[getLayerIndex(state, action)].blur =
+                action.payload.blur;
+        },
         setLayerHue: (state, action: PayloadAction<{ layer: Layer, hue: number }>) => {
             state.layers[getLayerIndex(state, action)].hue =
                 action.payload.hue;
@@ -203,6 +211,20 @@ const layersSlice = createSlice({
             state.layers[getLayerIndex(state, action)].invert =
                 action.payload.invert;
         },
+
+        setLayerShadows: (state, action: PayloadAction<{ layer: Layer, shadows: number }>) => {
+            state.layers[getLayerIndex(state, action)].shadows =
+                action.payload.shadows;
+        },
+        setLayerMidtones: (state, action: PayloadAction<{ layer: Layer, midtones: number }>) => {
+            state.layers[getLayerIndex(state, action)].midtones =
+                action.payload.midtones;
+        },
+        setLayerHighlights: (state, action: PayloadAction<{ layer: Layer, highlights: number }>) => {
+            state.layers[getLayerIndex(state, action)].highlights =
+                action.payload.highlights;
+        },
+
         setLayerPixelate: (state, action: PayloadAction<{ layer: Layer, pixelate: PixelationType }>) => {
             state.layers[getLayerIndex(state, action)].pixelate =
                 action.payload.pixelate;
@@ -378,6 +400,7 @@ export const {
     setLayerWidth,
     setLayerRotate,
     preserveLayerAspectRatio,
+    setLayerBlur,
     setLayerHue,
     setLayerSaturation,
     setLayerRed,
@@ -385,6 +408,9 @@ export const {
     setLayerBlue,
     setLayerBrightness,
     setLayerContrast,
+    setLayerHighlights,
+    setLayerMidtones,
+    setLayerShadows,
     setLayerInvert,
     setLayerPixelate,
     setLayerPixelateSource,

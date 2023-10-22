@@ -1,8 +1,8 @@
 import * as R from 'ramda';
-import { AttributeImage, BitImage, Color, Grid, Layer, Nullable, PixelationSource, Rgb, ToolType } from '../types';
-import { getColorAdjusted, getInverted } from './colors';
+import { AttributeImage, BitImage, Color, Grid, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb, ToolType } from '../types';
+import { gaussianBlur, getColorAdjusted, getInverted, sharpen } from './colors';
 import { computeAttributeBlockColor } from './dithering';
-import { getInitialized2DArray, getSourceRgb, rangeExclusive } from './utils';
+import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb } from './utils';
 
 export type PatternCache = BitImage[];
 
@@ -21,15 +21,24 @@ export interface LayerContext {
 
 export const initializeLayerContext = (layer: Layer, currentTool: ToolType): LayerContext => {
 
-    const adjustedPixels = getInitialized2DArray<Nullable<Rgb>>(192, 256, null);
-    rangeExclusive(192, y => rangeExclusive(256, x => {
+    let adjustedPixels: PartialRgbImage = getInitialized2DArray<Nullable<Rgb>>(192, 256, null);
+    applyRange2DExclusive(192, 255, (y, x) => {
         const rgb = getSourceRgb(layer, x, y, currentTool);
         if (rgb !== null) {
             const inverted = getInverted(layer, rgb);
             const adjusted = getColorAdjusted(layer, inverted);
             adjustedPixels[y][x] = adjusted;
+        } else {
+            adjustedPixels[y][x] = null;
         }
-    }));
+    });
+
+    if (layer.blur > 0) {
+        adjustedPixels = gaussianBlur(adjustedPixels, layer.blur / 100);
+    }
+    if (layer.blur < 0) {
+        adjustedPixels = sharpen(adjustedPixels, -layer.blur / 100);
+    }
 
     return {
         layer,
@@ -57,6 +66,7 @@ export const getDitheringContextAttributeBlockColor = (ctx: LayerContext, x: num
 
     const attrX = Math.floor(x / 8);
     const attrY = Math.floor(y / 8);
+
     if (ctx.attributes[attrY][attrX] === null) {
         ctx.attributes[attrY][attrX] = computeAttributeBlockColor(ctx, x, y);
     }

@@ -1,11 +1,12 @@
-import { Color, Distance, Nullable, Percentage, PixelationType, Rgb } from '../types';
+import { Color, Nullable, Percentage, PixelationType, Rgb } from '../types';
 import { getInkIntensity, getIntensity, getIntensityDifference, getPaperIntensity, spectrumColor } from './colors';
 import { DitheringErrorBuffer, LayerContext, PatternCache, getDitheringContextAttributeBlockColor } from './layerContextManager';
+import { applyRange2DExclusive } from './utils';
 
-export const getColorDistance = (from: Rgb, to: Rgb): number => {
-    const rDiff = to[0] - from[0];
-    const gDiff = to[1] - from[1];
-    const bDiff = to[2] - from[2];
+export const getColorDistance = (a: Rgb, b: Rgb): number => {
+    const rDiff = b[0] - a[0];
+    const gDiff = b[1] - a[1];
+    const bDiff = b[2] - a[2];
     return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
 }
 
@@ -42,19 +43,6 @@ export const getInkSimilarityPercentage = (source: Rgb, target: Color): Percenta
 
     return 0.5;
 }
-
-const getDistanceToInk = (source: Rgb, target: Color): Distance => {
-    return target.bright
-        ? getColorDistance(spectrumColor.bright[target.ink], source)
-        : getColorDistance(spectrumColor.normal[target.ink], source)
-}
-
-const getDistanceToPaper = (source: Rgb, target: Color): Distance => {
-    return target.bright
-        ? getColorDistance(spectrumColor.bright[target.paper], source)
-        : getColorDistance(spectrumColor.normal[target.paper], source)
-}
-
 
 const simple = (source: Rgb, target: Color): boolean => {
     return getIntensityDifference(source, target, true) < getIntensityDifference(source, target, false);
@@ -123,18 +111,13 @@ export const isDitheredPixelSet = (ctx: LayerContext, x: number, y: number): boo
 }
 
 export const computeAttributeBlockColor = (ctx: LayerContext, x: number, y: number): Nullable<Color> => {
-    const charX = Math.floor(x / 8);
-    const charY = Math.floor(y / 8);
-
     const contributingAdjustedPixels: Rgb[] = [];
-    for (let yOffset = 0; yOffset < 8; yOffset++) {
-        for (let xOffset = 0; xOffset < 8; xOffset++) {
-            const rgb = ctx.adjustedPixels[charY * 8 + yOffset][charX * 8 + xOffset];
-            if (rgb !== null) {
-                contributingAdjustedPixels.push(rgb);
-            }
+    applyRange2DExclusive(8, 8, (yOffset, xOffset) => {
+        const rgb = ctx.adjustedPixels[y + yOffset]?.[x + xOffset] || null;
+        if (rgb !== null) {
+            contributingAdjustedPixels.push(rgb);
         }
-    }
+    });
 
     // is attribute block bright or not
     const bright = ctx.layer.brightnessThreshold === 0
@@ -149,23 +132,21 @@ export const computeAttributeBlockColor = (ctx: LayerContext, x: number, y: numb
             ) > (ctx.layer.brightnessThreshold * 2.55) // bright if treshold exceeded 
 
     // transform contributing pixels to spectrum colors
-    const colorSet = bright
+    const availableColors = bright
         ? [...spectrumColor.bright]
         : [...spectrumColor.normal]
 
-    const frequencyMap: Map<number, number> = new Map();
+    const frequencyMap: Map<number, number> = new Map(); // key = color index, value = popularity/appearance count
     contributingAdjustedPixels.forEach(rgb => {
-        const nearestSpectrumColor = colorSet.indexOf((
-            [...colorSet]
-                .sort((a, b) => getColorDistance(rgb, a) - getColorDistance(rgb, b))
-        )[0]);
-        frequencyMap.set(
-            nearestSpectrumColor,
-            (frequencyMap.get(nearestSpectrumColor) || 0) + 1
-        );
+        const nearestSpectrumColors = [...availableColors].sort((a, b) => getColorDistance(rgb, a) - getColorDistance(rgb, b));
+        const mostPopularIndex = availableColors.indexOf(nearestSpectrumColors[0]);
+        const secondMostPopularIndex = availableColors.indexOf(nearestSpectrumColors[1]);
+        frequencyMap.set(mostPopularIndex, (frequencyMap.get(mostPopularIndex) || 0) + 8);
+        frequencyMap.set(secondMostPopularIndex, (frequencyMap.get(secondMostPopularIndex) || 0) + 1);
     });
 
-    const sortedEntries = [...frequencyMap.entries()].sort((a, b) => b[1] - a[1]);
+    const sortedEntries = [...frequencyMap.entries()]
+        .sort((colorAndPopularityPairA, colorAndPopularityPairB) => colorAndPopularityPairB[1] - colorAndPopularityPairA[1]);
 
     const mostPopularColor = sortedEntries.length > 0
         ? sortedEntries[0][0]
@@ -177,6 +158,7 @@ export const computeAttributeBlockColor = (ctx: LayerContext, x: number, y: numb
 
     let ink = mostPopularColor!;
     let paper = secondMostPopularColor!;
+
     if (ink < paper) {
         const temp = ink;
         ink = paper;

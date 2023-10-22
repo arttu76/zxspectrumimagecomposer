@@ -12,7 +12,7 @@ import { isDitheredPixelSet } from '../utils/dithering';
 import { setGrowableGridData } from '../utils/growableGridManager';
 import { getDitheringContextAttributeBlockColor, initializeLayerContext } from '../utils/layerContextManager';
 import { addAttributeGridUi, addMaskUiToLayer, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
-import { getLayerXYFromScreenCoordinates, getWindow, rangeExclusive, safeZero } from "../utils/utils";
+import { applyRange2DExclusive, getLayerXYFromScreenCoordinates, getWindow, safeZero } from "../utils/utils";
 
 const win = getWindow();
 
@@ -78,9 +78,7 @@ export const Screen = () => {
             .map(layer => initializeLayerContext(layer, currentTool))
             .reverse();
 
-        console.clear();
-
-        rangeExclusive(192, y => rangeExclusive(255, x => {
+        applyRange2DExclusive(192, 255, (y, x) => {
             let renderedPixel: Nullable<Rgb> = null;
 
             if (true || y > 13 * 8 + 1 && y < 13 * 8 + 3 && x > 10 * 8 && x < 11 * 8 - 3) {
@@ -123,7 +121,7 @@ export const Screen = () => {
             imageData.data[offset + 1] = renderedPixel[1];
             imageData.data[offset + 2] = renderedPixel[2];
             imageData.data[offset + 3] = 255;
-        }));
+        });
 
         miniMapCtx && miniMapCtx.putImageData(miniMapImageData, 0, 0);
         screenCtx.putImageData(imageData, 0, 0);
