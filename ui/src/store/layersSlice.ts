@@ -101,7 +101,7 @@ const layersSlice = createSlice({
                     blur: 0,
                     edgeEnhance: 0,
                     hue: 0,
-                    saturation: 100,
+                    saturation: 0,
                     red: 100,
                     green: 100,
                     blue: 100,
@@ -114,6 +114,7 @@ const layersSlice = createSlice({
                     pixelate: PixelationType.none,
                     patterns: [],
                     pixelateSource: PixelationSource.autoColor,
+                    pixelateAutoColors: [0, 1, 2, 3, 4, 5, 6, 7],
                     pixelateTargetColor: { ink: 7, paper: 0, bright: false },
                     brightnessThreshold: 50
                 },
@@ -220,6 +221,9 @@ const layersSlice = createSlice({
         },
         setLayerPixelateSource: (state, action: PayloadAction<{ layer: Layer, pixelateSource: PixelationSource }>) => {
             state.layers[getLayerIndex(state, action)].pixelateSource = action.payload.pixelateSource;
+        },
+        setLayerPixelateAutoColors: (state, action: PayloadAction<{ layer: Layer, colors: number[] }>) => {
+            state.layers[getLayerIndex(state, action)].pixelateAutoColors = action.payload.colors;
         },
         setLayerPixelateTargetColor: (state, action: PayloadAction<{ layer: Layer, color: Color }>) => {
             state.layers[getLayerIndex(state, action)].pixelateTargetColor = action.payload.color;
@@ -403,6 +407,7 @@ export const {
     setLayerInvert,
     setLayerPixelate,
     setLayerPixelateSource,
+    setLayerPixelateAutoColors,
     setLayerPixelateTargetColor,
     setLayerBrightnessThreshold,
     removeLayer,

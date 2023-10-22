@@ -1,5 +1,3 @@
-import "../styles/ColorComponentPicker.scss";
-
 export const ColorComponentPicker: React.FC<{
     chooseColorComponent: (colorComponent: number) => void;
     bright: boolean;

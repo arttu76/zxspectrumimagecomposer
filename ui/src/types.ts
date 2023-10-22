@@ -108,6 +108,7 @@ export interface Layer extends withId {
     pixelate: PixelationType;
     patterns: PixelationPattern[];
     pixelateSource: PixelationSource;
+    pixelateAutoColors: number[];
     pixelateTargetColor: Color;
     brightnessThreshold: number;
 }

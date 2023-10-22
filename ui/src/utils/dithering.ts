@@ -132,15 +132,14 @@ export const computeAttributeBlockColor = (ctx: LayerContext, x: number, y: numb
             ) > (ctx.layer.brightnessThreshold * 2.55) // bright if treshold exceeded 
 
     // transform contributing pixels to spectrum colors
-    const availableColors = bright
-        ? [...spectrumColor.bright]
-        : [...spectrumColor.normal]
+    const normalOrBrightColors = bright ? spectrumColor.bright : spectrumColor.normal;
+    const availableColors = ctx.layer.pixelateAutoColors.map(colorIndex => normalOrBrightColors[colorIndex]);
 
     const frequencyMap: Map<number, number> = new Map(); // key = color index, value = popularity/appearance count
     contributingAdjustedPixels.forEach(rgb => {
         const nearestSpectrumColors = [...availableColors].sort((a, b) => getColorDistance(rgb, a) - getColorDistance(rgb, b));
-        const mostPopularIndex = availableColors.indexOf(nearestSpectrumColors[0]);
-        const secondMostPopularIndex = availableColors.indexOf(nearestSpectrumColors[1]);
+        const mostPopularIndex = normalOrBrightColors.indexOf(nearestSpectrumColors[0]);
+        const secondMostPopularIndex = normalOrBrightColors.indexOf(nearestSpectrumColors[1]);
         frequencyMap.set(mostPopularIndex, (frequencyMap.get(mostPopularIndex) || 0) + 8);
         frequencyMap.set(secondMostPopularIndex, (frequencyMap.get(secondMostPopularIndex) || 0) + 1);
     });

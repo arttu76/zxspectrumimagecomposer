@@ -29,6 +29,7 @@ import {
     setLayerInvert,
     setLayerMidtones,
     setLayerPixelate,
+    setLayerPixelateAutoColors,
     setLayerPixelateSource,
     setLayerPixelateTargetColor,
     setLayerRed,
@@ -338,6 +339,12 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                                 dimmed={layer.pixelateSource !== PixelationSource.targetColor}
                                 onClick={() => dispatch(setLayerPixelateSource({ layer, pixelateSource: PixelationSource.targetColor }))}>Manually selected color</Button>
                         </div>
+                        {layer.pixelateSource === PixelationSource.autoColor && <div style={{ textAlign: 'center' }}>
+                            <ColorPicker
+                                title="Allowed colors"
+                                colors={layer.pixelateAutoColors}
+                                chooseColors={colors => dispatch(setLayerPixelateAutoColors({ layer, colors }))} />
+                        </div>}
                         {layer.pixelateSource === PixelationSource.targetColor && <div style={{ textAlign: 'center' }}>
                             <ColorPicker
                                 title="Manually selected color"
@@ -345,7 +352,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                                 chooseColor={color => dispatch(setLayerPixelateTargetColor({ layer, color }))} />
                         </div>}
                         <LayerPropertyEditor
-                            title="Brightness"
+                            title="Bright"
                             layer={layer}
                             fieldName="brightnessThreshold"
                             change={change(setLayerBrightnessThreshold)}
