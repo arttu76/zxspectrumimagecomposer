@@ -10,7 +10,15 @@ export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: To
         return null;
     }
 
-    const { layerX, layerY } = getLayerXYFromScreenCoordinates(layer, x, y);
+    let { layerX, layerY } = getLayerXYFromScreenCoordinates(layer, x, y);
+
+    if (layer.flipX && layer.originalWidth) {
+        layerX = layer.originalWidth - layerX;
+    }
+    if (layer.flipY && layer.originalHeight) {
+        layerY = layer.originalHeight - layerY;
+    }
+
     const layerOffset = (layerX + layerY * safeZero(layer.originalWidth)) * 3;
 
     return (

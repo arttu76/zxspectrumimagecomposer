@@ -98,6 +98,8 @@ const layersSlice = createSlice({
                     x: 0,
                     y: 0,
                     rotate: 0,
+                    flipX: false,
+                    flipY: false,
                     blur: 0,
                     edgeEnhance: 0,
                     hue: 0,
@@ -175,6 +177,13 @@ const layersSlice = createSlice({
         setLayerRotate: (state, action: PayloadAction<{ layer: Layer, rotate: number }>) => {
             state.layers[getLayerIndex(state, action)].rotate = action.payload.rotate;
         },
+        setLayerFlipX: (state, action: PayloadAction<{ layer: Layer, flipX: boolean }>) => {
+            state.layers[getLayerIndex(state, action)].flipX = action.payload.flipX;
+        },
+        setLayerFlipY: (state, action: PayloadAction<{ layer: Layer, flipY: boolean }>) => {
+            state.layers[getLayerIndex(state, action)].flipY = action.payload.flipY;
+        },
+
         setLayerBlur: (state, action: PayloadAction<{ layer: Layer, blur: number }>) => {
             state.layers[getLayerIndex(state, action)].blur = action.payload.blur;
         },
@@ -391,6 +400,8 @@ export const {
     setLayerHeight,
     setLayerWidth,
     setLayerRotate,
+    setLayerFlipX,
+    setLayerFlipY,
     preserveLayerAspectRatio,
     setLayerBlur,
     setLayerEdgeEnhance,

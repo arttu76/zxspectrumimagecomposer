@@ -92,6 +92,8 @@ export interface Layer extends withId {
     x: number;
     y: number;
     rotate: number;
+    flipX: boolean;
+    flipY: boolean;
     blur: number;
     edgeEnhance: number;
     hue: number;

@@ -22,6 +22,8 @@ import {
     setLayerBrightnessThreshold,
     setLayerContrast,
     setLayerEdgeEnhance,
+    setLayerFlipX,
+    setLayerFlipY,
     setLayerGreen,
     setLayerHeight,
     setLayerHighlights,
@@ -50,7 +52,7 @@ import { LayerProperyGroup } from './LayerPropertyGroup';
 export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
     const dispatch = useAppDispatch();
 
-    const change = (action: any) => (layer: Layer, fieldName: string, value: number | boolean) => {
+    const changeLayerAttribute = (action: any) => (layer: Layer, fieldName: keyof Layer, value: number | boolean) => {
         dispatch(action({ layer, [fieldName]: value }));
     };
 
@@ -122,7 +124,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="X"
                         layer={layer}
                         fieldName="x"
-                        change={change(setLayerX)}
+                        change={changeLayerAttribute(setLayerX)}
                         reset={0}
                         min={-safeZero(layer.width)}
                         max={255}
@@ -131,7 +133,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Y"
                         layer={layer}
                         fieldName="y"
-                        change={change(setLayerY)}
+                        change={changeLayerAttribute(setLayerY)}
                         reset={0}
                         min={0}
                         max={192}
@@ -140,7 +142,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Width"
                         layer={layer}
                         fieldName="width"
-                        change={change(setLayerWidth)}
+                        change={changeLayerAttribute(setLayerWidth)}
                         reset={layer.originalWidth}
                         min={1}
                         max={safeZero(layer.originalWidth) * 2}
@@ -156,14 +158,14 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         <Button
                             tooltip={layer.preserveLayerAspectRatio ? 'Preserve original aspect ratio' : 'Do not preserve aspect ratio'}
                             icon={layer.preserveLayerAspectRatio ? 'lock' : 'lock_open_right'}
-                            onClick={() => change(preserveLayerAspectRatio)(layer, 'preserveLayerAspectRatio', !layer.preserveLayerAspectRatio)}
+                            onClick={() => changeLayerAttribute(preserveLayerAspectRatio)(layer, 'preserveLayerAspectRatio', !layer.preserveLayerAspectRatio)}
                         ></Button>
                     </div>
                     <LayerPropertyEditor
                         title="Height"
                         layer={layer}
                         fieldName="height"
-                        change={change(setLayerHeight)}
+                        change={changeLayerAttribute(setLayerHeight)}
                         reset={layer.originalHeight}
                         min={1}
                         max={safeZero(layer.originalHeight) * 2}
@@ -179,11 +181,31 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Rotate"
                         layer={layer}
                         fieldName="rotate"
-                        change={change(setLayerRotate)}
+                        change={changeLayerAttribute(setLayerRotate)}
                         reset={0}
                         min={-360}
                         max={360}
                     />
+                    <div style={{ paddingBottom: '10px', display: 'flex', justifyContent: 'space-evenly' }}>
+                        <div>
+                            Flip X:&nbsp;
+                            <Input
+                                tooltip="Flip horizontally"
+                                type="checkbox"
+                                checked={layer.flipX}
+                                onClick={() => changeLayerAttribute(setLayerFlipX)(layer, 'flipX', !layer.flipX)}
+                            />
+                        </div>
+                        <div>
+                            Flip Y:&nbsp;
+                            <Input
+                                tooltip="Flip vertically"
+                                type="checkbox"
+                                checked={layer.flipY}
+                                onClick={() => changeLayerAttribute(setLayerFlipY)(layer, 'flipY', !layer.flipY)}
+                            />
+                        </div>
+                    </div>
                 </LayerProperyGroup>
                 <LayerProperyGroup title="Hue & Saturation">
                     <div style={{ paddingLeft: '75px' }}>
@@ -192,13 +214,13 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             tooltip="Invert source image colors"
                             type="checkbox"
                             checked={layer.invert}
-                            onClick={() => change(setLayerInvert)(layer, 'invert', !layer.invert)}
+                            onClick={() => changeLayerAttribute(setLayerInvert)(layer, 'invert', !layer.invert)}
                         /></div>
                     <LayerPropertyEditor
                         title="Blur"
                         layer={layer}
                         fieldName="blur"
-                        change={change(setLayerBlur)}
+                        change={changeLayerAttribute(setLayerBlur)}
                         reset={0}
                         min={-100}
                         max={100}
@@ -207,7 +229,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Edges"
                         layer={layer}
                         fieldName="edgeEnhance"
-                        change={change(setLayerEdgeEnhance)}
+                        change={changeLayerAttribute(setLayerEdgeEnhance)}
                         reset={0}
                         min={-100}
                         max={100}
@@ -216,7 +238,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Hue"
                         layer={layer}
                         fieldName="hue"
-                        change={change(setLayerHue)}
+                        change={changeLayerAttribute(setLayerHue)}
                         reset={0}
                         min={-360}
                         max={360}
@@ -225,7 +247,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Saturation"
                         layer={layer}
                         fieldName="saturation"
-                        change={change(setLayerSaturation)}
+                        change={changeLayerAttribute(setLayerSaturation)}
                         reset={0}
                         min={-100}
                         max={100}
@@ -234,7 +256,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Brightness"
                         layer={layer}
                         fieldName="brightness"
-                        change={change(setLayerBrightness)}
+                        change={changeLayerAttribute(setLayerBrightness)}
                         reset={0}
                         min={-100}
                         max={100}
@@ -243,7 +265,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Contrast"
                         layer={layer}
                         fieldName="contrast"
-                        change={change(setLayerContrast)}
+                        change={changeLayerAttribute(setLayerContrast)}
                         reset={0}
                         min={0}
                         max={500}
@@ -252,7 +274,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Highlights"
                         layer={layer}
                         fieldName="highlights"
-                        change={change(setLayerHighlights)}
+                        change={changeLayerAttribute(setLayerHighlights)}
                         reset={0}
                         min={-100}
                         max={100}
@@ -261,7 +283,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Midtones"
                         layer={layer}
                         fieldName="midtones"
-                        change={change(setLayerMidtones)}
+                        change={changeLayerAttribute(setLayerMidtones)}
                         reset={0}
                         min={-100}
                         max={100}
@@ -270,7 +292,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Shadows"
                         layer={layer}
                         fieldName="shadows"
-                        change={change(setLayerShadows)}
+                        change={changeLayerAttribute(setLayerShadows)}
                         reset={0}
                         min={-100}
                         max={100}
@@ -279,7 +301,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Red"
                         layer={layer}
                         fieldName="red"
-                        change={change(setLayerRed)}
+                        change={changeLayerAttribute(setLayerRed)}
                         reset={100}
                         min={0}
                         max={200}
@@ -288,7 +310,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Green"
                         layer={layer}
                         fieldName="green"
-                        change={change(setLayerGreen)}
+                        change={changeLayerAttribute(setLayerGreen)}
                         reset={100}
                         min={0}
                         max={200}
@@ -297,7 +319,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         title="Blue"
                         layer={layer}
                         fieldName="blue"
-                        change={change(setLayerBlue)}
+                        change={changeLayerAttribute(setLayerBlue)}
                         reset={100}
                         min={0}
                         max={200}
@@ -355,7 +377,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             title="Bright"
                             layer={layer}
                             fieldName="brightnessThreshold"
-                            change={change(setLayerBrightnessThreshold)}
+                            change={changeLayerAttribute(setLayerBrightnessThreshold)}
                             reset={50}
                             min={0}
                             max={100}
