@@ -1,3 +1,6 @@
+import { rangeExclusive } from "../utils/utils";
+import { Button } from "./CustomElements";
+
 export const ColorsIndexPicker: React.FC<{
     colors: number[];
     chooseColors: (colors: number[]) => void;
@@ -15,6 +18,9 @@ export const ColorsIndexPicker: React.FC<{
         }
     }
 
+    const setAllOn = () => {
+        chooseColors(rangeExclusive(8));
+    }
 
     return <>
         <div className="ColorsPicker">
@@ -29,5 +35,11 @@ export const ColorsIndexPicker: React.FC<{
             <br />
             <div>At least 2 colors must be selected</div>
         </div>}
+        {(colors || []).length < 7 && <div className="ColorsPicker ColorsPickerAll">
+            <br />
+            <Button tooltip="Allow dithering to use all Spectrumcolors"
+                onClick={setAllOn}>Choose all colors</Button>
+        </div>}
+
     </>
 }
