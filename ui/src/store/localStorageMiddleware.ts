@@ -1,11 +1,9 @@
-import { debounce, getWindow } from "../utils/utils";
+import { debounce, persistStateImageMaskData } from "../utils/utils";
 
 import store from "./store";
 
 const updateLocalStorage = () => {
-    const win = getWindow();
-    localStorage.setItem("state", JSON.stringify(store.getState()));
-    localStorage.setItem('_maskData', JSON.stringify(win._maskData));
+    persistStateImageMaskData(store.getState());
 }
 
 const updateLocalStorageDebounced = debounce(() => updateLocalStorage(), 500);

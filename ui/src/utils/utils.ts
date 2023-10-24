@@ -1,8 +1,45 @@
 import * as R from 'ramda';
-import { ExtendedWindow, Grid, Layer, Nullable, Percentage, Rgb, ToolType, Undefinable } from "../types";
+import { ExtendedWindow, Grid, Layer, LocalStorageKeys, Nullable, Percentage, Rgb, State, ToolType, Undefinable } from "../types";
 import { getGrowableGridData } from "./growableGridManager";
 
 export const getWindow = () => window as unknown as ExtendedWindow;
+
+export const persistStateImageMaskData = (state: State) => {
+    const win = getWindow();
+    localStorage.setItem(LocalStorageKeys.state, JSON.stringify(state));
+    localStorage.setItem(LocalStorageKeys.imageData, JSON.stringify(win._imageData));
+    localStorage.setItem(LocalStorageKeys.maskData, JSON.stringify(win._maskData));
+}
+export const restoreStateImageMaskData = (): State | undefined => {
+    const win = getWindow();
+
+    win._imageData = {};
+    win._maskData = {};
+
+    localStorage.getItem(LocalStorageKeys.imageData) && (win._imageData = JSON.parse(localStorage.getItem(LocalStorageKeys.imageData) || '{}'));
+    localStorage.getItem(LocalStorageKeys.maskData) && (win._maskData = JSON.parse(localStorage.getItem("_maskData") || '{}'));
+
+    const state = JSON.parse('' + localStorage.getItem(LocalStorageKeys.state)) as Undefinable<State> || undefined;
+
+    // remove unused image data and/or mask data
+    if (state) {
+        const layerIds = state.layers.layers.map(layer => layer.id);
+
+        Object.keys(win._imageData).forEach(key => {
+            if (!layerIds.includes(key)) {
+                delete win._imageData[key];
+            }
+        });
+
+        Object.keys(win._maskData).forEach(key => {
+            if (!layerIds.includes(key)) {
+                delete win._maskData[key];
+            }
+        });
+    }
+
+    return JSON.parse('' + localStorage.getItem(LocalStorageKeys.state)) as Undefinable<State> || undefined;
+}
 
 export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: ToolType): Nullable<Rgb> => {
     const win = getWindow();
@@ -22,7 +59,7 @@ export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: To
     const layerOffset = (layerX + layerY * safeZero(layer.originalWidth)) * 3;
 
     return (
-        typeof win?._imageData[layer.src] === 'object'
+        typeof win?._imageData[layer.id] === 'object'
         && layer.loaded
         && layer.shown
         && layerX >= 0
@@ -35,9 +72,9 @@ export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: To
         )
     )
         ? [
-            win?._imageData[layer.src][layerOffset],
-            win?._imageData[layer.src][layerOffset + 1],
-            win?._imageData[layer.src][layerOffset + 2]
+            win?._imageData[layer.id][layerOffset],
+            win?._imageData[layer.id][layerOffset + 1],
+            win?._imageData[layer.id][layerOffset + 2]
         ] as Rgb
         : null;
 }

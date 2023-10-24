@@ -52,7 +52,7 @@ export const ColorPicker: React.FC<{
         </div >
     </LayerProperyGroup>}
     {colors && chooseColors && <LayerProperyGroup title={title}>
-        <div className="ColorPicker">
+        <div className="ColorPicker ColorsIndexPicker">
             <div className="ColorItem">
                 <ColorsIndexPicker
                     colors={colors}

@@ -4,7 +4,6 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 
 import * as R from "ramda";
 
-import { repaint } from "../store/layersSlice";
 import {
     setAttributeGridOpacity,
     setBrushShape,
@@ -13,9 +12,9 @@ import {
     setTool,
     setZoom
 } from "../store/toolsSlice";
-import { BrushShape, Nullable, ToolType, Undefinable } from "../types";
-import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
-import { getWindow, safeZero } from '../utils/utils';
+import { BrushShape, GrowableGrid, Layer, ToolType } from "../types";
+import { getEmptyGrowableGrid, getGrowableGridData } from '../utils/growableGridManager';
+import { getWindow, rangeExclusive } from '../utils/utils';
 import { Button, Input } from './CustomElements';
 
 export const Toolbar = () => {
@@ -31,38 +30,38 @@ export const Toolbar = () => {
 
     const dispatch = useAppDispatch();
 
-    const updateMaskData = (updateFunc: (previousValue: Nullable<boolean>) => Undefinable<boolean>) => {
-        const activeLayer = R.find(
-            layer => layer.active,
-            layers
-        );
-
-        const win = getWindow();
-
-        if (activeLayer && win?._maskData[activeLayer.id]) {
-            for (let y = 0; y < safeZero(activeLayer.originalHeight); y++) {
-                for (let x = 0; x < safeZero(activeLayer.originalWidth); x++) {
-                    setGrowableGridData(
-                        win._maskData[activeLayer.id],
-                        x,
-                        y,
-                        updateFunc(getGrowableGridData(win._maskData[activeLayer.id], x, y))
-                    );
-                }
-            }
-            dispatch(repaint());
-        } else {
-            console.log("no");
+    const withActiveLayerAndMaskData = (applyFunc: (activeLayerId: Layer, mask: GrowableGrid<boolean>) => void): void => {
+        const activeLayer = R.find(layer => layer.active, layers);
+        if (!activeLayer) {
+            return;
         }
 
+        const win = getWindow();
+        if (!win._maskData[activeLayer.id]) {
+            win._maskData[activeLayer.id] = getEmptyGrowableGrid<boolean>();
+        }
+
+        applyFunc(
+            activeLayer,
+            win._maskData[activeLayer.id]
+        );
     }
 
     const invertActiveLayerMaskData = () => {
-        updateMaskData((previousValue) => !previousValue ? true : undefined);
+        withActiveLayerAndMaskData((layer, mask) => {
+            getWindow()._maskData[layer.id] = getEmptyGrowableGrid(
+                rangeExclusive(layer.height || 0).map(y => rangeExclusive(layer.width || 0).map(x => {
+                    const existingValue = getGrowableGridData(mask, x, y);
+                    return existingValue === null
+                        ? null
+                        : !existingValue
+                }))
+            );
+        });
     }
 
     const clearActiveLayerMaskData = () => {
-        updateMaskData(() => undefined);
+        withActiveLayerAndMaskData(layer => getWindow()._maskData[layer.id] = getEmptyGrowableGrid<boolean>());
     }
 
     const reset = () => {
@@ -106,7 +105,7 @@ export const Toolbar = () => {
             {tool === 'nudge' ? '' : <span>
                 <Button
                     icon={brushShape === BrushShape.block ? "brightness_1" : "square"}
-                    tooltip="Click to change tool"
+                    tooltip="Click to change tool shape"
                     onClick={() => dispatch(setBrushShape(brushShape === BrushShape.block ? BrushShape.circle : BrushShape.block))} />
 
                 {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
@@ -153,7 +152,7 @@ export const Toolbar = () => {
 
             <Button
                 icon='warning'
-                tooltip="Reset everything"
+                tooltip={"Reset everything, lose all your work"}
                 className="reset"
                 onClick={reset} />
 

@@ -8,10 +8,12 @@
   },
   "author": "",
   "license": "ISC",
+  "type": "module",
   "dependencies": {
     "bmp-js": "^0.1.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "node-fetch": "^3.3.2",
     "supervisor": "^0.12.0",
     "uuid": "^8.3.2"
   }

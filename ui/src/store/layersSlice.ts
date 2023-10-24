@@ -1,10 +1,9 @@
-import { PayloadAction, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 
 import * as R from "ramda";
 
-import { Color, ImageFileData, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
-import { fetchJson, getHeightForAspectRatio, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
-import { RootState } from "./store";
+import { Color, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
+import { getHeightForAspectRatio, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
 
 export type ActionWithLayer = {
     meta?: { arg?: Layer },
@@ -26,41 +25,7 @@ const getLayerIndex = (state: LayersSliceState, action: ActionWithLayer): number
     return index;
 };
 
-export const loadLayerSrc = createAsyncThunk<ImageFileData | undefined, Layer>(
-    'layers/loadLayerSrc',
-    async (layer: Layer, thunkAPI) => {
-
-        const state = thunkAPI.getState() as RootState;
-
-        const src = (
-            '' + state.layers.layers.find(l => l.id === layer.id)!.src
-        ).toLowerCase().trim();
-
-        if (!src) {
-            alert("Layer source address must not be empty!");
-            return;
-        }
-
-        if (!src.startsWith("http")) {
-            alert(
-                "Layer source address must start with http(s)://\n\n"
-                + "You have set layer source address to be:\n\n" + src
-            );
-            return;
-        }
-
-        return await fetchJson<ImageFileData>(
-            window.location.protocol
-            + '//'
-            + window.location.hostname
-            + ':13000'
-            + '/?url=' + encodeURIComponent(src)
-        )
-    }
-);
-
 const initialState: LayersSliceState = {
-    repaint: 0,
     layers: [],
     background: -1
 }
@@ -69,25 +34,14 @@ const layersSlice = createSlice({
     name: "layers",
     initialState,
     reducers: {
-        repaint: (state) => {
-            state.repaint = Date.now();
-        },
         addLayer: (state) => {
-            let src = "";
-            if (state.layers.length === 0) {
-                src = "http://www.metta.org.uk/travel/images/thumbs/turkey_boat_small.jpg";
-            }
-            if (state.layers.length === 1) {
-                src = "https://i.pinimg.com/280x280_RS/b5/96/91/b5969183bd096593ddce4ac4d27dc60c.jpg";
-            }
-
             state.layers = [
                 {
                     id: getUuid(),
                     active: true,
                     shown: true,
                     expanded: true,
-                    src,
+                    name: 'My layer',
                     loading: false,
                     loaded: false,
                     originalHeight: undefined,
@@ -142,9 +96,18 @@ const layersSlice = createSlice({
             const idx = getLayerIndex(state, action);
             state.layers[idx]!.expanded = !state.layers[idx]!.expanded;
         },
-        setLayerSrc: (state, action: PayloadAction<{ layer: Layer, src: string }>) => {
+        setLayerName: (state, action: PayloadAction<{ layer: Layer, name: string }>) => {
             const idx = getLayerIndex(state, action);
-            state.layers[idx]!.src = action.payload.src;
+            state.layers[idx]!.name = action.payload.name;
+        },
+        setLayerSrcDimensions: (state, action: PayloadAction<{ layer: Layer, height: number, width: number }>) => {
+            const idx = getLayerIndex(state, action);
+            state.layers[idx]!.originalHeight = action.payload.height;
+            state.layers[idx]!.height = action.payload.height;
+            state.layers[idx]!.originalWidth = action.payload.width;
+            state.layers[idx]!.width = action.payload.width;
+            state.layers[idx]!.loading = false;
+            state.layers[idx]!.loaded = true;
         },
         setLayerX: (state, action: PayloadAction<{ layer: Layer, x: number }>) => {
             state.layers[getLayerIndex(state, action)].x = action.payload.x;
@@ -186,6 +149,7 @@ const layersSlice = createSlice({
 
         setLayerBlur: (state, action: PayloadAction<{ layer: Layer, blur: number }>) => {
             state.layers[getLayerIndex(state, action)].blur = action.payload.blur;
+
         },
         setLayerEdgeEnhance: (state, action: PayloadAction<{ layer: Layer, edgeEnhance: number }>) => {
             state.layers[getLayerIndex(state, action)].edgeEnhance = action.payload.edgeEnhance;
@@ -289,21 +253,8 @@ const layersSlice = createSlice({
             const idx = getLayerIndex(state, action);
             const win = getWindow();
 
-            // other layers not using this data?
-            if (
-                state.layers
-                    .filter((layer, layerIndex) => idx !== layerIndex && layer.src === action.payload.src)
-                    .length === 0
-            ) {
-                if (win._imageData) {
-                    console.log("trashing " + state.layers[idx]!.src);
-                    delete win._imageData[state.layers[idx]!.src];
-                }
-            }
-
-            if (win._maskData) {
-                delete win._maskData[state.layers[idx]!.id];
-            }
+            win._imageData && delete win._imageData[action.payload.id];
+            win._maskData && delete win._maskData[action.payload.id];
 
             state.layers.splice(idx, 1);
 
@@ -316,85 +267,38 @@ const layersSlice = createSlice({
             }
         },
         duplicateLayer: (state, action: PayloadAction<Layer>) => {
-            const idx = getLayerIndex(state, action);
             const win = getWindow();
 
-            const newLayer = R.mergeRight(state.layers[idx]!, {
+            const newLayer = {
+                ...action.payload,
                 id: getUuid(),
                 active: true,
-            });
+                name: "Copy of " + action.payload.name
+            };
 
-            win._maskData[newLayer.id] = R.clone(
-                win._maskData[state.layers[idx]!.id]
-            );
+            win._imageData[newLayer.id] = R.clone(win._imageData[action.payload.id]);
+            win._maskData[newLayer.id] = R.clone(win._maskData[action.payload.id]);
 
             state.layers = [
-                ...state.layers.map(layer => ({ ...layer, active: false })),
-                newLayer
+                newLayer,
+                ...state.layers.map(layer => ({ ...layer, active: false }))
             ];
+
         },
         changeBackground: (state, action) => {
             state.background = action.payload.background;
         },
-    },
-    extraReducers: (builder) => {
-        builder
-            .addCase(loadLayerSrc.pending, (state, action) => {
-                const idx = getLayerIndex(state, action);
-                state.layers[idx]!.loading = true;
-            })
-            .addCase(loadLayerSrc.fulfilled, (state, action) => {
-
-                const idx = getLayerIndex(state, action);
-                state.layers[idx]!.loading = false;
-
-                if (action.payload === undefined) {
-                    console.log("loadLayerSrc.fulfilled got undefined payload");
-                    return;
-                }
-
-                state.layers[idx]!.originalHeight = action.payload.height;
-                state.layers[idx]!.height = action.payload.height;
-                state.layers[idx]!.originalWidth = action.payload.width;
-                state.layers[idx]!.width = action.payload.width;
-
-                const win = getWindow();
-
-                if (!win._imageData) {
-                    win._imageData = {};
-                }
-                win._imageData[state.layers[idx]!.src] = action.payload.data;
-
-                if (!win._maskData) {
-                    win._maskData = {};
-                }
-                win._maskData[state.layers[idx]!.id] = {
-                    offsetX: 0,
-                    offsetY: 0,
-                    data: []
-                }
-                state.layers[idx]!.loading = false;
-                state.layers[idx]!.loaded = true;
-                state.repaint = Date.now();
-            })
-            .addCase(loadLayerSrc.rejected, (state, action) => {
-                const idx = getLayerIndex(state, action);
-                const layer = state.layers[idx]!;
-                layer.loading = false;
-                alert(`Can not load this layer!\n${layer.src}`);
-            })
-
     }
 });
 
 export const {
-    repaint,
     addLayer,
     setActive,
     changeLayerOrdering,
     showHideLayer,
     expandLayer,
-    setLayerSrc,
+    setLayerName,
+    setLayerSrcDimensions,
     setLayerX,
     setLayerY,
     setLayerHeight,

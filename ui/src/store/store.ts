@@ -2,29 +2,29 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import localStorageMiddleware from "./localStorageMiddleware";
 
-import layers, { loadLayerSrc } from "./layersSlice";
+import layers from "./layersSlice";
+import repaint from "./repaintSlice";
 import tools from "./toolsSlice";
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
-import { Layer, State, Undefinable } from "../types";
+import { restoreStateImageMaskData } from "../utils/utils";
+import repaintScreenMiddleware from "./repaintScreenMiddleware";
 
-const preloadedState = JSON.parse('' + localStorage.getItem("state")) as Undefinable<State> || undefined;
+const preloadedState = restoreStateImageMaskData();
 
 const store = configureStore({
     preloadedState,
     reducer: {
+        repaint,
         tools,
-        layers,
+        layers
     },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware({
         serializableCheck: false,
         immutableCheck: false,
     })
         .concat(localStorageMiddleware)
-});
-
-(preloadedState?.layers?.layers || []).forEach((layer: Layer) => {
-    layer.loaded && store.dispatch(loadLayerSrc(layer));
+        .concat(repaintScreenMiddleware)
 });
 
 export type RootState = ReturnType<typeof store.getState>

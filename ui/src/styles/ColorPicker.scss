@@ -5,6 +5,12 @@
     grid-template-columns: 1fr 1fr;
     gap: 3px 10px;
 
+    &.ColorsIndexPicker {
+        display: block;
+        text-align: center;
+        margin: 15px 0 5px;
+    }
+
     .ColorItem {
         display: contents;
 
@@ -160,9 +166,6 @@
     }
 
     .ColorsPicker {
-        margin: 10px auto;
-        width: 240px;
-
         .color {
             margin-right: 10px;
             opacity: 0.25;
@@ -172,21 +175,12 @@
             }
         }
 
-        &.ColorsPickerWarning {
-            position: relative;
-            display: block;
-            right: 203px;
-            font-size: 10px;
-            line-height: 15px;
-            top: 10px;
-        }
-
+        &.ColorsPickerWarning,
         &.ColorsPickerAll {
-            position: relative;
+            margin: 0;
+            text-align: center;
             display: block;
-            right: 173px;
             font-size: 10px;
-            top: 19px;
         }
 
     }

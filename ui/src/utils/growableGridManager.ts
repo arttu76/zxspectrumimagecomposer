@@ -1,4 +1,4 @@
-import { GrowableGrid, Nullable } from "../types";
+import { Grid, GrowableGrid, Nullable } from "../types";
 
 const getExistingRowSize = <T>(grid: GrowableGrid<T>): number => grid.data[0]?.length || 0;
 
@@ -91,6 +91,21 @@ const shrinkGridIfPossible = <T>(grid: GrowableGrid<T>): GrowableGrid<T> => {
     return newGrid;
 };
 
+export const getEmptyGrowableGrid = <T>(data?: Grid<Nullable<T>>): GrowableGrid<T> => {
+    return {
+        offsetX: 0,
+        offsetY: 0,
+        data: data || []
+    };
+}
+
+export const setAllGrowableGridData = <T>(grid: GrowableGrid<T>, adjustmentFunc: ((value: Nullable<T>) => Nullable<T>)): GrowableGrid<T> => {
+    return {
+        ...grid,
+        data: grid.data.map(row => row.map(adjustmentFunc))
+    }
+}
+
 export const setGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: number, value: Nullable<T>): GrowableGrid<T> => {
     if (grid.data.length === 0) {
         return {
@@ -108,6 +123,7 @@ export const setGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: numb
         grid.data[y - grid.offsetY][x - grid.offsetX] = null;
         return shrinkGridIfPossible(grid);
     }
+
 };
 
 export const getGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: number): Nullable<T> => {

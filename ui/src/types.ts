@@ -19,6 +19,8 @@ export type PartialRgbImage = Grid<Nullable<Rgb>>; // partial = image can have "
 
 export type BitImage = Grid<boolean>;
 
+export type MaskImage = GrowableGrid<boolean>;
+
 export type ErrorValueImage = Grid<number>;
 export type ImageFilterKernel = Grid<number>;
 export type AttributeImage = Grid<Nullable<Color>>;
@@ -27,9 +29,15 @@ export interface withId {
     id: Id;
 }
 
+export enum LocalStorageKeys {
+    state = 'state',
+    imageData = '_imageData',
+    maskData = '_maskData'
+}
+
 export interface ExtendedWindow extends Window {
-    _maskData: { [key: Id]: GrowableGrid<boolean>; }; // key = layer id
-    _imageData: { [key: string]: FlatRgbData }; // { layer.src: [r,g,b,a, r,g,b,a ...] }
+    [LocalStorageKeys.maskData]: { [key: Id]: GrowableGrid<boolean>; }; // key = layer id
+    [LocalStorageKeys.imageData]: { [key: string]: FlatRgbData }; // { layer.src: [r,g,b,a, r,g,b,a ...] }
 }
 
 export type DragState = {
@@ -81,7 +89,7 @@ export interface Layer extends withId {
     active: boolean;
     shown: boolean;
     expanded: boolean;
-    src: string;
+    name: string;
     loading: boolean;
     loaded: boolean;
     originalHeight: Undefinable<number>;
@@ -115,7 +123,6 @@ export interface Layer extends withId {
     brightnessThreshold: number;
 }
 export interface LayersSliceState {
-    repaint: number;
     layers: Layer[];
     background: number;
 }

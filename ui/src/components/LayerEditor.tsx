@@ -7,12 +7,11 @@ import { PatternEditor } from "./PatternEditor";
 
 import { Layer, PixelationSource, PixelationType, Undefinable } from "../types";
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     addLayerPattern,
     duplicateLayer,
     expandLayer,
-    loadLayerSrc,
     preserveLayerAspectRatio,
     removeLayer,
     setActive,
@@ -38,18 +37,80 @@ import {
     setLayerRotate,
     setLayerSaturation,
     setLayerShadows,
-    setLayerSrc,
+    setLayerSrcDimensions,
     setLayerWidth,
     setLayerX,
     setLayerY,
     showHideLayer
 } from "../store/layersSlice";
+import { repaint } from '../store/repaintSlice';
+import { getWindow } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Icon } from './Icon';
 import { LayerProperyGroup } from './LayerPropertyGroup';
 
 export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
+
+    // for uploads
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const imageRef = useRef<HTMLImageElement>(null);
+
+
+    const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+        const items = event.nativeEvent.clipboardData?.items || [];
+        for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file') {
+                const blob = item.getAsFile();
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    setImageUrl((event.target as FileReader).result as string);
+                }
+                reader.readAsDataURL(blob!);
+            }
+        }
+    };
+
+    const readPixelValues = () => {
+        if (imageUrl && imageRef.current) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d')!;
+            canvas.width = imageRef.current!.width;
+            canvas.height = imageRef.current!.height;
+
+            ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+            const win = getWindow();
+            if (!win._imageData) {
+                win._imageData = {};
+            }
+            win._imageData[layer.id] = Array.from(data).filter((_, idx) => idx % 4 < 3);
+
+            if (!win._maskData) {
+                win._maskData = {};
+            }
+            win._maskData[layer.id] = {
+                offsetX: 0,
+                offsetY: 0,
+                data: []
+            }
+
+            setImageUrl(null);
+            [...document.querySelectorAll('div[contentEditable=true]')].forEach(
+                div => div.innerHTML = ''
+            );
+
+            dispatch(setLayerSrcDimensions({ layer, width: canvas.width, height: canvas.height }));
+            dispatch(repaint());
+        }
+    }
+
+    useEffect(() => {
+        readPixelValues();
+    }, [imageUrl]);
+
     const dispatch = useAppDispatch();
 
     const changeLayerAttribute = (action: any) => (layer: Layer, fieldName: keyof Layer, value: number | boolean) => {
@@ -62,18 +123,6 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             dispatch(removeLayer(layer));
         }
     };
-
-    const clickLoad = () => {
-        if (layer.loading) {
-            return;
-        }
-
-        const src = prompt("Enter URL of image to load:", layer.src || '');
-        if (src) {
-            dispatch(setLayerSrc({ layer, src }));
-            return dispatch(loadLayerSrc(layer));
-        }
-    }
 
     const safeZero = (value: Undefinable<number>) => typeof value === "undefined" ? 0 : value;
     const safeOne = (value: Undefinable<number>) => typeof value === "undefined" ? 1 : value;
@@ -110,13 +159,17 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             />
             <Button
                 icon={layer.expanded ? "Compress" : "Expand"}
-                tooltip={layer.expanded ? "Minimize" : "Maximize"}
+                tooltip={layer.expanded ? "Hide layer attributes" : "Show layer attributes"}
                 onClick={() => dispatch(expandLayer(layer))} />
-            <Button
-                icon={layer.loading ? 'hourglass_top' : layer.loaded ? "sync" : "download"}
-                tooltip={layer.loading ? 'Loading...' : layer.loaded ? "Reload source image" : "Load source image"}
-                onClick={clickLoad}
-            />
+            <Icon icon="image"
+                className="ImageUploaderIcon"
+                onPaste={handlePaste} />
+            {imageUrl && <img src={imageUrl}
+                style={{ "display": "none" }}
+                alt="Pasted content"
+                ref={imageRef}
+                onLoad={readPixelValues} />}
+
 
             {layer.expanded && <div>
                 <LayerProperyGroup title="Size & position">
@@ -208,7 +261,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                     </div>
                 </LayerProperyGroup>
                 <LayerProperyGroup title="Hue & Saturation">
-                    <div style={{ paddingLeft: '75px' }}>
+                    <div style={{ 'textAlign': 'center', 'paddingBottom': '5px', 'marginTop': '-5px' }}>
                         Invert colors:&nbsp;
                         <Input
                             tooltip="Invert source image colors"

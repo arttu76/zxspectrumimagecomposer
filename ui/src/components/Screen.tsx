@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from '../store/store';
 
 import React from 'react';
-import { repaint, setLayerX, setLayerY } from "../store/layersSlice";
+import { setLayerX, setLayerY } from "../store/layersSlice";
+import { repaint } from '../store/repaintSlice';
 import { setZoom } from '../store/toolsSlice';
 import { DragState, Layer, Nullable, PixelationType, Rgb, ToolType, Undefinable } from "../types";
 import { spectrumColor } from '../utils/colors';
@@ -29,7 +30,7 @@ export const Screen = () => {
     const currentBrushSize = useAppSelector((state) => state.tools.brushSize);
 
     // force updates when something is drawn by mouse handler
-    useAppSelector((state) => state.layers.repaint);
+    useAppSelector((state) => state.repaint.repaint);
 
     // change zoom when window is resized
     useEffect(() => {
@@ -220,7 +221,7 @@ export const Screen = () => {
     }
 
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => handleMouse(event, true);
-    const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => handleMouse(event, false);
+    const handleMouseNotDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => handleMouse(event, false);
 
     return (
         <div className="Screen"
@@ -241,18 +242,19 @@ export const Screen = () => {
                     height={192}
                     ref={canvasRef}
                     onMouseDown={handleMouseDown}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
+                    onMouseUp={handleMouseNotDown}
+                    onMouseLeave={handleMouseNotDown}
                     onMouseMove={handleMouse}
                 ></canvas>
             </div>
-            {currentZoom > 1 && <canvas
+            <canvas
+                style={{ display: currentZoom > 1 ? 'block' : 'none' }}
                 className={`miniMap${showMiniMap ? ' show' : ' hide'}`}
                 onClick={() => setShowMiniMap(!showMiniMap)}
                 width={255}
                 height={192}
                 ref={miniMapCanvasRef}
-            ></canvas>}
+            ></canvas>
         </div>
     );
 };
