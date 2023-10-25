@@ -414,27 +414,29 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                                 dimmed={layer.pixelateSource !== PixelationSource.targetColor}
                                 onClick={() => dispatch(setLayerPixelateSource({ layer, pixelateSource: PixelationSource.targetColor }))}>Manually selected color</Button>
                         </div>
-                        {layer.pixelateSource === PixelationSource.autoColor && <div style={{ textAlign: 'center' }}>
-                            <ColorPicker
-                                title="Allowed colors"
-                                colors={layer.pixelateAutoColors}
-                                chooseColors={colors => dispatch(setLayerPixelateAutoColors({ layer, colors }))} />
-                        </div>}
+                        {layer.pixelateSource === PixelationSource.autoColor && <>
+                            <div style={{ textAlign: 'center' }}>
+                                <ColorPicker
+                                    title="Allowed colors"
+                                    colors={layer.pixelateAutoColors}
+                                    chooseColors={colors => dispatch(setLayerPixelateAutoColors({ layer, colors }))} />
+                            </div>
+                            <LayerPropertyEditor
+                                title="Bright"
+                                layer={layer}
+                                fieldName="brightnessThreshold"
+                                change={changeLayerAttribute(setLayerBrightnessThreshold)}
+                                reset={50}
+                                min={0}
+                                max={100}
+                            />
+                        </>}
                         {layer.pixelateSource === PixelationSource.targetColor && <div style={{ textAlign: 'center' }}>
                             <ColorPicker
                                 title="Manually selected color"
                                 color={layer.pixelateTargetColor}
                                 chooseColor={color => dispatch(setLayerPixelateTargetColor({ layer, color }))} />
                         </div>}
-                        <LayerPropertyEditor
-                            title="Bright"
-                            layer={layer}
-                            fieldName="brightnessThreshold"
-                            change={changeLayerAttribute(setLayerBrightnessThreshold)}
-                            reset={50}
-                            min={0}
-                            max={100}
-                        />
                     </>}
 
                     {layer.pixelate === 'pattern' && <div className="patterns">
