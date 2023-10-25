@@ -15,9 +15,12 @@ export const restoreStateImageMaskData = (): State | undefined => {
 
     win._imageData = {};
     win._maskData = {};
-
     localStorage.getItem(LocalStorageKeys.imageData) && (win._imageData = JSON.parse(localStorage.getItem(LocalStorageKeys.imageData) || '{}'));
-    localStorage.getItem(LocalStorageKeys.maskData) && (win._maskData = JSON.parse(localStorage.getItem("_maskData") || '{}'));
+    localStorage.getItem(LocalStorageKeys.maskData) && (win._maskData = JSON.parse(localStorage.getItem(LocalStorageKeys.maskData) || '{}'));
+
+    win.adjustedPixels = {};
+    win.pixels = {};
+    win.attributes = {};
 
     const state = JSON.parse('' + localStorage.getItem(LocalStorageKeys.state)) as Undefinable<State> || undefined;
 
@@ -41,7 +44,7 @@ export const restoreStateImageMaskData = (): State | undefined => {
     return JSON.parse('' + localStorage.getItem(LocalStorageKeys.state)) as Undefinable<State> || undefined;
 }
 
-export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: ToolType): Nullable<Rgb> => {
+export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: ToolType = ToolType.nudge): Nullable<Rgb> => {
     const win = getWindow();
     if (!win || !win._imageData) {
         return null;
@@ -169,3 +172,5 @@ export const getLayerXYFromScreenCoordinates = (layer: Layer, x: number, y: numb
         layerY: Math.floor(safeZero(layer.originalWidth) / 2 + layerY)
     }
 }
+
+export const booleanOrNull = (value: Nullable<boolean>): boolean | null => value === null ? null : value;

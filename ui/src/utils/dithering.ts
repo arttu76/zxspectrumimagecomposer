@@ -1,7 +1,7 @@
-import { Color, Nullable, Percentage, PixelationType, Rgb } from '../types';
+import { Color, Layer, Nullable, Percentage, PixelationSource, PixelationType, Rgb, SpectrumPixelCoordinate } from '../types';
 import { getInkIntensity, getIntensity, getIntensityDifference, getPaperIntensity, spectrumColor } from './colors';
-import { DitheringErrorBuffer, LayerContext, PatternCache, getDitheringContextAttributeBlockColor } from './layerContextManager';
-import { applyRange2DExclusive } from './utils';
+import { DitheringErrorBuffer, LayerContext, PatternCache } from './layerContextManager';
+import { applyRange2DExclusive, getWindow } from './utils';
 
 export const getColorDistance = (a: Rgb, b: Rgb): number => {
     const rDiff = b[0] - a[0];
@@ -81,59 +81,69 @@ const pattern = (source: Rgb, x: number, y: number, layerPatternCache: PatternCa
     }
 }
 
-export const isDitheredPixelSet = (ctx: LayerContext, x: number, y: number): boolean => {
+export const isDitheredPixelSet = (ctx: LayerContext, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate): Nullable<boolean> => {
 
-    const target = getDitheringContextAttributeBlockColor(ctx, x, y);
-    if (target === null) {
-        return false;
+    const win = getWindow();
+    const sourceRgb = win.adjustedPixels[ctx.layer.id][y][x];
+    const targetAttribute = win.attributes[ctx.layer.id][Math.floor(y / 8)][Math.floor(x / 8)]
+    if (sourceRgb === null || targetAttribute! === null) {
+        return null;
     }
 
-    const source = ctx.adjustedPixels[y][x];
-    if (source !== null) {
-        if (ctx.layer.pixelate === PixelationType.simple) {
-            return simple(source, target);
-        }
-        if (ctx.layer.pixelate === PixelationType.noise) {
-            return noise(source, x, y, target);
-        }
-
-        if (ctx.layer.pixelate === PixelationType.floydsteinberg) {
-            return floydsteinberg(source, x, y, ctx.ditheringErrorBuffer, target);
-        }
-
-        if (ctx.layer.pixelate === PixelationType.pattern) {
-            return pattern(source, x, y, ctx.patternCache, target);
-        }
+    if (ctx.layer.pixelate === PixelationType.simple) {
+        return simple(sourceRgb, targetAttribute);
+    }
+    if (ctx.layer.pixelate === PixelationType.noise) {
+        return noise(sourceRgb, x, y, targetAttribute);
     }
 
-    // no dither
-    return false;
+    if (ctx.layer.pixelate === PixelationType.floydsteinberg) {
+        return floydsteinberg(sourceRgb, x, y, ctx.ditheringErrorBuffer, targetAttribute);
+    }
+
+    if (ctx.layer.pixelate === PixelationType.pattern) {
+        return pattern(sourceRgb, x, y, ctx.patternCache, targetAttribute);
+    }
+
+    return null;
 }
 
-export const computeAttributeBlockColor = (ctx: LayerContext, x: number, y: number): Nullable<Color> => {
+export const computeAttributeBlockColor = (layer: Layer, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate): Nullable<Color> => {
+    if (layer.pixelateSource === PixelationSource.targetColor) {
+        return layer.pixelateTargetColor;
+    }
+
+    const win = getWindow();
+
     const contributingAdjustedPixels: Rgb[] = [];
     applyRange2DExclusive(8, 8, (yOffset, xOffset) => {
-        const rgb = ctx.adjustedPixels[y + yOffset]?.[x + xOffset] || null;
-        if (rgb !== null) {
-            contributingAdjustedPixels.push(rgb);
+        if (
+            win.adjustedPixels
+            && win.adjustedPixels[layer.id]
+            && win.adjustedPixels[layer.id][y + yOffset]
+        ) {
+            const rgb = win.adjustedPixels[layer.id][y + yOffset]?.[x + xOffset] || null;
+            if (rgb !== null) {
+                contributingAdjustedPixels.push(rgb);
+            }
         }
     });
 
     // is attribute block bright or not
-    const bright = ctx.layer.brightnessThreshold === 0
+    const bright = layer.brightnessThreshold === 0
         ? true // always bright
-        : ctx.layer.brightnessThreshold === 100
+        : layer.brightnessThreshold === 100
             ? false // always dark
             : (
                 (contributingAdjustedPixels || []).reduce(
                     (acc, val) => acc + val[0] + val[1] + val[2],
                     0
                 ) / (contributingAdjustedPixels.length * 3)
-            ) > (ctx.layer.brightnessThreshold * 2.55) // bright if treshold exceeded 
+            ) > (layer.brightnessThreshold * 2.55) // bright if treshold exceeded 
 
     // transform contributing pixels to spectrum colors
     const normalOrBrightColors = bright ? spectrumColor.bright : spectrumColor.normal;
-    const availableColors = ctx.layer.pixelateAutoColors.map(colorIndex => normalOrBrightColors[colorIndex]);
+    const availableColors = layer.pixelateAutoColors.map(colorIndex => normalOrBrightColors[colorIndex]);
 
     const frequencyMap: Map<number, number> = new Map(); // key = color index, value = popularity/appearance count
     contributingAdjustedPixels.forEach(rgb => {

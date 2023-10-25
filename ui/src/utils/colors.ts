@@ -191,10 +191,13 @@ const applyKernel = (image: PartialRgbImage, kernel: ImageFilterKernel): Partial
         const kernelSize = kernel.length;
         const mu = Math.floor(kernelSize / 2);
         applyRange2DExclusive(kernelSize, kernelSize, (ky, kx) => {
-            const pixel = image[y + ky - mu]?.[x + kx - mu] || [0, 0, 0];
-            r += pixel[0] * kernel[ky][kx];
-            g += pixel[1] * kernel[ky][kx];
-            b += pixel[2] * kernel[ky][kx];
+            const py = Math.round(y + ky - mu);
+            const px = Math.round(x + kx - mu);
+
+            const pixel = image[py]?.[px] || image[y][x];
+            r += pixel![0] * kernel[ky][kx];
+            g += pixel![1] * kernel[ky][kx];
+            b += pixel![2] * kernel[ky][kx];
         });
         return [r, g, b].map(clamp8Bit) as Rgb;
     }

@@ -3,6 +3,8 @@ export type Nullable<T> = T | null;
 
 export type Percentage = number;
 
+export type SpectrumPixelCoordinate = number;
+
 export type Distance = number;
 
 export type Id = string;
@@ -18,12 +20,13 @@ export type RgbImage = Grid<Rgb>;
 export type PartialRgbImage = Grid<Nullable<Rgb>>; // partial = image can have "holes" (nulls)
 
 export type BitImage = Grid<boolean>;
+export type PartialBitImage = Grid<Nullable<boolean>>; // partial = image can have "holes" (nulls)
 
 export type MaskImage = GrowableGrid<boolean>;
 
 export type ErrorValueImage = Grid<number>;
 export type ImageFilterKernel = Grid<number>;
-export type AttributeImage = Grid<Nullable<Color>>;
+export type PartialAttributeImage = Grid<Nullable<Color>>;
 
 export interface withId {
     id: Id;
@@ -37,7 +40,11 @@ export enum LocalStorageKeys {
 
 export interface ExtendedWindow extends Window {
     [LocalStorageKeys.maskData]: { [key: Id]: GrowableGrid<boolean>; }; // key = layer id
-    [LocalStorageKeys.imageData]: { [key: string]: FlatRgbData }; // { layer.src: [r,g,b,a, r,g,b,a ...] }
+    [LocalStorageKeys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
+
+    adjustedPixels: { [key: Id]: PartialRgbImage }
+    pixels: { [key: Id]: PartialBitImage }
+    attributes: { [key: Id]: PartialAttributeImage }
 }
 
 export type DragState = {
@@ -94,6 +101,7 @@ export interface Layer extends withId {
     loaded: boolean;
     originalHeight: Undefinable<number>;
     originalWidth: Undefinable<number>;
+    requireAdjustedPixelsRefresh: boolean; // when settings have been adjusted so that window[layer.id].adjustedPixels needs to be updated
     height: Undefinable<number>;
     width: Undefinable<number>;
     preserveLayerAspectRatio: boolean;
@@ -115,6 +123,7 @@ export interface Layer extends withId {
     midtones: number;
     highlights: number;
     invert: boolean;
+    requireSpectrumPixelsRefresh: boolean; // when settings have been adjusted so that window[layer.id].pixels and attributes need to be updated
     pixelate: PixelationType;
     patterns: PixelationPattern[];
     pixelateSource: PixelationSource;

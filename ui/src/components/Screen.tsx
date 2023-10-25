@@ -7,13 +7,11 @@ import React from 'react';
 import { setLayerX, setLayerY } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { setZoom } from '../store/toolsSlice';
-import { DragState, Layer, Nullable, PixelationType, Rgb, ToolType, Undefinable } from "../types";
+import { Color, DragState, Layer, Nullable, PixelationType, Rgb, ToolType, Undefinable } from "../types";
 import { spectrumColor } from '../utils/colors';
-import { isDitheredPixelSet } from '../utils/dithering';
 import { setGrowableGridData } from '../utils/growableGridManager';
-import { getDitheringContextAttributeBlockColor, initializeLayerContext } from '../utils/layerContextManager';
 import { addAttributeGridUi, addMaskUiToLayer, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
-import { applyRange2DExclusive, getLayerXYFromScreenCoordinates, getWindow, safeZero } from "../utils/utils";
+import { applyRange2DExclusive, booleanOrNull, getLayerXYFromScreenCoordinates, getWindow, safeZero } from "../utils/utils";
 
 const win = getWindow();
 
@@ -29,8 +27,7 @@ export const Screen = () => {
     const currentBrushShape = useAppSelector((state) => state.tools.brushShape);
     const currentBrushSize = useAppSelector((state) => state.tools.brushSize);
 
-    // force updates when something is drawn by mouse handler
-    useAppSelector((state) => state.repaint.repaint);
+    useAppSelector((state) => state.repaint.repaint); // just trigger component redraw
 
     // change zoom when window is resized
     useEffect(() => {
@@ -75,38 +72,49 @@ export const Screen = () => {
             ? miniMapCtx.createImageData(255, 192)
             : null;
 
-        const ditheringContexts = layers
-            .map(layer => initializeLayerContext(layer, currentTool))
-            .reverse();
-
         applyRange2DExclusive(192, 255, (y, x) => {
+
+            let pixel: Nullable<boolean> = null;
+            let attribute: Nullable<Color> = null;
+
+            let topmostAdjustedPixel: Nullable<Rgb> = null;
+
             let renderedPixel: Nullable<Rgb> = null;
 
-            if (true || y > 13 * 8 + 1 && y < 13 * 8 + 3 && x > 10 * 8 && x < 11 * 8 - 3) {
+            for (const layer of layers) {
+                if (layer.shown === false) continue;
+                if (layer.pixelate !== PixelationType.none) {
 
-                ditheringContexts.forEach((ditheringContext) => {
-                    const attribute = getDitheringContextAttributeBlockColor(ditheringContext, x, y);
+                    pixel = booleanOrNull(win.pixels?.[layer.id]?.[y][x]);
+                    if (pixel === null) continue;
+                    attribute = (
+                        win.attributes
+                        && win.attributes?.[layer.id]
+                        && win.attributes?.[layer.id]?.[Math.floor(y / 8)]
+                    )
+                        ? win.attributes?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
+                        : null;
+                } else {
                     if (
-                        ditheringContext.layer.pixelate !== PixelationType.none
-                        && attribute
+                        topmostAdjustedPixel === null
+                        && win.adjustedPixels[layer.id]
+                        && win.adjustedPixels[layer.id]?.[y]
                     ) {
-                        const colors = attribute.bright
-                            ? spectrumColor.bright
-                            : spectrumColor.normal;
-                        renderedPixel = isDitheredPixelSet(ditheringContext, x, y)
-                            ? colors[attribute.ink]
-                            : colors[attribute.paper]
-
-                    } else {
-                        renderedPixel = ditheringContext.adjustedPixels[y][x];
+                        topmostAdjustedPixel = win.adjustedPixels[layer.id]?.[y][x] || null;
                     }
-                });
-            } else {
-                renderedPixel = [255, 0, 0]
+                }
             }
 
-            renderedPixel = replaceEmptyWithBackground(renderedPixel, x, y, bg);
-            renderedPixel = addMaskUiToLayer(renderedPixel, activeLayer, currentTool, x, y);
+            if (pixel === null || attribute === null) {
+                renderedPixel = replaceEmptyWithBackground(topmostAdjustedPixel, x, y, bg);
+            } else {
+                const normalOrBrightColors = attribute.bright
+                    ? spectrumColor.bright
+                    : spectrumColor.normal;
+                renderedPixel = pixel
+                    ? normalOrBrightColors[attribute.ink]
+                    : normalOrBrightColors[attribute.paper]
+            }
 
             const offset = (y * 255 + x) * 4;
             if (miniMapCtx && miniMapImageData) {
@@ -116,6 +124,7 @@ export const Screen = () => {
                 miniMapImageData.data[offset + 3] = 255;
             }
 
+            renderedPixel = addMaskUiToLayer(renderedPixel, activeLayer, currentTool, x, y);
             renderedPixel = addAttributeGridUi(attributeGridOpacity, renderedPixel, x, y);
 
             imageData.data[offset] = renderedPixel[0];

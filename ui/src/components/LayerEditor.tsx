@@ -120,7 +120,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
     const remove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         event.stopPropagation();
         if (window.confirm("Are you sure you want to remove this layer?")) {
-            dispatch(removeLayer(layer));
+            dispatch(removeLayer({ layer }));
         }
     };
 
@@ -132,7 +132,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             className={"LayerEditor layerItem" + (layer.active ? " layerActive" : "")}
             key={layer.id}
             style={{ opacity: layer.shown ? 1 : 0.75 }}
-            onClick={() => dispatch(setActive(layer))}
+            onClick={() => dispatch(setActive({ layer }))}
         >
 
             <Button
@@ -147,7 +147,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                 icon="control_point_duplicate"
                 tooltip="Duplicate layer"
                 onClick={(e) => {
-                    dispatch(duplicateLayer(layer));
+                    dispatch(duplicateLayer({ layer }));
                     e.stopPropagation();
                 }}
             />
@@ -155,12 +155,12 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             <Button
                 icon={layer.shown ? 'visibility' : 'visibility_off'}
                 tooltip={layer.shown ? 'Layer is visible' : 'Layer is hidden'}
-                onClick={() => dispatch(showHideLayer(layer))}
+                onClick={() => dispatch(showHideLayer({ layer }))}
             />
             <Button
                 icon={layer.expanded ? "Compress" : "Expand"}
                 tooltip={layer.expanded ? "Hide layer attributes" : "Show layer attributes"}
-                onClick={() => dispatch(expandLayer(layer))} />
+                onClick={() => dispatch(expandLayer({ layer }))} />
             <Icon icon="image"
                 className="ImageUploaderIcon"
                 onPaste={handlePaste} />
