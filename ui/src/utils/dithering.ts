@@ -1,6 +1,6 @@
-import { Color, Layer, Nullable, Percentage, PixelationSource, PixelationType, Rgb, SpectrumPixelCoordinate } from '../types';
+import { Color, DitheringErrorBuffer, Layer, Nullable, PatternCache, Percentage, PixelationSource, PixelationType, Rgb, SpectrumPixelCoordinate } from '../types';
 import { getInkIntensity, getIntensity, getIntensityDifference, getPaperIntensity, spectrumColor } from './colors';
-import { DitheringErrorBuffer, LayerContext, PatternCache } from './layerContextManager';
+import { LayerContext } from './layerContextManager';
 import { applyRange2DExclusive, getWindow } from './utils';
 
 export const getColorDistance = (a: Rgb, b: Rgb): number => {
@@ -102,7 +102,7 @@ export const isDitheredPixelSet = (ctx: LayerContext, x: SpectrumPixelCoordinate
     }
 
     if (ctx.layer.pixelate === PixelationType.pattern) {
-        return pattern(sourceRgb, x, y, ctx.patternCache, targetAttribute);
+        return pattern(sourceRgb, x, y, win.patternCache[ctx.layer.id], targetAttribute);
     }
 
     return null;

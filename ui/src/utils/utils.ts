@@ -18,6 +18,7 @@ export const restoreStateImageMaskData = (): State | undefined => {
     localStorage.getItem(LocalStorageKeys.imageData) && (win._imageData = JSON.parse(localStorage.getItem(LocalStorageKeys.imageData) || '{}'));
     localStorage.getItem(LocalStorageKeys.maskData) && (win._maskData = JSON.parse(localStorage.getItem(LocalStorageKeys.maskData) || '{}'));
 
+    win.patternCache = {};
     win.adjustedPixels = {};
     win.pixels = {};
     win.attributes = {};

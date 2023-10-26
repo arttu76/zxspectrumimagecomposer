@@ -1,10 +1,12 @@
+import * as R from "ramda";
 import { Color, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb } from "../types";
 import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from "../utils/colors";
 import { computeAttributeBlockColor, isDitheredPixelSet } from "../utils/dithering";
 import { initializeLayerContext } from "../utils/layerContextManager";
-import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb, getWindow } from "../utils/utils";
+import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb, getWindow, rangeExclusive } from "../utils/utils";
 import {
     addLayerPattern,
+    duplicateLayer,
     preserveLayerAspectRatio,
     removeLayerPattern,
     setLayerBlue,
@@ -27,6 +29,7 @@ import {
     setLayerPixelateTargetColor,
     setLayerRed,
     setLayerRequireAdjustedPixelsRefresh,
+    setLayerRequirePatternCacheRefresh,
     setLayerRequireSpectrumPixelsRefresh,
     setLayerRotate,
     setLayerSaturation,
@@ -41,7 +44,7 @@ import {
 import { repaint } from "./repaintSlice";
 import store from "./store";
 
-const updateAdjustedPixels = () => {
+const updateAdjustedPixelsIfRequired = () => {
 
     const win = getWindow();
     if (!win.adjustedPixels) {
@@ -92,10 +95,47 @@ const updateAdjustedPixels = () => {
         });
 }
 
-const updateSpectrumPixels = () => {
+const updatePatternCacheIfRequired = () => {
 
     const win = getWindow();
-    updateAdjustedPixels(); // make sure source adjusted pixels are up to date
+    if (!win.patternCache) {
+        win.patternCache = {};
+    }
+    const state = store.getState();
+
+    state.layers.layers
+        .filter((layer: Layer) => layer.requirePatternCacheRefresh)
+        .forEach((layer: Layer) => {
+
+            if (!win.patternCache[layer.id]) {
+                win.patternCache[layer.id] = [];
+            }
+
+            win.patternCache[layer.id] = rangeExclusive(256).map(brightness => R.reduce(
+                (acc, pattern) => (acc !== layer.patterns[layer.patterns.length - 1].pattern)
+                    ? acc // already chose something other than the last pattern
+                    : brightness < pattern.limit ? pattern.pattern : acc,
+                layer.patterns.length ? layer.patterns[layer.patterns.length - 1].pattern : [],
+                R.init(layer.patterns)
+            ));
+
+            store.dispatch(setLayerRequirePatternCacheRefresh({ layer, required: false }))
+        });
+
+    store.dispatch(repaint());
+}
+
+const updateSpectrumPixelsIfRequired = () => {
+
+    const win = getWindow();
+    updateAdjustedPixelsIfRequired(); // make sure source adjusted pixels are up to date
+
+    if (!win.attributes) {
+        win.attributes = {};
+    }
+    if (!win.pixels) {
+        win.pixels = {};
+    }
 
     const state = store.getState();
 
@@ -103,16 +143,10 @@ const updateSpectrumPixels = () => {
         .filter((layer: Layer) => layer.requireSpectrumPixelsRefresh)
         .forEach((layer: Layer) => {
 
-            if (!win.attributes) {
-                win.attributes = {};
-            }
             if (!win.attributes[layer.id]) {
                 win.attributes[layer.id] = getInitialized2DArray<Nullable<Color>>(24, 32, null);
             }
 
-            if (!win.pixels) {
-                win.pixels = {};
-            }
             if (!win.pixels[layer.id]) {
                 win.pixels[layer.id] = getInitialized2DArray<Nullable<boolean>>(192, 256, null);
             }
@@ -184,6 +218,18 @@ const repaintScreenMiddleware = (storeApi: any) => (next: any) => (action: any) 
         }));
     }
 
+    if ([
+        duplicateLayer.type,
+        addLayerPattern.type,
+        updateLayerPattern.type,
+        removeLayerPattern.type
+    ].includes(action.type)) {
+        storeApi.dispatch(setLayerRequirePatternCacheRefresh({
+            layer: action.payload.layer,
+            required: true
+        }));
+    }
+
     // do spectrum pixels have to be updated?
     if ([
         setLayerPixelate.type,
@@ -203,16 +249,13 @@ const repaintScreenMiddleware = (storeApi: any) => (next: any) => (action: any) 
 
     if (![
         repaint.type,
+        setLayerRequirePatternCacheRefresh.type,
         setLayerRequireAdjustedPixelsRefresh.type,
         setLayerRequireSpectrumPixelsRefresh.type
     ].includes(action.type)) {
-        updateAdjustedPixels();
-        updateSpectrumPixels();
-    }
-
-    if (['x'
-    ].includes(action.type)) {
-        storeApi.dispatch(repaint());
+        updateAdjustedPixelsIfRequired();
+        updatePatternCacheIfRequired();
+        updateSpectrumPixelsIfRequired();
     }
 
     return originalActionResult;

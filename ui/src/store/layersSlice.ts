@@ -68,6 +68,7 @@ const layersSlice = createSlice({
                     invert: false,
                     requireSpectrumPixelsRefresh: true,
                     pixelate: PixelationType.none,
+                    requirePatternCacheRefresh: true,
                     patterns: [],
                     pixelateSource: PixelationSource.autoColor,
                     pixelateAutoColors: [0, 1, 2, 3, 4, 5, 6, 7],
@@ -207,6 +208,9 @@ const layersSlice = createSlice({
         setLayerBrightnessThreshold: (state, action: LayerAction<{ brightnessThreshold: number }>) => {
             getLayer(state, action).brightnessThreshold = action.payload.brightnessThreshold;
         },
+        setLayerRequirePatternCacheRefresh: (state, action: LayerAction<{ required: boolean }>) => {
+            getLayer(state, action).requirePatternCacheRefresh = action.payload.required;
+        },
         addLayerPattern: (state, action: LayerAction<{ insertBefore: number }>) => {
             const layer = getLayer(state, action);
 
@@ -254,12 +258,16 @@ const layersSlice = createSlice({
         },
         removeLayer: (state, action: LayerAction) => {
             const win = getWindow();
+            const layerId = action.payload.layer.id;
 
-            win._imageData && delete win._imageData[action.payload.layer.id];
-            win._maskData && delete win._maskData[action.payload.layer.id];
+            win._imageData && delete win._imageData[layerId];
+            win._maskData && delete win._maskData[layerId];
+            win.adjustedPixels && delete win.adjustedPixels[layerId];
+            win.pixels && delete win.pixels[layerId];
+            win.patternCache && delete win.patternCache[layerId];
 
-            const idx = state.layers.map(layer => layer.id).indexOf(action.payload.layer.id);
-            state.layers = state.layers.filter(layer => layer.id !== action.payload.layer.id);
+            const idx = state.layers.map(layer => layer.id).indexOf(layerId);
+            state.layers = state.layers.filter(layer => layer.id !== layerId);
 
             if (idx > 0) {
                 state.layers[idx - 1].active = true;
@@ -271,16 +279,17 @@ const layersSlice = createSlice({
         },
         duplicateLayer: (state, action: LayerAction) => {
             const win = getWindow();
+            const layer = action.payload.layer;
 
             const newLayer: Layer = {
-                ...action.payload.layer,
+                ...layer,
                 id: getUuid(),
                 active: true,
-                name: "Copy of " + action.payload.layer.name
+                name: "Copy of " + layer.name
             };
 
-            win._imageData[newLayer.id] = R.clone(win._imageData[action.payload.layer.id]);
-            win._maskData[newLayer.id] = R.clone(win._maskData[action.payload.layer.id]);
+            win._imageData[newLayer.id] = R.clone(win._imageData[layer.id]);
+            win._maskData[newLayer.id] = R.clone(win._maskData[layer.id]);
 
             state.layers = [
                 newLayer,
@@ -332,6 +341,7 @@ export const {
     setLayerBrightnessThreshold,
     removeLayer,
     duplicateLayer,
+    setLayerRequirePatternCacheRefresh,
     addLayerPattern,
     updateLayerPattern,
     removeLayerPattern,

@@ -22,11 +22,12 @@ export type PartialRgbImage = Grid<Nullable<Rgb>>; // partial = image can have "
 export type BitImage = Grid<boolean>;
 export type PartialBitImage = Grid<Nullable<boolean>>; // partial = image can have "holes" (nulls)
 
-export type MaskImage = GrowableGrid<boolean>;
-
-export type ErrorValueImage = Grid<number>;
 export type ImageFilterKernel = Grid<number>;
 export type PartialAttributeImage = Grid<Nullable<Color>>;
+
+export type DitheringErrorBuffer = Grid<number>;
+
+export type PatternCache = BitImage[];
 
 export interface withId {
     id: Id;
@@ -42,6 +43,7 @@ export interface ExtendedWindow extends Window {
     [LocalStorageKeys.maskData]: { [key: Id]: GrowableGrid<boolean>; }; // key = layer id
     [LocalStorageKeys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
 
+    patternCache: { [key: Id]: PatternCache }
     adjustedPixels: { [key: Id]: PartialRgbImage }
     pixels: { [key: Id]: PartialBitImage }
     attributes: { [key: Id]: PartialAttributeImage }
@@ -125,6 +127,7 @@ export interface Layer extends withId {
     invert: boolean;
     requireSpectrumPixelsRefresh: boolean; // when settings have been adjusted so that window[layer.id].pixels and attributes need to be updated
     pixelate: PixelationType;
+    requirePatternCacheRefresh: boolean;
     patterns: PixelationPattern[];
     pixelateSource: PixelationSource;
     pixelateAutoColors: number[];
