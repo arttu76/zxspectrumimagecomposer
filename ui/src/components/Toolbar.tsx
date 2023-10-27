@@ -16,7 +16,7 @@ import {
     setTool,
     setZoom
 } from "../store/toolsSlice";
-import { BrushShape, BrushType, ToolType } from "../types";
+import { BrushShape, MaskBrushType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
 import { Button, Input } from './CustomElements';
 
@@ -55,7 +55,7 @@ export const Toolbar = () => {
     }
 
     const toggleBrushType = () => {
-        dispatch(setBrushType(brushType === BrushType.brush ? BrushType.eraser : BrushType.brush));
+        dispatch(setBrushType(brushType === MaskBrushType.brush ? MaskBrushType.eraser : MaskBrushType.brush));
     }
 
     const keysToBrushSize = [
@@ -113,8 +113,8 @@ export const Toolbar = () => {
                 hotkey='W'
             />
             <Button
-                dimmed={tool !== ToolType.attributes}
-                onClick={() => dispatch(setTool(ToolType.attributes))}
+                dimmed={tool !== ToolType.pixels}
+                onClick={() => dispatch(setTool(ToolType.pixels))}
                 icon="gradient"
                 tooltip="Pixels"
                 hotkey='E'
@@ -129,13 +129,11 @@ export const Toolbar = () => {
 
             &nbsp;
 
-            {tool === 'nudge' ? '' : <span>
-                <Button
-                    icon={brushType === BrushType.eraser ? "ink_eraser" : "brush"}
-                    tooltip={brushType === BrushType.eraser ? "Click on canvas to erase (space)" : "Click on cavas to draw (space)"}
-                    onClick={toggleBrushType} />
-
-
+            {tool === ToolType.mask && <Button
+                icon={brushType === MaskBrushType.eraser ? "ink_eraser" : "brush"}
+                tooltip={brushType === MaskBrushType.eraser ? "Click on canvas to erase (space)" : "Click on cavas to draw (space)"}
+                onClick={toggleBrushType} />}
+            {tool !== ToolType.nudge && <>
                 <Button
                     icon={brushShape === BrushShape.block ? "square" : "brightness_1"}
                     tooltip="Click to change tool shape"
@@ -148,7 +146,9 @@ export const Toolbar = () => {
                     onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
 
                 &nbsp;
+            </>}
 
+            {tool === ToolType.mask && <>
                 <Button onClick={() => invertActiveLayerMaskData()}
                     tooltip="Invert mask"
                     icon="invert_colors"
@@ -159,7 +159,7 @@ export const Toolbar = () => {
                 />
 
                 &nbsp;
-            </span>}
+            </>}
 
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((zoomLevel) => <Button
                 key={zoomLevel}

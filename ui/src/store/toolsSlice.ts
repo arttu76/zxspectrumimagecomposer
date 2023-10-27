@@ -2,11 +2,11 @@ import {
     PayloadAction,
     createSlice,
 } from "@reduxjs/toolkit";
-import { BrushShape, BrushType, ToolType, ToolsSliceState } from "../types";
+import { BrushShape, MaskBrushType, ToolType, ToolsSliceState } from "../types";
 
 const initialState: ToolsSliceState = {
     tool: ToolType.nudge,
-    brushType: BrushType.brush,
+    brushType: MaskBrushType.brush,
     brushSize: 10,
     brushShape: BrushShape.block,
     zoom: 1,
@@ -21,7 +21,7 @@ const toolsSlice = createSlice({
         setTool: (state, action: PayloadAction<ToolType>) => {
             state.tool = action.payload;
         },
-        setBrushType: (state, action: PayloadAction<BrushType>) => {
+        setBrushType: (state, action: PayloadAction<MaskBrushType>) => {
             state.brushType = action.payload;
         },
         setBrushSize: (state, action: PayloadAction<number>) => {

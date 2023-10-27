@@ -142,21 +142,27 @@ export interface LayersSliceState {
 export enum ToolType {
     nudge = 'nudge',
     mask = 'mark',
+    pixels = 'pixels',
     attributes = 'attributes'
-}
-export enum BrushType {
-    brush = 'brush',
-    eraser = 'eraser',
 }
 export enum BrushShape {
     block = 'block',
     circle = 'circle'
 }
+export enum MaskBrushType {
+    brush = 'brush',
+    eraser = 'eraser'
+}
+export enum PaperInkBrushType {
+    ink = 'ink',
+    paper = 'paper',
+    eraser = 'eraser'
+}
 export interface ToolsSliceState {
     zoom: number;
     crisp: boolean;
     tool: ToolType;
-    brushType: BrushType;
+    brushType: MaskBrushType;
     brushSize: number;
     brushShape: BrushShape;
     attributeGridOpacity: number;

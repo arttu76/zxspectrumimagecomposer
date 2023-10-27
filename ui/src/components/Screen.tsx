@@ -7,7 +7,7 @@ import React from 'react';
 import { setLayerX, setLayerY } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { setZoom } from '../store/toolsSlice';
-import { BrushShape, BrushType, Color, DragState, Layer, Nullable, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
+import { BrushShape, Color, DragState, Layer, MaskBrushType, Nullable, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
 import { spectrumColor } from '../utils/colors';
 import { isMaskSet, setMask } from '../utils/maskManager';
 import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
@@ -239,7 +239,7 @@ export const Screen = () => {
                                 : Math.sqrt(xDiff * xDiff + yDiff * yDiff) < halfBrushSize;
 
                             if (isInside) {
-                                setMask(layer, layerX, layerY, currentBrushType === BrushType.brush, true);
+                                setMask(layer, layerX, layerY, currentBrushType === MaskBrushType.brush, true);
                             }
                         }
                     }
