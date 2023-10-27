@@ -44,6 +44,7 @@ import {
     showHideLayer
 } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
+import { confirmMask } from '../utils/maskManager';
 import { getWindow } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
@@ -91,11 +92,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             if (!win._maskData) {
                 win._maskData = {};
             }
-            win._maskData[layer.id] = {
-                offsetX: 0,
-                offsetY: 0,
-                data: []
-            }
+            confirmMask(layer);
 
             setImageUrl(null);
             [...document.querySelectorAll('div[contentEditable=true]')].forEach(

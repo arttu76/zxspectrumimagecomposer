@@ -1,51 +1,68 @@
 import * as R from 'ramda';
-import { ExtendedWindow, Grid, Layer, LocalStorageKeys, Nullable, Percentage, Rgb, State, ToolType, Undefinable } from "../types";
-import { getGrowableGridData } from "./growableGridManager";
+import { ExtendedWindow, Grid, Layer, LocalStorageKeys, Nullable, Percentage, Rgb, SpectrumPixelCoordinate, State, ToolType, Undefinable } from "../types";
+import { isMaskSet } from './maskManager';
 
 export const getWindow = () => window as unknown as ExtendedWindow;
+
+const pack = (values: number[]): string => {
+    let result = "";
+    for (let i = 0; i < values.length; i += 2) {
+        result += String.fromCharCode((values[i] << 8) | (values[i + 1] || 0));
+    }
+    return result;
+}
+function unpack(str: string): number[] {
+    const result: number[] = [];
+    for (let i = 0; i < str.length; i++) {
+        const value = str ? str.charCodeAt(i) : 0;
+        result.push(value >> 8);
+        result.push(value & 0xFF);
+    }
+    return result;
+}
 
 export const persistStateImageMaskData = (state: State) => {
     const win = getWindow();
     localStorage.setItem(LocalStorageKeys.state, JSON.stringify(state));
-    localStorage.setItem(LocalStorageKeys.imageData, JSON.stringify(win._imageData));
-    localStorage.setItem(LocalStorageKeys.maskData, JSON.stringify(win._maskData));
+    // localStorage.setItem(LocalStorageKeys.maskData, JSON.stringify(win._maskData));
+
+    const keys = Object.keys(win._imageData);
+    const packedImageData = keys.reduce(
+        (acc, val) => ({ ...acc, [val]: pack(win._imageData[val]) }),
+        {}
+    );
+    localStorage.setItem(LocalStorageKeys.imageData, JSON.stringify(packedImageData));
 }
 export const restoreStateImageMaskData = (): State | undefined => {
     const win = getWindow();
 
     win._imageData = {};
     win._maskData = {};
-    localStorage.getItem(LocalStorageKeys.imageData) && (win._imageData = JSON.parse(localStorage.getItem(LocalStorageKeys.imageData) || '{}'));
-    localStorage.getItem(LocalStorageKeys.maskData) && (win._maskData = JSON.parse(localStorage.getItem(LocalStorageKeys.maskData) || '{}'));
+    const packedImageDataJSON = localStorage.getItem(LocalStorageKeys.imageData);
+    if (packedImageDataJSON) {
+        const parsed = JSON.parse(packedImageDataJSON);
+        const keys = Object.keys(parsed);
+        win[LocalStorageKeys.imageData] = keys.reduce(
+            (acc, val) => ({ ...acc, [val]: unpack(parsed[val]) }),
+            {}
+        )
+    }
+    // localStorage.getItem(LocalStorageKeys.maskData) && (win._maskData = JSON.parse(localStorage.getItem(LocalStorageKeys.maskData) || '{}'));
 
     win.patternCache = {};
     win.adjustedPixels = {};
     win.pixels = {};
     win.attributes = {};
 
-    const state = JSON.parse('' + localStorage.getItem(LocalStorageKeys.state)) as Undefinable<State> || undefined;
-
-    // remove unused image data and/or mask data
-    if (state) {
-        const layerIds = state.layers.layers.map(layer => layer.id);
-
-        Object.keys(win._imageData).forEach(key => {
-            if (!layerIds.includes(key)) {
-                delete win._imageData[key];
-            }
-        });
-
-        Object.keys(win._maskData).forEach(key => {
-            if (!layerIds.includes(key)) {
-                delete win._maskData[key];
-            }
-        });
-    }
-
     return JSON.parse('' + localStorage.getItem(LocalStorageKeys.state)) as Undefinable<State> || undefined;
 }
 
-export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: ToolType = ToolType.nudge): Nullable<Rgb> => {
+export const getSourceRgb = (
+    layer: Layer,
+    x: SpectrumPixelCoordinate,
+    y: SpectrumPixelCoordinate,
+    currentTool: ToolType = ToolType.nudge
+): Nullable<Rgb> => {
     const win = getWindow();
     if (!win || !win._imageData) {
         return null;
@@ -71,8 +88,8 @@ export const getSourceRgb = (layer: Layer, x: number, y: number, currentTool: To
         && layerY >= 0
         && layerY < safeZero(layer.originalHeight)
         && (
-            currentTool === ToolType.mask
-            || !getGrowableGridData(win._maskData[layer.id], layerX, layerY)
+            currentTool !== ToolType.mask
+            || !isMaskSet(layer, layerX, layerY, true)
         )
     )
         ? [
@@ -119,18 +136,18 @@ export const clamp8Bit = (value: number): number => Math.max(0, Math.min(255, Ma
 
 export const clampOneZero = (value: number): number => Math.max(0, Math.min(1, value));
 
-export const rangeExclusive = (maxValueExclusive: number): number[] => R.range(0, maxValueExclusive);
+export const rangeExclusive = <T = number>(maxValueExclusive: number): T[] => R.range(0, maxValueExclusive) as T[];
 
-export const applyRangeExclusive = (maxValueExclusive: number, callback: (value: number) => void) => {
+export const applyRangeExclusive = <T = number>(maxValueExclusive: number, callback: (value: T) => void) => {
     for (let i = 0; i < maxValueExclusive; i++) {
-        callback(i);
+        callback(i as T);
     }
 }
 
-export const applyRange2DExclusive = (maxOuterExclusive: number, maxInnerExclusive: number, callback: (outer: number, inner: number) => void) => {
-    applyRangeExclusive(maxOuterExclusive, (outer) => {
-        applyRangeExclusive(maxInnerExclusive, (inner) => {
-            callback(outer, inner);
+export const applyRange2DExclusive = <T = number>(maxOuterExclusive: number, maxInnerExclusive: number, callback: (outer: T, inner: T) => void) => {
+    applyRangeExclusive<T>(maxOuterExclusive, (outer: T) => {
+        applyRangeExclusive<T>(maxInnerExclusive, (inner: T) => {
+            callback(outer as T, inner as T);
         });
     });
 }
@@ -154,23 +171,26 @@ export const getInitialized2DArray = <T>(rows: number, columns: number, initialV
 }
 
 export const getLayerXYFromScreenCoordinates = (layer: Layer, x: number, y: number) => {
-    const layerOffsetX = Math.floor((x - layer.x) * (safeZero(layer.originalWidth) / safeOne(layer.width)));
-    const layerOffsetY = Math.floor((y - layer.y) * (safeZero(layer.originalHeight) / safeOne(layer.height)));
 
-    let layerX = layerOffsetX - safeZero(layer.originalWidth) / 2;
-    let layerY = layerOffsetY - safeZero(layer.originalHeight) / 2;
+    const xScale = safeZero(layer.width) / safeOne(layer.originalWidth);
+    const yScale = safeZero(layer.height) / safeOne(layer.originalHeight);
+
+    let dx = ((x - 256 / 2) - layer.x) / xScale;
+    let dy = ((y - 192 / 2) - layer.y) / yScale;
 
     if (layer.rotate) {
-        const radians = layer.rotate * -0.0174533;
-        let rotatedX = layerX * Math.cos(radians) - layerY * Math.sin(radians);
-        let rotatedY = layerX * Math.sin(radians) + layerY * Math.cos(radians);
-        layerX = rotatedX;
-        layerY = rotatedY;
+        const radians = layer.rotate * -0.0174533; // Math.PI/180 * -1
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        const rotatedX = dx * cos - dy * sin;
+        const rotatedY = dx * sin + dy * cos;
+        dx = rotatedX;
+        dy = rotatedY;
     }
 
     return {
-        layerX: Math.floor(safeZero(layer.originalWidth) / 2 + layerX),
-        layerY: Math.floor(safeZero(layer.originalWidth) / 2 + layerY)
+        layerX: Math.round(safeZero(layer.width) / 2 + dx),
+        layerY: Math.round(safeZero(layer.height) / 2 + dy)
     }
 }
 

@@ -1,7 +1,7 @@
-import { Layer, Nullable, Rgb, ToolType } from "../types";
+import { BrushShape, Layer, Nullable, Rgb, SpectrumPixelCoordinate, ToolType } from "../types";
 import { spectrumColor } from "./colors";
-import { getGrowableGridData } from "./growableGridManager";
-import { getWindow } from "./utils";
+import { isMaskSet } from "./maskManager";
+import { bias, getWindow } from "./utils";
 
 export const replaceEmptyWithBackground = (source: Nullable<Rgb>, x: number, y: number, backgroundColor: number): Rgb => {
     if (source) {
@@ -29,7 +29,7 @@ export const addMaskUiToLayer = (source: Rgb, layer: Nullable<Layer>, toolType: 
         return [...source];
     }
 
-    return (getGrowableGridData(getWindow()._maskData[layer.id], x, y) === true)
+    return isMaskSet(layer, x, y, true)
         ? [
             Math.round(255 * 0.8 + source[0] * 0.2),
             Math.round(0 * 0.8 + source[1] * 0.2),
@@ -53,4 +53,40 @@ export const addAttributeGridUi = (attributeGridOpacity: number, rgb: Rgb, x: nu
         Math.round(rgb[2] * (1 - attributeGridOpacity) + target * attributeGridOpacity)
     ];
 
+}
+
+
+export const addMouseCursor = (
+    rgb: Rgb,
+    tool: ToolType,
+    brush: BrushShape,
+    size: number,
+    x: SpectrumPixelCoordinate,
+    y: SpectrumPixelCoordinate,
+    mouseX: SpectrumPixelCoordinate,
+    mouseY: SpectrumPixelCoordinate
+): Rgb => {
+
+    // no cursor
+    if (
+        tool === ToolType.nudge
+        || (x + size) < mouseX
+        || mouseX < (x - size)
+        || (y + size) < mouseY
+        || mouseY < (y - size)
+    ) {
+        return [...rgb];
+    }
+
+    const xDiff = x - mouseX;
+    const yDiff = y - mouseY;
+    const halfSize = size / 2;
+
+    const isInside = brush === BrushShape.circle
+        ? Math.sqrt(xDiff * xDiff + yDiff * yDiff) < halfSize
+        : Math.abs(xDiff) < halfSize && Math.abs(yDiff) < halfSize;
+
+    return isInside
+        ? rgb.map(c => bias(c, 255 - c, 0.25)) as Rgb
+        : [...rgb];
 }

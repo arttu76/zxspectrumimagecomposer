@@ -69,7 +69,23 @@ const layersSlice = createSlice({
                     requireSpectrumPixelsRefresh: true,
                     pixelate: PixelationType.none,
                     requirePatternCacheRefresh: true,
-                    patterns: [],
+                    patterns: [
+                        {
+                            "id": "82636431-d653-4812-b590-c700f2a21a87",
+                            "limit": 64,
+                            "pattern": [[false, false], [false, false]]
+                        },
+                        {
+                            "id": "e7eb4971-c280-4a92-8f22-4432b37cc431",
+                            "limit": 128,
+                            "pattern": [[true, false], [false, true]]
+                        },
+                        {
+                            "id": "b6704a93-ad5e-4ecb-9374-16fb3f3b65f0",
+                            "limit": 128,
+                            "pattern": [[true, true], [true, true]]
+                        }
+                    ],
                     pixelateSource: PixelationSource.autoColor,
                     pixelateAutoColors: [0, 1, 2, 3, 4, 5, 6, 7],
                     pixelateTargetColor: { ink: 7, paper: 0, bright: false },

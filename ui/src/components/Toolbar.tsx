@@ -4,22 +4,26 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 
 import * as R from "ramda";
 
+import { useEffect } from 'react';
+import { setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
+import { repaint } from '../store/repaintSlice';
 import {
     setAttributeGridOpacity,
     setBrushShape,
     setBrushSize,
+    setBrushType,
     setCrispScaling,
     setTool,
     setZoom
 } from "../store/toolsSlice";
-import { BrushShape, GrowableGrid, Layer, ToolType } from "../types";
-import { getEmptyGrowableGrid, getGrowableGridData } from '../utils/growableGridManager';
-import { getWindow, rangeExclusive } from '../utils/utils';
+import { BrushShape, BrushType, ToolType } from "../types";
+import { mutateMask } from '../utils/maskManager';
 import { Button, Input } from './CustomElements';
 
 export const Toolbar = () => {
 
     const tool = useAppSelector((state) => state.tools.tool);
+    const brushType = useAppSelector((state) => state.tools.brushType);
     const brushSize = useAppSelector((state) => state.tools.brushSize);
     const brushShape = useAppSelector((state) => state.tools.brushShape);
     const zoom = useAppSelector((state) => state.tools.zoom);
@@ -30,44 +34,67 @@ export const Toolbar = () => {
 
     const dispatch = useAppDispatch();
 
-    const withActiveLayerAndMaskData = (applyFunc: (activeLayerId: Layer, mask: GrowableGrid<boolean>) => void): void => {
+    const applyActiveLayer = (applyFunc: (oldValue: boolean) => boolean): void => {
         const activeLayer = R.find(layer => layer.active, layers);
         if (!activeLayer) {
             return;
         }
 
-        const win = getWindow();
-        if (!win._maskData[activeLayer.id]) {
-            win._maskData[activeLayer.id] = getEmptyGrowableGrid<boolean>();
-        }
+        mutateMask(activeLayer, applyFunc);
 
-        applyFunc(
-            activeLayer,
-            win._maskData[activeLayer.id]
-        );
+        dispatch(setLayerRequireAdjustedPixelsRefresh({ layer: activeLayer, required: true }));
+        dispatch(repaint());
     }
 
-    const invertActiveLayerMaskData = () => {
-        withActiveLayerAndMaskData((layer, mask) => {
-            getWindow()._maskData[layer.id] = getEmptyGrowableGrid(
-                rangeExclusive(layer.height || 0).map(y => rangeExclusive(layer.width || 0).map(x => {
-                    const existingValue = getGrowableGridData(mask, x, y);
-                    return existingValue === null
-                        ? null
-                        : !existingValue
-                }))
-            );
-        });
-    }
-
-    const clearActiveLayerMaskData = () => {
-        withActiveLayerAndMaskData(layer => getWindow()._maskData[layer.id] = getEmptyGrowableGrid<boolean>());
-    }
+    const invertActiveLayerMaskData = () => applyActiveLayer(oldValue => !oldValue);
+    const clearActiveLayerMaskData = () => applyActiveLayer(_ => false);
 
     const reset = () => {
         localStorage.clear();
         window.location.reload();
     }
+
+    const toggleBrushType = () => {
+        dispatch(setBrushType(brushType === BrushType.brush ? BrushType.eraser : BrushType.brush));
+    }
+
+    const keysToBrushSize = [
+        [1, 1],
+        [2, 3],
+        [3, 10],
+        [4, 25],
+        [5, 50]
+    ];
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'q') {
+            dispatch(setTool(ToolType.nudge));
+        }
+        if (event.key === 'w') {
+            dispatch(setTool(ToolType.mask));
+        }
+        if (event.key === 'e') {
+            dispatch(setTool(ToolType.attributes));
+        }
+        if (event.key === 'r') {
+            dispatch(setTool(ToolType.attributes));
+        }
+
+        if (event.key === ' ') {
+            toggleBrushType();
+        }
+
+        const brushSizeByKey = keysToBrushSize.find(ktbs => '' + ktbs[0] === event.key);
+        if (brushSizeByKey) {
+            dispatch(setBrushSize(brushSizeByKey[1]));
+        }
+    };
+    useEffect(() => {
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [brushType]);
 
     return (
         <div className="Toolbar">
@@ -104,14 +131,20 @@ export const Toolbar = () => {
 
             {tool === 'nudge' ? '' : <span>
                 <Button
-                    icon={brushShape === BrushShape.block ? "brightness_1" : "square"}
+                    icon={brushType === BrushType.eraser ? "ink_eraser" : "brush"}
+                    tooltip={brushType === BrushType.eraser ? "Click on canvas to erase (space)" : "Click on cavas to draw (space)"}
+                    onClick={toggleBrushType} />
+
+
+                <Button
+                    icon={brushShape === BrushShape.block ? "square" : "brightness_1"}
                     tooltip="Click to change tool shape"
                     onClick={() => dispatch(setBrushShape(brushShape === BrushShape.block ? BrushShape.circle : BrushShape.block))} />
 
                 {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
                     key={newBrushSize}
                     dimmed={brushSize !== newBrushSize}
-                    tooltip={`Use ${newBrushSize}x${newBrushSize} brush`}
+                    tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
                     onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
 
                 &nbsp;
@@ -131,7 +164,7 @@ export const Toolbar = () => {
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((zoomLevel) => <Button
                 key={zoomLevel}
                 dimmed={zoom !== zoomLevel}
-                tooltip={`Show picture using ${zoomLevel}x${zoomLevel} pixels`}
+                tooltip={`Show picture using ${zoomLevel} x${zoomLevel} pixels`}
                 onClick={() => dispatch(setZoom(zoomLevel))} >{zoomLevel}</Button>
             )}
 

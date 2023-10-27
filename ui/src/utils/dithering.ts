@@ -71,6 +71,7 @@ const floydsteinberg = (source: Rgb, x: number, y: number, ditheringErrorBuffer:
 }
 
 const pattern = (source: Rgb, x: number, y: number, layerPatternCache: PatternCache, target: Color): boolean => {
+    if (!layerPatternCache) return false;
     const similarity = getInkSimilarityPercentage(source, target);
     const correctPattern = layerPatternCache[Math.round(similarity * 255)];
     if (!correctPattern?.length) {

@@ -9,11 +9,14 @@ import { Provider } from "react-redux";
 import store from "./store/store.ts";
 
 import { Tooltip } from 'react-tooltip';
-import { setLayerX } from './store/layersSlice.ts';
+import { setLayerRequireAdjustedPixelsRefresh, setLayerRequirePatternCacheRefresh, setLayerRequireSpectrumPixelsRefresh, setLayerX } from './store/layersSlice.ts';
 
 // trigger initial repaint
 store.getState().layers.layers.forEach(layer => {
-  // triggers change in adjusted pixels and speccy pixels
+  store.dispatch(setLayerRequireAdjustedPixelsRefresh({ layer, required: true }));
+  store.dispatch(setLayerRequireSpectrumPixelsRefresh({ layer, required: true }));
+  store.dispatch(setLayerRequirePatternCacheRefresh({ layer, required: true }));
+  // make real change to trigger change
   store.dispatch(setLayerX({ layer, x: layer.x }));
 });
 

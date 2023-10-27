@@ -2,10 +2,11 @@ import {
     PayloadAction,
     createSlice,
 } from "@reduxjs/toolkit";
-import { BrushShape, ToolType, ToolsSliceState } from "../types";
+import { BrushShape, BrushType, ToolType, ToolsSliceState } from "../types";
 
 const initialState: ToolsSliceState = {
     tool: ToolType.nudge,
+    brushType: BrushType.brush,
     brushSize: 10,
     brushShape: BrushShape.block,
     zoom: 1,
@@ -19,6 +20,9 @@ const toolsSlice = createSlice({
     reducers: {
         setTool: (state, action: PayloadAction<ToolType>) => {
             state.tool = action.payload;
+        },
+        setBrushType: (state, action: PayloadAction<BrushType>) => {
+            state.brushType = action.payload;
         },
         setBrushSize: (state, action: PayloadAction<number>) => {
             state.brushSize = action.payload;
@@ -40,6 +44,7 @@ const toolsSlice = createSlice({
 
 export const {
     setTool,
+    setBrushType,
     setBrushSize,
     setBrushShape,
     setZoom,

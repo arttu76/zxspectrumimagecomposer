@@ -7,11 +7,11 @@ import React from 'react';
 import { setLayerX, setLayerY } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { setZoom } from '../store/toolsSlice';
-import { Color, DragState, Layer, Nullable, PixelationType, Rgb, ToolType, Undefinable } from "../types";
+import { BrushShape, BrushType, Color, DragState, Layer, Nullable, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
 import { spectrumColor } from '../utils/colors';
-import { setGrowableGridData } from '../utils/growableGridManager';
-import { addAttributeGridUi, addMaskUiToLayer, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
-import { applyRange2DExclusive, booleanOrNull, getLayerXYFromScreenCoordinates, getWindow, safeZero } from "../utils/utils";
+import { isMaskSet, setMask } from '../utils/maskManager';
+import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
+import { applyRange2DExclusive, booleanOrNull, getLayerXYFromScreenCoordinates, getWindow, safeOne, safeZero } from "../utils/utils";
 
 const win = getWindow();
 
@@ -24,6 +24,7 @@ export const Screen = () => {
     const currentZoom = useAppSelector((state) => state.tools.zoom);
     const currentCrisp = useAppSelector((state) => state.tools.crisp);
     const currentTool = useAppSelector((state) => state.tools.tool);
+    const currentBrushType = useAppSelector((state) => state.tools.brushType);
     const currentBrushShape = useAppSelector((state) => state.tools.brushShape);
     const currentBrushSize = useAppSelector((state) => state.tools.brushSize);
 
@@ -54,6 +55,18 @@ export const Screen = () => {
 
     const dispatch = useAppDispatch();
 
+    const [mouseDownState, setMouseDownState] = useState(false);
+    const [mouseOnScreen, setMouseOnScreen] = useState(false);
+    const [mouseX, setMouseX] = useState<SpectrumPixelCoordinate>(0);
+    const [mouseY, setMouseY] = useState<SpectrumPixelCoordinate>(0);
+
+    const drawCursor = mouseOnScreen && currentTool !== ToolType.nudge;
+
+    const [dragState, setDragState] = useState<DragState>({
+        dragging: false,
+        dragPreviousX: undefined,
+        dragPreviousY: undefined
+    })
     const miniMapCanvasRef = React.useRef(null);
 
     const canvasRef = (canvas: HTMLCanvasElement) => {
@@ -72,7 +85,7 @@ export const Screen = () => {
             ? miniMapCtx.createImageData(255, 192)
             : null;
 
-        applyRange2DExclusive(192, 255, (y, x) => {
+        applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
 
             let pixel: Nullable<boolean> = null;
             let attribute: Nullable<Color> = null;
@@ -82,9 +95,24 @@ export const Screen = () => {
             let renderedPixel: Nullable<Rgb> = null;
 
             for (const layer of layers) {
-                if (layer.shown === false) continue;
-                if (layer.pixelate !== PixelationType.none) {
 
+                if (
+                    layer.shown === false
+                    || (
+                        currentTool !== ToolType.mask
+                        && isMaskSet(layer, x, y, true)
+                    )
+                ) continue;
+
+                if (layer.pixelate === PixelationType.none) {
+                    if (
+                        topmostAdjustedPixel === null
+                        && win.adjustedPixels[layer.id]
+                        && win.adjustedPixels[layer.id]?.[y]
+                    ) {
+                        topmostAdjustedPixel = win.adjustedPixels[layer.id]?.[y][x] || null;
+                    }
+                } else {
                     pixel = booleanOrNull(win.pixels?.[layer.id]?.[y][x]);
                     if (pixel === null) continue;
                     attribute = (
@@ -94,14 +122,6 @@ export const Screen = () => {
                     )
                         ? win.attributes?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
                         : null;
-                } else {
-                    if (
-                        topmostAdjustedPixel === null
-                        && win.adjustedPixels[layer.id]
-                        && win.adjustedPixels[layer.id]?.[y]
-                    ) {
-                        topmostAdjustedPixel = win.adjustedPixels[layer.id]?.[y][x] || null;
-                    }
                 }
             }
 
@@ -126,6 +146,9 @@ export const Screen = () => {
 
             renderedPixel = addMaskUiToLayer(renderedPixel, activeLayer, currentTool, x, y);
             renderedPixel = addAttributeGridUi(attributeGridOpacity, renderedPixel, x, y);
+            if (drawCursor) {
+                renderedPixel = addMouseCursor(renderedPixel, currentTool, currentBrushShape, currentBrushSize, x, y, mouseX, mouseY);
+            }
 
             imageData.data[offset] = renderedPixel[0];
             imageData.data[offset + 1] = renderedPixel[1];
@@ -137,60 +160,14 @@ export const Screen = () => {
         screenCtx.putImageData(imageData, 0, 0);
     };
 
-    const [mouseDownState, setMouseDownState] = useState(false);
-
-    const [dragState, setDragState] = useState<DragState>({
-        dragging: false,
-        dragPreviousX: undefined,
-        dragPreviousY: undefined
-    })
-
     const handleMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>, mouseDown: Undefinable<boolean> = undefined) => {
         if (!activeLayer) {
             return;
         }
 
+        let requestRepaint = drawCursor;
+
         const layer = activeLayer as unknown as Layer;
-
-        if (currentTool === ToolType.mask) {
-            if (mouseDown === true || mouseDown === false) {
-                setMouseDownState(mouseDown);
-            }
-            if (mouseDown || (!mouseDown && mouseDownState)) {
-                const middleX = (event.clientX - event.currentTarget.getBoundingClientRect().left) / currentZoom;
-                const middleY = (event.clientY - event.currentTarget.getBoundingClientRect().top) / currentZoom;
-                const halfBrushSize = currentBrushSize / 2;
-
-                for (let brushY = middleY - halfBrushSize; brushY < middleY + halfBrushSize; brushY += 0.1) {
-                    for (let brushX = middleX - halfBrushSize; brushX < middleX + halfBrushSize; brushX += 0.1) {
-                        const { layerX, layerY } = getLayerXYFromScreenCoordinates(layer, brushX, brushY);
-                        if (
-                            layerX >= 0
-                            && layerX < safeZero(layer.originalWidth)
-                            && layerY >= 0
-                            && layerY < safeZero(layer.originalHeight)
-                            && (
-                                currentBrushShape === "block"
-                                || Math.sqrt( // circle brush
-                                    Math.pow(middleX - brushX, 2)
-                                    + Math.pow(middleY - brushY, 2)
-                                ) < halfBrushSize
-                            )
-                        ) {
-                            setGrowableGridData(
-                                win._maskData[layer.id],
-                                layerX,
-                                layerY,
-                                !(event.button !== 0 || event.altKey)
-                                    ? true
-                                    : undefined
-                            );
-                        }
-                    }
-                }
-                dispatch(repaint());
-            }
-        }
 
         if (currentTool === ToolType.nudge) {
             const nowDragging = mouseDown === undefined
@@ -227,6 +204,58 @@ export const Screen = () => {
                 dragPreviousY
             });
         }
+
+        const mouseX = (event.clientX - event.currentTarget.getBoundingClientRect().left) / currentZoom;
+        const mouseY = (event.clientY - event.currentTarget.getBoundingClientRect().top) / currentZoom;
+
+        if (currentTool === ToolType.mask) {
+            if (mouseDown === true || mouseDown === false) {
+                setMouseDownState(mouseDown);
+            }
+            if (mouseDown || (!mouseDown && mouseDownState)) {
+                const xScaler = layer.width! / safeOne(layer.originalWidth);
+                const yScaler = layer.height! / safeOne(layer.originalHeight);
+
+                const halfBrushSize = Math.floor(currentBrushSize / 2);
+
+                applyRange2DExclusive(
+                    currentBrushSize * yScaler,
+                    currentBrushSize * xScaler,
+                    (y, x) => {
+                        const { layerX, layerY } = getLayerXYFromScreenCoordinates(
+                            layer,
+                            mouseX + x - halfBrushSize,
+                            mouseY + y - halfBrushSize
+                        );
+                        if (
+                            layerX >= 0 && layerX < safeZero(layer.originalWidth)
+                            && layerY >= 0 && layerY < safeZero(layer.originalHeight)
+                        ) {
+                            const xDiff = x - halfBrushSize * xScaler;
+                            const yDiff = y - halfBrushSize * yScaler;
+
+                            const isInside = currentBrushShape === BrushShape.block
+                                ? Math.abs(xDiff) < halfBrushSize * xScaler && Math.abs(yDiff) < halfBrushSize * yScaler
+                                : Math.sqrt(xDiff * xDiff + yDiff * yDiff) < halfBrushSize;
+
+                            if (isInside) {
+                                setMask(layer, layerX, layerY, currentBrushType === BrushType.brush, true);
+                            }
+                        }
+                    }
+                );
+
+                requestRepaint = true;
+            }
+        }
+
+        const { layerX, layerY } = getLayerXYFromScreenCoordinates(layer, mouseX, mouseY);
+        setMouseX(_ => layerX);
+        setMouseY(_ => layerY);
+
+        if (requestRepaint) {
+            dispatch(repaint());
+        }
     }
 
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => handleMouse(event, true);
@@ -252,7 +281,8 @@ export const Screen = () => {
                     ref={canvasRef}
                     onMouseDown={handleMouseDown}
                     onMouseUp={handleMouseNotDown}
-                    onMouseLeave={handleMouseNotDown}
+                    onMouseEnter={() => setMouseOnScreen(true)}
+                    onMouseLeave={() => setMouseOnScreen(false)}
                     onMouseMove={handleMouse}
                 ></canvas>
             </div>

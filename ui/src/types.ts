@@ -14,6 +14,7 @@ export type Hsl = Rgb;
 
 export type Grid<T> = T[][]
 
+export type FlatMaskData = Uint16Array; // most significant bit = leftmost pixel
 export type FlatRgbData = number[];
 
 export type RgbImage = Grid<Rgb>;
@@ -40,7 +41,7 @@ export enum LocalStorageKeys {
 }
 
 export interface ExtendedWindow extends Window {
-    [LocalStorageKeys.maskData]: { [key: Id]: GrowableGrid<boolean>; }; // key = layer id
+    [LocalStorageKeys.maskData]: { [key: Id]: Uint16Array; }; // key = layer id
     [LocalStorageKeys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
 
     patternCache: { [key: Id]: PatternCache }
@@ -143,6 +144,10 @@ export enum ToolType {
     mask = 'mark',
     attributes = 'attributes'
 }
+export enum BrushType {
+    brush = 'brush',
+    eraser = 'eraser',
+}
 export enum BrushShape {
     block = 'block',
     circle = 'circle'
@@ -151,6 +156,7 @@ export interface ToolsSliceState {
     zoom: number;
     crisp: boolean;
     tool: ToolType;
+    brushType: BrushType;
     brushSize: number;
     brushShape: BrushShape;
     attributeGridOpacity: number;
