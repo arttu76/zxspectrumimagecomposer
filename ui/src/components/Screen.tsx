@@ -97,8 +97,6 @@ export const Screen = () => {
             ? miniMapCtx.createImageData(255, 192)
             : null;
 
-        const start = Date.now();
-
         applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
 
             let manualPixel: Nullable<boolean> = null;
@@ -131,11 +129,15 @@ export const Screen = () => {
                     continue;
                 }
 
+                // code below deals with source/adjusted/dithered image, ignore it if user so wishes
+                if (hideSourceImage) {
+                    continue;
+                }
+
                 if (layer.pixelate === PixelationType.none) {
                     // source/adjusted image
                     if (
                         topmostAdjustedPixel === null
-                        && !hideSourceImage
                         && win.adjustedPixels[layer.id]
                         && win.adjustedPixels[layer.id]?.[y]
                         && (currentTool !== ToolType.mask || !isMaskSet(layer, x, y, true))
@@ -144,8 +146,7 @@ export const Screen = () => {
                     }
                 } else {
                     if (
-                        !hideSourceImage
-                        && (currentTool === ToolType.mask || !isMaskSet(layer, x, y, true))
+                        (currentTool === ToolType.mask || !isMaskSet(layer, x, y, true))
                     ) continue;
                     // dithered image
                     adjustedPixel = booleanOrNull(win.pixels?.[layer.id]?.[y][x]);
@@ -183,6 +184,7 @@ export const Screen = () => {
                     ? spectrumColor.bright
                     : spectrumColor.normal;
 
+
                 renderedPixel = pixel
                     ? normalOrBrightColors[attribute.ink]
                     : normalOrBrightColors[attribute.paper]
@@ -208,9 +210,6 @@ export const Screen = () => {
             imageData.data[offset + 2] = renderedPixel[2];
             imageData.data[offset + 3] = 255;
         });
-
-        const end = Date.now() - start;
-        document.querySelector('#renderTime')!.innerHTML = end.toString();
 
         miniMapCtx && miniMapCtx.putImageData(miniMapImageData, 0, 0);
         screenCtx.putImageData(imageData, 0, 0);

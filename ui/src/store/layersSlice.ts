@@ -3,6 +3,7 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import * as R from "ramda";
 
 import { Color, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
+import { scrollGrowableGrid } from "../utils/growableGridManager";
 import { getHeightForAspectRatio, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
 
 export type ActionWithLayer = {
@@ -89,7 +90,9 @@ const layersSlice = createSlice({
                     pixelateSource: PixelationSource.autoColor,
                     pixelateAutoColors: [0, 1, 2, 3, 4, 5, 6, 7],
                     pixelateTargetColor: { ink: 7, paper: 0, bright: false },
-                    brightnessThreshold: 50
+                    brightnessThreshold: 50,
+                    manualAttributesOffsetX: 0,
+                    manualAttributesOffsetY: 0
                 },
                 ...state.layers.map((layer) => { layer.active = false; return layer })
             ];
@@ -131,10 +134,44 @@ const layersSlice = createSlice({
             layer.loaded = true;
         },
         setLayerX: (state, action: LayerAction<{ x: number }>) => {
-            getLayer(state, action).x = action.payload.x;
+            const layer = getLayer(state, action);
+            const diffX = action.payload.x - layer.x;
+
+            const win = getWindow();
+
+            if (win.manualPixels?.[layer.id]) {
+                win.manualPixels[layer.id] = scrollGrowableGrid(win.manualPixels[layer.id], diffX, 0);
+            }
+
+            if (win.manualAttributes?.[layer.id]) {
+                layer.manualAttributesOffsetX = (layer.manualAttributesOffsetX || 0) + diffX;
+                const offsetRemainder = layer.manualAttributesOffsetX % 8;
+                const charactersToScroll = layer.manualAttributesOffsetX - offsetRemainder;
+                win.manualAttributes[layer.id] = scrollGrowableGrid(win.manualAttributes[layer.id], charactersToScroll / 8, 0);
+                layer.manualAttributesOffsetX = offsetRemainder;
+            }
+
+            layer.x = action.payload.x;
         },
         setLayerY: (state, action: LayerAction<{ y: number }>) => {
-            getLayer(state, action).y = action.payload.y;
+            const layer = getLayer(state, action);
+            const diffY = action.payload.y - layer.y;
+
+            const win = getWindow();
+
+            if (win.manualPixels?.[layer.id]) {
+                win.manualPixels[layer.id] = scrollGrowableGrid(win.manualPixels[layer.id], 0, diffY);
+            }
+
+            if (win.manualAttributes?.[layer.id]) {
+                layer.manualAttributesOffsetY = (layer.manualAttributesOffsetY || 0) + diffY;
+                const offsetRemainder = layer.manualAttributesOffsetY % 8;
+                const charactersToScroll = layer.manualAttributesOffsetY - offsetRemainder;
+                win.manualAttributes[layer.id] = scrollGrowableGrid(win.manualAttributes[layer.id], 0, charactersToScroll / 8);
+                layer.manualAttributesOffsetY = offsetRemainder;
+            }
+
+            layer.y = action.payload.y;
         },
         setLayerHeight: (state, action: LayerAction<{ height: number }>) => {
             const layer = getLayer(state, action);
@@ -306,6 +343,9 @@ const layersSlice = createSlice({
 
             win._imageData[newLayer.id] = R.clone(win._imageData[layer.id]);
             win._maskData[newLayer.id] = R.clone(win._maskData[layer.id]);
+
+            win.manualPixels[newLayer.id] = R.clone(win.manualPixels[layer.id]);
+            win.manualAttributes[newLayer.id] = R.clone(win.manualAttributes[layer.id]);
 
             state.layers = [
                 newLayer,

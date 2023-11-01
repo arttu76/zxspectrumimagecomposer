@@ -146,6 +146,8 @@ export interface Layer extends withId {
     pixelateAutoColors: number[];
     pixelateTargetColor: Color;
     brightnessThreshold: number;
+    manualAttributesOffsetX: number;
+    manualAttributesOffsetY: number;
 }
 export interface LayersSliceState {
     layers: Layer[];

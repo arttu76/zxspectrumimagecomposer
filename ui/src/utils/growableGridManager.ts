@@ -140,3 +140,11 @@ export const getGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: numb
         ? null
         : grid.data[y - grid.offsetY][x - grid.offsetX];
 };
+
+export const scrollGrowableGrid = <T>(grid: GrowableGrid<T>, x: number, y: number): GrowableGrid<T> => {
+    return {
+        ...grid,
+        offsetX: grid.offsetX + x,
+        offsetY: grid.offsetY + y
+    };
+}
