@@ -257,7 +257,7 @@ export const Toolbar = () => {
             </>}
 
             <Group title="Zoom" disableClose={true}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((zoomLevel) => <Button
+                {[1, 2, 3, 4, 5, 10, 20].map((zoomLevel) => <Button
                     key={zoomLevel}
                     dimmed={zoom !== zoomLevel}
                     tooltip={`Show picture using ${zoomLevel} x${zoomLevel} pixels`}
