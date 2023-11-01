@@ -1,6 +1,6 @@
 import { Grid, GrowableGrid, Nullable } from "../types";
 
-const getExistingRowSize = <T>(grid: GrowableGrid<T>): number => grid.data[0]?.length || 0;
+const getExistingRowSize = <T>(grid: GrowableGrid<T>): number => grid?.data[0]?.length || 0;
 
 const cloneGrid = <T>(grid: GrowableGrid<T>) => JSON.parse(JSON.stringify(grid)) as GrowableGrid<T>;
 
@@ -91,6 +91,8 @@ const shrinkGridIfPossible = <T>(grid: GrowableGrid<T>): GrowableGrid<T> => {
     return newGrid;
 };
 
+
+
 export const getEmptyGrowableGrid = <T>(data?: Grid<Nullable<T>>): GrowableGrid<T> => {
     return {
         offsetX: 0,
@@ -107,7 +109,7 @@ export const setAllGrowableGridData = <T>(grid: GrowableGrid<T>, adjustmentFunc:
 }
 
 export const setGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: number, value: Nullable<T>): GrowableGrid<T> => {
-    if (grid.data.length === 0) {
+    if (!grid?.data?.length) {
         return {
             offsetX: x,
             offsetY: y,
@@ -129,7 +131,8 @@ export const setGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: numb
 export const getGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: number): Nullable<T> => {
     const existingSize = getExistingRowSize(grid);
     return (
-        x < grid.offsetX
+        existingSize === 0
+        || x < grid.offsetX
         || x >= (grid.offsetX + existingSize)
         || y < grid.offsetY
         || y >= grid.offsetY + grid.data.length

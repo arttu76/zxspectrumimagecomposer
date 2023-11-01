@@ -1,12 +1,12 @@
-import { ExtendedWindow, Layer, Undefinable } from '../types';
-import { getLayerXYFromScreenCoordinates, getWindow } from './utils';
+import { ExtendedWindow, Layer, SourceImageCoordinate, Undefinable } from '../types';
+import { getLayerXYFromScreenCoordinates, getWindow, safeZero } from './utils';
 
 const withMaskCoordinates = <T>(
     layer: Layer,
     x: number,
     y: number,
     spectrumScreenCoordinates: boolean,
-    func: (win: ExtendedWindow, offset: number, bit: number) => T
+    func: (win: ExtendedWindow, offset: number, bit: number, layerX: SourceImageCoordinate, layerY: SourceImageCoordinate) => T
 ): Undefinable<T> => {
     if (
         !layer?.loaded
@@ -19,11 +19,11 @@ const withMaskCoordinates = <T>(
     if (spectrumScreenCoordinates) {
         const { layerX, layerY } = getLayerXYFromScreenCoordinates(layer, x, y);
         const { win, offset, bit } = confirmMask(layer, layerX, layerY);
-        return func(win, offset, bit);
+        return func(win, offset, bit, layerX, layerY);
     }
 
     const { win, offset, bit } = confirmMask(layer, x, y);
-    return func(win, offset, bit);
+    return func(win, offset, bit, x, y);
 }
 
 export const confirmMask = (layer: Layer, x: number = 0, y: number = 0) => {
@@ -49,7 +49,13 @@ export const isMaskSet = (layer: Layer, x: number, y: number, spectrumScreenCoor
         x,
         y,
         spectrumScreenCoordinates,
-        (win, offset, bit) => (!!((win._maskData[layer.id][offset] >>> bit) & 1) || false)
+        (win, offset, bit, layerX, layerY) => (
+            layerX >= 0
+            && layerY >= 0
+            && layerX < safeZero(layer.originalWidth)
+            && layerY < safeZero(layer.originalHeight)
+            && (!!((win._maskData[layer.id][offset] >>> bit) & 1) || false)
+        )
     ) || false; // in case mask does not exit
 }
 
@@ -59,9 +65,17 @@ export const setMask = (layer: Layer, x: number, y: number, value: boolean, spec
         x,
         y,
         spectrumScreenCoordinates,
-        (win, offset, bit) => value
-            ? win._maskData[layer.id][offset] |= 1 << bit
-            : win._maskData[layer.id][offset] &= ~(1 << bit)
+        (win, offset, bit, layerX, layerY) => (
+            layerX >= 0
+            && layerY >= 0
+            && layerX < safeZero(layer.originalWidth)
+            && layerY < safeZero(layer.originalHeight)
+            && (
+                value
+                    ? win._maskData[layer.id][offset] |= 1 << bit
+                    : win._maskData[layer.id][offset] &= ~(1 << bit)
+            )
+        )
     );
 }
 

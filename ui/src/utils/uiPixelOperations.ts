@@ -59,8 +59,8 @@ export const addAttributeGridUi = (attributeGridOpacity: number, rgb: Rgb, x: nu
 export const addMouseCursor = (
     rgb: Rgb,
     tool: ToolType,
-    brush: BrushShape,
-    size: number,
+    brushShape: BrushShape,
+    brushSize: number,
     x: SpectrumPixelCoordinate,
     y: SpectrumPixelCoordinate,
     mouseX: SpectrumPixelCoordinate,
@@ -70,19 +70,33 @@ export const addMouseCursor = (
     // no cursor
     if (
         tool === ToolType.nudge
-        || (x + size) < mouseX
-        || mouseX < (x - size)
-        || (y + size) < mouseY
-        || mouseY < (y - size)
     ) {
         return [...rgb];
     }
 
+    // attribute block cursor
+    if (tool === ToolType.attributes) {
+        return (
+            Math.floor(x / 8) === Math.floor(mouseX / 8)
+            && Math.floor(y / 8) === Math.floor(mouseY / 8)
+        ) ? rgb.map(c => bias(c, 255 - c, 0.25)) as Rgb
+            : [...rgb];
+    }
+
     const xDiff = x - mouseX;
     const yDiff = y - mouseY;
-    const halfSize = size / 2;
+    const halfSize = brushSize / 2;
 
-    const isInside = brush === BrushShape.circle
+    if (
+        mouseX < (x - halfSize)
+        || mouseX > (x + brushSize)
+        || mouseY < (y - brushSize)
+        || mouseY > (y + brushSize)
+    ) {
+        return [...rgb];
+    }
+
+    const isInside = brushShape === BrushShape.circle
         ? Math.sqrt(xDiff * xDiff + yDiff * yDiff) < halfSize
         : Math.abs(xDiff) < halfSize && Math.abs(yDiff) < halfSize;
 

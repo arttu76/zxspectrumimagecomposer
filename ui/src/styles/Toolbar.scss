@@ -1,19 +1,77 @@
+@import "./variables";
+
 .Toolbar {
     box-sizing: border-box;
-    padding: 10px;
+    padding: 0 0 15px 0;
     height: 50px;
+
+    .Group {
+        display: inline-block;
+
+        .GroupTitle {
+            background-color: $background;
+        }
+
+        .GroupContent {
+            padding: 4px 2px;
+
+            button.CustomElements span {
+                position: relative;
+                top: 0;
+            }
+        }
+    }
+
+    .ManualAttributeGroup {
+        top: -7px;
+        height: 34px;
+
+        &>.GroupContent {
+            position: relative;
+            top: 4px;
+
+            &>.Group {
+                border: none;
+                margin: 0;
+                padding: 0;
+
+                .GroupTitle,
+                .ColorSample {
+                    display: none;
+                }
+
+                .GroupContent {
+                    position: relative;
+                    padding: 0;
+
+                    .ColorPicker {
+                        display: flex;
+                        gap: 10px;
+
+                        .ColorItem {
+                            margin-right: 10px;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     .reset {
         float: right;
+        position: relative;
+        top: 10px;
+        right: 10px;
         background-color: #900;
         border: none;
         border-radius: 5px;
-        border-bottom: 1px solid black;
         cursor: pointer;
+        box-shadow: 3px 3px 7px 2px rgba(0, 0, 0, 0.5) inset;
 
         &:hover {
-            color: white;
+            color: yellow;
             background-color: red;
+            box-shadow: none;
         }
     }
 }

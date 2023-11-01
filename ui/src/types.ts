@@ -3,6 +3,8 @@ export type Nullable<T> = T | null;
 
 export type Percentage = number;
 
+export type SourceImageCoordinate = number;
+
 export type SpectrumPixelCoordinate = number;
 
 export type Distance = number;
@@ -45,9 +47,19 @@ export interface ExtendedWindow extends Window {
     [LocalStorageKeys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
 
     patternCache: { [key: Id]: PatternCache }
+
+    // source image pixels modified by layer settings - same size as source image
     adjustedPixels: { [key: Id]: PartialRgbImage }
+
+    // source image pixels computed from adjustedPixels and layer settings - spectrum screen sized
     pixels: { [key: Id]: PartialBitImage }
+    // source image attributes computed from adjustedPixels and layer settings - spectrum screen sized
     attributes: { [key: Id]: PartialAttributeImage }
+
+    // manually set pixels and attributes - spectrum screen sized
+    manualPixels: { [key: Id]: GrowableGrid<boolean> }
+    manualAttributes: { [key: Id]: GrowableGrid<Color> }
+
 }
 
 export type DragState = {
@@ -153,18 +165,33 @@ export enum MaskBrushType {
     brush = 'brush',
     eraser = 'eraser'
 }
-export enum PaperInkBrushType {
+export enum PixelBrushType {
     ink = 'ink',
     paper = 'paper',
     eraser = 'eraser'
 }
+
+export enum AttributeBrushType {
+    ink = 'ink',
+    paper = 'paper',
+    bright = 'bright',
+    all = 'all',
+    eraser = 'eraser'
+}
+
 export interface ToolsSliceState {
     zoom: number;
     crisp: boolean;
     tool: ToolType;
-    brushType: MaskBrushType;
+    maskBrushType: MaskBrushType;
+    pixelBrushType: PixelBrushType;
+    attributeBrushType: AttributeBrushType;
     brushSize: number;
     brushShape: BrushShape;
+    manualAttribute: Color;
+    hideSourceImage: boolean;
+    hideManualPixels: boolean;
+    hideManualAttributes: boolean;
     attributeGridOpacity: number;
 }
 

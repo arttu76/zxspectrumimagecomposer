@@ -1,18 +1,21 @@
-import '../styles/App.scss'
+import '../styles/App.scss';
 
-import { Screen } from "./Screen";
 import { Layers } from "./Layers";
+import { Screen } from "./Screen";
 import { Toolbar } from "./Toolbar";
 
 function App() {
   return (
-    <div className="App">
-      <Toolbar></Toolbar>
-      <div className="AppContainer">
-        <Screen />
-        <Layers />
+    <>
+      <div id="renderTime">xxx</div>
+      <div className="App">
+        <Toolbar></Toolbar>
+        <div className="AppContainer">
+          <Screen />
+          <Layers />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

@@ -11,6 +11,23 @@
         margin: 15px 0 5px;
     }
 
+    .ColorPickerSwapButton {
+        background-color: #999;
+        border: 0;
+        border-radius: 5px;
+        cursor: pointer;
+        position: relative;
+        padding: 0;
+        height: 20px;
+
+        .Icon {
+            font-size: 20px;
+            position: relative;
+            top: 0px;
+            padding: 0;
+        }
+    }
+
     .ColorItem {
         display: contents;
 

@@ -1,13 +1,13 @@
 @import "./variables";
 
-.LayerPropertyGroup {
+.Group {
     position: relative;
     margin: 7px 5px;
     padding: 5px 5px 0 5px;
     border: 1px solid $borderColor;
     border-radius: 5px;
 
-    .LayerPropertyGroupTitle {
+    .GroupTitle {
         position: absolute;
         top: -6px;
         height: 13px;
@@ -70,7 +70,7 @@
     }
 
 
-    .LayerPropertyGroupContent {
+    .GroupContent {
         .Icon {
             position: relative;
             top: 5px;

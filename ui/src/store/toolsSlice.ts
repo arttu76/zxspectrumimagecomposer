@@ -2,15 +2,25 @@ import {
     PayloadAction,
     createSlice,
 } from "@reduxjs/toolkit";
-import { BrushShape, MaskBrushType, ToolType, ToolsSliceState } from "../types";
+import { AttributeBrushType, BrushShape, Color, MaskBrushType, PixelBrushType, ToolType, ToolsSliceState } from "../types";
 
 const initialState: ToolsSliceState = {
     tool: ToolType.nudge,
-    brushType: MaskBrushType.brush,
+    maskBrushType: MaskBrushType.brush,
+    pixelBrushType: PixelBrushType.ink,
+    attributeBrushType: AttributeBrushType.all,
     brushSize: 10,
     brushShape: BrushShape.block,
     zoom: 1,
     crisp: true,
+    manualAttribute: {
+        ink: 7,
+        paper: 0,
+        bright: false
+    },
+    hideSourceImage: false,
+    hideManualPixels: false,
+    hideManualAttributes: false,
     attributeGridOpacity: 0
 }
 
@@ -21,8 +31,14 @@ const toolsSlice = createSlice({
         setTool: (state, action: PayloadAction<ToolType>) => {
             state.tool = action.payload;
         },
-        setBrushType: (state, action: PayloadAction<MaskBrushType>) => {
-            state.brushType = action.payload;
+        setMaskBrushType: (state, action: PayloadAction<MaskBrushType>) => {
+            state.maskBrushType = action.payload;
+        },
+        setPixelBrushType: (state, action: PayloadAction<PixelBrushType>) => {
+            state.pixelBrushType = action.payload;
+        },
+        setAttributeBrushType: (state, action: PayloadAction<AttributeBrushType>) => {
+            state.attributeBrushType = action.payload;
         },
         setBrushSize: (state, action: PayloadAction<number>) => {
             state.brushSize = action.payload;
@@ -30,11 +46,23 @@ const toolsSlice = createSlice({
         setBrushShape: (state, action: PayloadAction<BrushShape>) => {
             state.brushShape = action.payload;
         },
+        setManualAttribute: (state, action: PayloadAction<Color>) => {
+            state.manualAttribute = action.payload;
+        },
         setZoom: (state, action: PayloadAction<number>) => {
             state.zoom = action.payload || 1;
         },
         setCrispScaling: (state, action: PayloadAction<boolean>) => {
             state.crisp = action.payload;
+        },
+        setHideSourceImage: (state, action: PayloadAction<boolean>) => {
+            state.hideSourceImage = action.payload;
+        },
+        setHideManualPixels: (state, action: PayloadAction<boolean>) => {
+            state.hideManualPixels = action.payload;
+        },
+        setHideManualAttributes: (state, action: PayloadAction<boolean>) => {
+            state.hideManualAttributes = action.payload;
         },
         setAttributeGridOpacity: (state, action: PayloadAction<number>) => {
             state.attributeGridOpacity = action.payload;
@@ -44,11 +72,17 @@ const toolsSlice = createSlice({
 
 export const {
     setTool,
-    setBrushType,
+    setMaskBrushType,
+    setPixelBrushType,
+    setAttributeBrushType,
     setBrushSize,
     setBrushShape,
+    setManualAttribute,
     setZoom,
     setCrispScaling,
+    setHideSourceImage,
+    setHideManualPixels,
+    setHideManualAttributes,
     setAttributeGridOpacity
 } = toolsSlice.actions;
 

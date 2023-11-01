@@ -13,7 +13,7 @@ import {
 
 import { Layer, PixelationPattern } from "../types";
 import { Button, Input } from './CustomElements';
-import { LayerProperyGroup } from './LayerPropertyGroup';
+import { Group } from './Group';
 
 export const PatternEditor: React.FC<{
     layer: Layer,
@@ -122,7 +122,7 @@ export const PatternEditor: React.FC<{
     const warning = layerStartIntensity === layerEndIntensity || layerStartIntensity >= layerEndIntensity;
 
     return (
-        <LayerProperyGroup
+        <Group
             title={last ? `Pattern for other values (${coveragePercentage}%)` : `Pattern for ${layerStartIntensity}...${layerEndIntensity} (${coveragePercentage}%)`}
             cornerIcon="delete"
             cornerIconTooltip="Remove this pattern"
@@ -190,7 +190,7 @@ export const PatternEditor: React.FC<{
                     </div>
                 </div>
             </div>
-        </LayerProperyGroup >
+        </Group >
     );
 }
 

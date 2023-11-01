@@ -48,8 +48,8 @@ import { confirmMask } from '../utils/maskManager';
 import { getWindow } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
+import { Group } from './Group';
 import { Icon } from './Icon';
-import { LayerProperyGroup } from './LayerPropertyGroup';
 
 export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
@@ -169,7 +169,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
 
             {layer.expanded && <div>
-                <LayerProperyGroup title="Size & position">
+                <Group title="Size & position">
                     <LayerPropertyEditor
                         title="X"
                         layer={layer}
@@ -256,8 +256,8 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             />
                         </div>
                     </div>
-                </LayerProperyGroup>
-                <LayerProperyGroup title="Hue & Saturation">
+                </Group>
+                <Group title="Hue & Saturation">
                     <div style={{ 'textAlign': 'center', 'paddingBottom': '5px', 'marginTop': '-5px' }}>
                         Invert colors:&nbsp;
                         <Input
@@ -374,8 +374,8 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         min={0}
                         max={200}
                     />
-                </LayerProperyGroup>
-                <LayerProperyGroup title="Dithering">
+                </Group>
+                <Group title="Dithering">
                     <div style={{ textAlign: 'center' }}>
                         Algorithm:<br />
                         <Button
@@ -459,7 +459,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             <Icon icon="add_circle" /> Add pattern
                         </Button>
                     </div>}
-                </LayerProperyGroup>
+                </Group>
 
             </div>}
         </div>
