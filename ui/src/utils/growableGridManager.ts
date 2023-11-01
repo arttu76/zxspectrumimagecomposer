@@ -122,7 +122,12 @@ export const setGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: numb
         newGrid.data[y - newGrid.offsetY][x - newGrid.offsetX] = value;
         return newGrid
     } else {
-        grid.data[y - grid.offsetY][x - grid.offsetX] = null;
+        if (
+            (y - grid.offsetY) < grid.data.length
+            && (x - grid.offsetX) < grid.data[y - grid.offsetY].length
+        ) {
+            grid.data[y - grid.offsetY][x - grid.offsetX] = null;
+        }
         return shrinkGridIfPossible(grid);
     }
 
