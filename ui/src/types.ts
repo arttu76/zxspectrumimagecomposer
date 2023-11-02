@@ -169,7 +169,8 @@ export enum ToolType {
     nudge = 'nudge',
     mask = 'mark',
     pixels = 'pixels',
-    attributes = 'attributes'
+    attributes = 'attributes',
+    export = 'export'
 }
 export enum BrushShape {
     block = 'block',

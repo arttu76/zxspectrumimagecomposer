@@ -27,10 +27,10 @@ export const LayerPropertyEditor: React.FC<{
 				<div>
 					<Button
 						tooltip="Change by -8"
-						onClick={() => changeValue(value - 8)}>-8</Button>
+						onClick={() => changeValue(Math.max(min, value - 8))}>-8</Button>
 					<Button
 						tooltip="Change by -1"
-						onClick={() => changeValue(value - 1)}>-1</Button>
+						onClick={() => changeValue(Math.max(min, value - 1))}>-1</Button>
 					<input
 						size={5}
 						type="text"
@@ -39,10 +39,10 @@ export const LayerPropertyEditor: React.FC<{
 					/>
 					<Button
 						tooltip="Change by +1"
-						onClick={() => changeValue(value + 1)}>+1</Button>
+						onClick={() => changeValue(Math.min(max, value + 1))}>+1</Button>
 					<Button
 						tooltip="Change by +8"
-						onClick={() => changeValue(value + 8)}>+8</Button>
+						onClick={() => changeValue(Math.min(max, value + 8))}>+8</Button>
 					{reset !== undefined && <Button
 						dimmed={value === reset}
 						icon="settings_backup_restore"

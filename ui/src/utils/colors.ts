@@ -59,7 +59,6 @@ export const fromRgbToHsl = (rgb: Rgb): Hsl => {
 
     h = (h % 360 + 360) % 360;
 
-
     return [h * 60, s, l];
 }
 
@@ -90,7 +89,6 @@ export const fromHslToRgb = (hsl: Hsl): Rgb => {
     }
     // if (300 <= hue && hue < 360) {
     return [chroma, 0, intermediate].map(to8BitRange) as Rgb;
-
 }
 
 export const getIntensity = (rgb: Rgb): Percentage => {
@@ -132,6 +130,9 @@ export const getColorAdjusted = (layer: Layer, rgb: Rgb): Rgb => {
         || layer.saturation !== 0
         || layer.brightness !== 0
         || layer.contrast !== 0
+        || layer.highlights !== 0
+        || layer.midtones !== 0
+        || layer.shadows !== 0
     ) {
         const hsl = fromRgbToHsl(newColor);
 
@@ -171,7 +172,6 @@ export const getColorAdjusted = (layer: Layer, rgb: Rgb): Rgb => {
         }
 
         newColor = fromHslToRgb(hsl);
-
     }
 
     return [
@@ -187,7 +187,7 @@ const applyKernel = (image: PartialRgbImage, kernel: ImageFilterKernel): Partial
             return null;
         }
 
-        let r = 0, g = 0, b = 0;
+        const color: Rgb = [0, 0, 0];
         const kernelSize = kernel.length;
         const mu = Math.floor(kernelSize / 2);
         applyRange2DExclusive(kernelSize, kernelSize, (ky, kx) => {
@@ -195,11 +195,11 @@ const applyKernel = (image: PartialRgbImage, kernel: ImageFilterKernel): Partial
             const px = Math.round(x + kx - mu);
 
             const pixel = image[py]?.[px] || image[y][x];
-            r += pixel![0] * kernel[ky][kx];
-            g += pixel![1] * kernel[ky][kx];
-            b += pixel![2] * kernel[ky][kx];
+            color[0] += pixel![0] * kernel[ky][kx];
+            color[1] += pixel![1] * kernel[ky][kx];
+            color[2] += pixel![2] * kernel[ky][kx];
         });
-        return [r, g, b].map(clamp8Bit) as Rgb;
+        return color.map(clamp8Bit) as Rgb;
     }
 
     return map2D(image, (_, x, y) => applyKernelAt(x, y)) as RgbImage;

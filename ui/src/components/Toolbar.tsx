@@ -89,6 +89,9 @@ export const Toolbar = () => {
         if (event.key === 'r') {
             dispatch(setTool(ToolType.attributes));
         }
+        if (event.key === 't') {
+            dispatch(setTool(ToolType.attributes));
+        }
 
         if (tool === ToolType.mask) {
             if (event.key === 'a') dispatch(setMaskBrushType(MaskBrushType.eraser));
@@ -156,6 +159,13 @@ export const Toolbar = () => {
                     icon="palette"
                     tooltip="Attributes"
                     hotkey='R'
+                />
+                <Button
+                    dimmed={tool !== ToolType.export}
+                    onClick={() => dispatch(setTool(ToolType.export))}
+                    icon="ios_share"
+                    tooltip="Export"
+                    hotkey='T'
                 />
             </Group>
 
