@@ -123,7 +123,9 @@ export const setGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: numb
         return newGrid
     } else {
         if (
-            (y - grid.offsetY) < grid.data.length
+            grid.data
+            && (y - grid.offsetY) < grid.data.length
+            && grid.data[y - grid.offsetY]
             && (x - grid.offsetX) < grid.data[y - grid.offsetY].length
         ) {
             grid.data[y - grid.offsetY][x - grid.offsetX] = null;

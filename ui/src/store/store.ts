@@ -7,10 +7,10 @@ import repaint from "./repaintSlice";
 import tools from "./toolsSlice";
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
-import { restoreStateImageMaskData } from "../utils/utils";
+import { restoreStateImageMaskPixelAttributeData } from "../utils/utils";
 import repaintScreenMiddleware from "./repaintScreenMiddleware";
 
-const preloadedState = restoreStateImageMaskData();
+const preloadedState = restoreStateImageMaskPixelAttributeData();
 
 const store = configureStore({
     preloadedState,

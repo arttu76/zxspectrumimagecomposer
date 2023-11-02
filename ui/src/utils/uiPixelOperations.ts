@@ -1,7 +1,7 @@
-import { BrushShape, Layer, Nullable, Rgb, SpectrumPixelCoordinate, ToolType } from "../types";
+import { BrushShape, Layer, Nullable, Rgb, SourceImageCoordinate, SpectrumPixelCoordinate, ToolType, XY } from "../types";
 import { spectrumColor } from "./colors";
 import { isMaskSet } from "./maskManager";
-import { bias, getWindow } from "./utils";
+import { applyRange2DExclusive, bias, getLayerXYFromScreenCoordinates, getWindow } from "./utils";
 
 export const replaceEmptyWithBackground = (source: Nullable<Rgb>, x: number, y: number, backgroundColor: number): Rgb => {
     if (source) {
@@ -55,52 +55,165 @@ export const addAttributeGridUi = (attributeGridOpacity: number, rgb: Rgb, x: nu
 
 }
 
-
-export const addMouseCursor = (
-    rgb: Rgb,
+export const getCoordinatesCoveredByCursor = (
     tool: ToolType,
     brushShape: BrushShape,
     brushSize: number,
     x: SpectrumPixelCoordinate,
-    y: SpectrumPixelCoordinate,
-    mouseX: SpectrumPixelCoordinate,
-    mouseY: SpectrumPixelCoordinate
-): Rgb => {
+    y: SpectrumPixelCoordinate
+): XY<SpectrumPixelCoordinate>[] => {
 
     // no cursor
     if (
         tool === ToolType.nudge
     ) {
-        return [...rgb];
+        return [];
     }
+
+    const result: XY<SpectrumPixelCoordinate>[] = [];
 
     // attribute block cursor
     if (tool === ToolType.attributes) {
-        return (
-            Math.floor(x / 8) === Math.floor(mouseX / 8)
-            && Math.floor(y / 8) === Math.floor(mouseY / 8)
-        ) ? rgb.map(c => bias(c, 255 - c, 0.25)) as Rgb
-            : [...rgb];
+        applyRange2DExclusive(192, 256, (yAttempt, xAttempt) => {
+            if (
+                Math.floor(xAttempt / 8) === Math.floor(x / 8)
+                && Math.floor(yAttempt / 8) === Math.floor(y / 8)
+            ) {
+                result.push({ x: xAttempt, y: yAttempt });
+            }
+        });
+        return result;
     }
 
-    const xDiff = x - mouseX;
-    const yDiff = y - mouseY;
+    if (brushSize === 1) {
+        return [{ x, y }];
+    }
+    if (brushSize === 2) {
+        return [
+            { x, y },
+            { x: x + 1, y },
+            { x, y: y + 1 },
+            { x: x + 1, y: y + 1 }
+        ].filter(xy => xy.x < 256 && xy.y < 192);
+    }
+
     const halfSize = brushSize / 2;
 
-    if (
-        mouseX < (x - halfSize)
-        || mouseX > (x + brushSize)
-        || mouseY < (y - brushSize)
-        || mouseY > (y + brushSize)
-    ) {
-        return [...rgb];
+    applyRange2DExclusive(192, 256, (yAttempt, xAttempt) => {
+        if (
+            xAttempt < (x - halfSize)
+            || xAttempt > (x + brushSize)
+            || yAttempt < (y - brushSize)
+            || yAttempt > (y + brushSize)
+        ) {
+            return;
+        }
+
+        const xDiff = xAttempt - x;
+        const yDiff = yAttempt - y;
+
+        if (
+            brushShape === BrushShape.circle
+                ? Math.sqrt(xDiff * xDiff + yDiff * yDiff) * 1.1 < halfSize
+                : Math.abs(xDiff) < halfSize && Math.abs(yDiff) < halfSize
+        ) {
+            result.push({ x: xAttempt, y: yAttempt });
+        }
+    });
+
+    return result;
+}
+
+export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (coordinates: XY<SpectrumPixelCoordinate>[], layer: Layer): XY<SourceImageCoordinate>[] => {
+
+    const scalerFunction = (xy: XY<SpectrumPixelCoordinate>): XY<SourceImageCoordinate> => {
+        const result = getLayerXYFromScreenCoordinates(layer, xy.x, xy.y);
+        return {
+            x: result.layerX,
+            y: result.layerY
+        };
+    };
+
+    const maxY = coordinates.reduce((acc, val) => Math.max(acc, val.y), -1);
+    const yLimitSourceCoordinate: SourceImageCoordinate = scalerFunction({ y: maxY + 1, x: 0 }).y;
+
+    interface CoordinateRow {
+        y: number;
+        nextY: number;
+        minX: number;
+        maxX: number;
+        lastRow?: boolean;
     }
 
-    const isInside = brushShape === BrushShape.circle
-        ? Math.sqrt(xDiff * xDiff + yDiff * yDiff) < halfSize
-        : Math.abs(xDiff) < halfSize && Math.abs(yDiff) < halfSize;
+    const groupedByY = coordinates
+        .reduce((acc, val) => {
+            if (!acc.length) {
+                return [{
+                    y: val.y,
+                    lastRow: val.y === maxY,
+                    nextY: val.y === maxY ? val.y : val.y + 1,
+                    minX: val.x,
+                    maxX: val.x
+                }];
+            }
+            const lastItem = acc[acc.length - 1];
 
-    return isInside
+            return (lastItem.y === val.y)
+                ? [
+                    ...acc.slice(0, -1),
+                    {
+                        ...lastItem,
+                        maxX: val.x
+                    }
+                ]
+                : [
+                    ...acc,
+                    {
+                        y: val.y,
+                        lastRow: val.y === maxY,
+                        nextY: val.y === maxY ? val.y : val.y + 1,
+                        minX: val.x,
+                        maxX: val.x
+                    }
+                ]
+        },
+            [] as CoordinateRow[]
+        );
+
+    const transformed = groupedByY.map(item => {
+        const yMinX = scalerFunction({ y: item.y, x: item.minX });
+        const nextYmaxX = scalerFunction({ y: item.nextY, x: item.maxX });
+        return {
+            y: yMinX.y,
+            nextY: item.lastRow ? yLimitSourceCoordinate : nextYmaxX.y,
+            minX: yMinX.x,
+            maxX: nextYmaxX.x
+        }
+    });
+
+    const scaled = transformed.reduce((acc, val) => {
+        let result = [...acc];
+        for (let i = val.y; i < val.nextY; i++) {
+            for (let j = val.minX; j < (val.maxX + 1); j++) {
+                result.push({
+                    y: i,
+                    x: j
+                });
+            }
+        }
+        return result;
+    }, [] as XY<SourceImageCoordinate>[]);
+
+    return scaled;
+}
+
+export const addMouseCursor = (
+    rgb: Rgb,
+    x: SpectrumPixelCoordinate,
+    y: SpectrumPixelCoordinate,
+    coordinatesCoveredByCursor: XY<SpectrumPixelCoordinate>[]
+): Rgb => {
+    return coordinatesCoveredByCursor.find(xy => xy.x === x && xy.y === y)
         ? rgb.map(c => bias(c, 255 - c, 0.25)) as Rgb
         : [...rgb];
 }

@@ -7,12 +7,12 @@ import React from 'react';
 import { setLayerX, setLayerY } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { setZoom } from '../store/toolsSlice';
-import { AttributeBrushType, BrushShape, Color, DragState, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
+import { AttributeBrushType, Color, DragState, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
 import { spectrumColor } from '../utils/colors';
 import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
 import { isMaskSet, setMask } from '../utils/maskManager';
-import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
-import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getLayerXYFromScreenCoordinates, getWindow, safeOne, safeZero } from "../utils/utils";
+import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
+import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getWindow } from "../utils/utils";
 
 const win = getWindow();
 
@@ -44,7 +44,6 @@ export const Screen = () => {
 
     // change zoom when window is resized
     useEffect(() => {
-
         const resize = () => {
             if (screenRef?.current) {
                 dispatch(setZoom(
@@ -97,6 +96,14 @@ export const Screen = () => {
             ? miniMapCtx.createImageData(255, 192)
             : null;
 
+        const coordinatesCoveredByCursor = getCoordinatesCoveredByCursor(
+            currentTool,
+            currentBrushShape,
+            currentBrushSize,
+            mouseX,
+            mouseY
+        );
+
         applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
 
             let manualPixel: Nullable<boolean> = null;
@@ -109,18 +116,18 @@ export const Screen = () => {
 
             let renderedPixel: Nullable<Rgb> = null;
 
-            // loop layers from top to bottom
+            // loop visible layers from top to bottom
             for (const layer of layers.filter(layer => layer.shown)) {
 
                 if (manualAttribute === null) {
                     manualAttribute = !hideManualAttributes
-                        ? getGrowableGridData<Color>(win.manualAttributes?.[layer.id], Math.floor(x / 8), Math.floor(y / 8))
+                        ? getGrowableGridData<Color>(win[Keys.manualAttributes]?.[layer.id], Math.floor(x / 8), Math.floor(y / 8))
                         : null;
                 }
 
                 if (manualPixel === null) {
                     manualPixel = !hideManualPixels
-                        ? getGrowableGridData<boolean>(win.manualPixels?.[layer.id], x, y)
+                        ? getGrowableGridData<boolean>(win[Keys.manualPixels]?.[layer.id], x, y)
                         : null;
                 }
 
@@ -138,24 +145,22 @@ export const Screen = () => {
                     // source/adjusted image
                     if (
                         topmostAdjustedPixel === null
-                        && win.adjustedPixels[layer.id]
-                        && win.adjustedPixels[layer.id]?.[y]
-                        && (currentTool !== ToolType.mask || !isMaskSet(layer, x, y, true))
+                        && win[Keys.adjustedPixels][layer.id]
+                        && win[Keys.adjustedPixels][layer.id]?.[y]
+                        && (currentTool === ToolType.mask || !isMaskSet(layer, x, y, true))
                     ) {
-                        topmostAdjustedPixel = win.adjustedPixels[layer.id]?.[y][x] || null;
+                        topmostAdjustedPixel = win[Keys.adjustedPixels][layer.id]?.[y][x] || null;
                     }
                 } else {
-                    if (
-                        (currentTool === ToolType.mask || !isMaskSet(layer, x, y, true))
-                    ) continue;
+                    if (isMaskSet(layer, x, y, true) && currentTool !== ToolType.mask) continue;
                     // dithered image
-                    adjustedPixel = booleanOrNull(win.pixels?.[layer.id]?.[y][x]);
+                    adjustedPixel = booleanOrNull(win[Keys.pixels]?.[layer.id]?.[y][x]);
                     adjustedAttribute = (
-                        win.attributes
-                        && win.attributes?.[layer.id]
-                        && win.attributes?.[layer.id]?.[Math.floor(y / 8)]
+                        win[Keys.attributes]
+                        && win[Keys.attributes]?.[layer.id]
+                        && win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)]
                     )
-                        ? win.attributes?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
+                        ? win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
                         : null;
                 }
 
@@ -169,10 +174,7 @@ export const Screen = () => {
             ) {
                 renderedPixel = replaceEmptyWithBackground(topmostAdjustedPixel, x, y, bg);
             } else {
-                let pixel = manualPixel;
-                if (manualPixel === null) {
-                    pixel = adjustedPixel;
-                }
+                let pixel = manualPixel || adjustedPixel;
 
                 let attribute = manualAttribute || adjustedAttribute || {
                     ink: 0,
@@ -188,6 +190,7 @@ export const Screen = () => {
                 renderedPixel = pixel
                     ? normalOrBrightColors[attribute.ink]
                     : normalOrBrightColors[attribute.paper]
+
             }
 
             const offset = (y * 255 + x) * 4;
@@ -202,7 +205,7 @@ export const Screen = () => {
             renderedPixel = addAttributeGridUi(attributeGridOpacity, renderedPixel, x, y);
 
             if (drawCursor) {
-                renderedPixel = addMouseCursor(renderedPixel, currentTool, currentBrushShape, currentBrushSize, x, y, mouseX, mouseY);
+                renderedPixel = addMouseCursor(renderedPixel, x, y, coordinatesCoveredByCursor);
             }
 
             imageData.data[offset] = renderedPixel[0];
@@ -269,114 +272,76 @@ export const Screen = () => {
             setMouseDownState(mouseDown);
         }
 
-        // use layer cordinates if drawing mask, otherwise use screen coordinates
+        // use layer cordinates if drawing mask (as mask is same size as source image), otherwise use screen coordinates
         if (mouseDown || (!mouseDown && mouseDownState)) {
-            const xScaler = currentTool === ToolType.mask
-                ? layer.width! / safeOne(layer.originalWidth)
-                : 1;
-            const yScaler = currentTool === ToolType.mask
-                ? layer.height! / safeOne(layer.originalHeight)
-                : 1;
 
-            const targetWidth = currentTool === ToolType.mask
-                ? safeZero(layer.originalWidth)
-                : 255;
+            if (currentTool === ToolType.mask || currentTool === ToolType.pixels) {
 
-            const targetHeight = currentTool === ToolType.mask
-                ? safeZero(layer.originalHeight)
-                : 192;
-
-            const halfBrushSize = Math.floor(currentBrushSize / 2);
-
-            if (
-                currentTool === ToolType.mask
-                || currentTool === ToolType.pixels
-            ) {
-                applyRange2DExclusive(
-                    currentBrushSize * yScaler,
-                    currentBrushSize * xScaler,
-                    (y, x) => {
-                        const { layerX: cursorX, layerY: cursorY } = currentTool === ToolType.mask
-                            ? getLayerXYFromScreenCoordinates(
-                                layer,
-                                mouseX + x - halfBrushSize,
-                                mouseY + y - halfBrushSize
-                            )
-                            : {
-                                layerX: mouseX + x - halfBrushSize,
-                                layerY: mouseY + y - halfBrushSize
-                            };
-                        if (
-                            cursorX >= 0 && cursorX < targetWidth
-                            && cursorY >= 0 && cursorY < targetHeight
-                        ) {
-                            const xDiff = x - halfBrushSize * xScaler;
-                            const yDiff = y - halfBrushSize * yScaler;
-
-                            const isInside = currentBrushShape === BrushShape.block
-                                ? Math.abs(xDiff) < halfBrushSize * xScaler && Math.abs(yDiff) < halfBrushSize * yScaler
-                                : Math.sqrt(xDiff * xDiff + yDiff * yDiff) < halfBrushSize;
-
-                            if (isInside) {
-                                if (currentTool === ToolType.mask) {
-                                    setMask(layer, cursorX, cursorY, currentMaskBrushType === MaskBrushType.brush, true);
-                                }
-
-                                if (currentTool === ToolType.pixels) {
-                                    if (!win.manualPixels) {
-                                        win.manualPixels = {};
-                                    }
-                                    if (currentPixelBrushType === PixelBrushType.eraser) {
-                                        win.manualPixels[layer.id] = setGrowableGridData(win.manualPixels?.[layer.id], Math.round(cursorX), Math.round(cursorY), null);
-                                    }
-                                    if (currentPixelBrushType === PixelBrushType.ink) {
-                                        win.manualPixels[layer.id] = setGrowableGridData(win.manualPixels?.[layer.id], Math.round(cursorX), Math.round(cursorY), true);
-                                    }
-                                    if (currentPixelBrushType === PixelBrushType.paper) {
-                                        win.manualPixels[layer.id] = setGrowableGridData(win.manualPixels?.[layer.id], Math.round(cursorX), Math.round(cursorY), false);
-                                    }
-                                }
-
-
-                            }
-                        }
-                    }
+                const coordinatesCoveredByCursor = getCoordinatesCoveredByCursor(
+                    currentTool,
+                    currentBrushShape,
+                    currentBrushSize,
+                    mouseX,
+                    mouseY
                 );
+
+                if (currentTool === ToolType.mask) {
+                    getCoordinatesCoveredByCursorInSourceImageCoordinates(coordinatesCoveredByCursor, activeLayer).forEach(xy => {
+                        setMask(layer, xy.x, xy.y, currentMaskBrushType === MaskBrushType.brush, false);
+                    });
+                }
+
+                if (currentTool === ToolType.pixels) {
+                    coordinatesCoveredByCursor.forEach(xy => {
+                        if (!win[Keys.manualPixels]) {
+                            win[Keys.manualPixels] = {};
+                        }
+                        if (currentPixelBrushType === PixelBrushType.eraser) {
+                            win[Keys.manualPixels][layer.id] = setGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y, null);
+                        }
+                        if (currentPixelBrushType === PixelBrushType.ink) {
+                            win[Keys.manualPixels][layer.id] = setGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y, true);
+                        }
+                        if (currentPixelBrushType === PixelBrushType.paper) {
+                            win[Keys.manualPixels][layer.id] = setGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y, false);
+                        }
+                    });
+                }
             }
 
             if (currentTool === ToolType.attributes) {
                 const cursorX = Math.floor(mouseX / 8);
                 const cursorY = Math.floor(mouseY / 8);
 
-                if (!win.manualAttributes) {
-                    win.manualAttributes = {};
+                if (!win[Keys.manualAttributes]) {
+                    win[Keys.manualAttributes] = {};
                 }
                 if (currentAttributeBrushType === AttributeBrushType.eraser) {
-                    win.manualAttributes[layer.id] = setGrowableGridData(win.manualAttributes[layer.id], cursorX, cursorY, null);
+                    win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, null);
                 }
                 if (currentAttributeBrushType === AttributeBrushType.all) {
-                    win.manualAttributes[layer.id] = setGrowableGridData(win.manualAttributes[layer.id], cursorX, cursorY, currentManualAttribute);
+                    win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, currentManualAttribute);
                 }
 
-                const existingAttribute = getGrowableGridData<Color>(win.manualAttributes[layer.id], cursorX, cursorY) || {
+                const existingAttribute = getGrowableGridData<Color>(win[Keys.manualAttributes][layer.id], cursorX, cursorY) || {
                     ink: 0,
                     paper: 7,
                     bright: false
                 };
                 if (currentAttributeBrushType === AttributeBrushType.ink) {
-                    win.manualAttributes[layer.id] = setGrowableGridData(win.manualAttributes[layer.id], cursorX, cursorY, {
+                    win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, {
                         ...existingAttribute,
                         ink: currentManualAttribute.ink
                     });
                 }
                 if (currentAttributeBrushType === AttributeBrushType.paper) {
-                    win.manualAttributes[layer.id] = setGrowableGridData(win.manualAttributes[layer.id], cursorX, cursorY, {
+                    win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, {
                         ...existingAttribute,
                         paper: currentManualAttribute.paper
                     });
                 }
                 if (currentAttributeBrushType === AttributeBrushType.bright) {
-                    win.manualAttributes[layer.id] = setGrowableGridData(win.manualAttributes[layer.id], cursorX, cursorY, {
+                    win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, {
                         ...existingAttribute,
                         bright: currentManualAttribute.bright
                     });
@@ -408,7 +373,7 @@ export const Screen = () => {
                 }}>
                 <canvas
                     style={{
-                        cursor: currentTool === "nudge" ? "move" : "crosshair",
+                        cursor: currentTool === "nudge" ? "move" : "none",
                         transformOrigin: "top left",
                         transform: "scale(" + currentZoom + ")",
                         imageRendering: currentCrisp ? "pixelated" : "inherit"

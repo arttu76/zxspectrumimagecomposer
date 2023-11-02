@@ -1,17 +1,17 @@
 import * as R from 'ramda';
-import { ExtendedWindow, Grid, Layer, LocalStorageKeys, Nullable, Percentage, Rgb, SpectrumPixelCoordinate, State, ToolType, Undefinable } from "../types";
+import { ExtendedWindow, Grid, Keys, Layer, Nullable, Percentage, Rgb, SpectrumPixelCoordinate, State, ToolType, Undefinable } from "../types";
 import { isMaskSet } from './maskManager';
 
 export const getWindow = () => window as unknown as ExtendedWindow;
 
-const pack = (values: number[]): string => {
+export const pack8bit = (values: number[]): string => {
     let result = "";
     for (let i = 0; i < values.length; i += 2) {
         result += String.fromCharCode((values[i] << 8) | (values[i + 1] || 0));
     }
     return result;
 }
-function unpack(str: string): number[] {
+export function unpack8bit(str: string): number[] {
     const result: number[] = [];
     for (let i = 0; i < str.length; i++) {
         const value = str ? str.charCodeAt(i) : 0;
@@ -21,40 +21,91 @@ function unpack(str: string): number[] {
     return result;
 }
 
-export const persistStateImageMaskData = (state: State) => {
-    const win = getWindow();
-    localStorage.setItem(LocalStorageKeys.state, JSON.stringify(state));
-    // localStorage.setItem(LocalStorageKeys.maskData, JSON.stringify(win._maskData));
+export const packBoolean = (values: Nullable<boolean>[]): string => {
+    let result = "";
+    let bit = 0;
+    let value = 0;
+    for (let i = 0; i < values.length; i++) {
+        value |= ((values[i] ? 1 : 0) << bit);
+        bit++;
+        if (bit === 16) {
+            result += String.fromCharCode(value);
+            value = 0;
+            bit = 0;
+        }
+    }
+    return result;
+}
 
-    const keys = Object.keys(win._imageData);
-    const packedImageData = keys.reduce(
-        (acc, val) => ({ ...acc, [val]: pack(win._imageData[val]) }),
+export function unpackBoolean(str: string): boolean[] {
+    const result: boolean[] = [];
+    for (let i = 0; i < str.length; i++) {
+        const value = str.charCodeAt(i);
+        for (let bit = 0; bit < 16; bit++) {
+            result.push(!!(value >> bit));
+        }
+    }
+    return result;
+}
+
+export const persistStateImageMaskPixelAttributeData = (state: State) => {
+    const win = getWindow();
+    localStorage.setItem(Keys.state, JSON.stringify(state));
+
+    const packedImageData = Object.keys(win[Keys.imageData]).reduce(
+        (acc, val) => ({ ...acc, [val]: pack8bit(win[Keys.imageData][val]) }),
         {}
     );
-    localStorage.setItem(LocalStorageKeys.imageData, JSON.stringify(packedImageData));
+    localStorage.setItem(Keys.imageData, JSON.stringify(packedImageData));
+
+    const packedMaskData = Object.keys(win[Keys.maskData]).reduce(
+        (acc, val) => ({
+            ...acc, [val]: Array.from(win[Keys.maskData][val]) // Uint16Array to Array thanks to stupid typescript
+                .map(item => String.fromCharCode(item))
+                .join('')
+        }),
+        {}
+    );
+    localStorage.setItem(Keys.maskData, JSON.stringify(packedMaskData));
+
+    localStorage.setItem(Keys.manualPixels, JSON.stringify(win[Keys.manualPixels]));
+    localStorage.setItem(Keys.manualAttributes, JSON.stringify(win[Keys.manualAttributes]));
 }
-export const restoreStateImageMaskData = (): State | undefined => {
+
+export const restoreStateImageMaskPixelAttributeData = (): State | undefined => {
     const win = getWindow();
 
-    win._imageData = {};
-    win._maskData = {};
-    const packedImageDataJSON = localStorage.getItem(LocalStorageKeys.imageData);
+    win[Keys.imageData] = {};
+    win[Keys.maskData] = {};
+    const packedImageDataJSON = localStorage.getItem(Keys.imageData);
     if (packedImageDataJSON) {
         const parsed = JSON.parse(packedImageDataJSON);
         const keys = Object.keys(parsed);
-        win[LocalStorageKeys.imageData] = keys.reduce(
-            (acc, val) => ({ ...acc, [val]: unpack(parsed[val]) }),
+        win[Keys.imageData] = keys.reduce(
+            (acc, val) => ({ ...acc, [val]: unpack8bit(parsed[val]) }),
             {}
         )
     }
-    // localStorage.getItem(LocalStorageKeys.maskData) && (win._maskData = JSON.parse(localStorage.getItem(LocalStorageKeys.maskData) || '{}'));
 
-    win.patternCache = {};
-    win.adjustedPixels = {};
-    win.pixels = {};
-    win.attributes = {};
+    const packedMaskDataJSON = localStorage.getItem(Keys.maskData);
+    if (packedMaskDataJSON) {
+        const parsed = JSON.parse(packedMaskDataJSON);
+        const keys = Object.keys(parsed);
+        win[Keys.maskData] = keys.reduce(
+            (acc, val) => ({ ...acc, [val]: parsed[val].split('').map((item: string) => item.charCodeAt(0)) }),
+            {}
+        )
+    }
 
-    return JSON.parse('' + localStorage.getItem(LocalStorageKeys.state)) as Undefinable<State> || undefined;
+    win[Keys.manualPixels] = JSON.parse(localStorage.getItem(Keys.manualPixels) || '{}');
+    win[Keys.manualAttributes] = JSON.parse(localStorage.getItem(Keys.manualAttributes) || '{}');
+
+    win[Keys.patternCache] = {};
+    win[Keys.adjustedPixels] = {};
+    win[Keys.pixels] = {};
+    win[Keys.attributes] = {};
+
+    return JSON.parse('' + localStorage.getItem(Keys.state)) as Undefinable<State> || undefined;
 }
 
 export const getSourceRgb = (
@@ -64,7 +115,7 @@ export const getSourceRgb = (
     currentTool: ToolType = ToolType.nudge
 ): Nullable<Rgb> => {
     const win = getWindow();
-    if (!win || !win._imageData) {
+    if (!win || !win[Keys.imageData]) {
         return null;
     }
 
@@ -126,9 +177,9 @@ export const debounce = (func: Function, wait: number) => {
     };
 }
 
-const safe = (value: Undefinable<number>, fallback: number) => value || fallback;
-export const safeZero = (value: Undefinable<number>): number => safe(value, 0);
-export const safeOne = (value: Undefinable<number>): number => safe(value, 1);
+const safe = (value: Undefinable<Nullable<number>>, fallback: number) => value || fallback;
+export const safeZero = (value: Undefinable<Nullable<number>>): number => safe(value, 0);
+export const safeDivide = (numerator: Undefinable<Nullable<number>>, denominator: Undefinable<Nullable<number>>): number => safe(numerator, 0) / safe(denominator, 1);
 
 export const bias = (a: number, b: number, bias: Percentage) => a * bias + b * (1 - bias);
 
@@ -154,9 +205,7 @@ export const applyRange2DExclusive = <T = number>(maxOuterExclusive: number, max
 
 export const map2D = <T>(grid: Grid<T>, mapper: (value: T, x: number, y: number) => T): Grid<T> => grid.map((row, y) => row.map((value, x) => mapper(value, x, y)));
 
-export const getOriginalAspectRatio = (layer: Layer): number => (
-    safeZero(layer.originalWidth) / safeOne(layer.originalHeight)
-);
+export const getOriginalAspectRatio = (layer: Layer): number => safeDivide(layer.originalWidth, layer.originalHeight);
 
 export const getWidthForAspectRatio = (layer: Layer): number => Math.round(
     safeZero(layer.height) * getOriginalAspectRatio(layer)
@@ -170,10 +219,10 @@ export const getInitialized2DArray = <T>(rows: number, columns: number, initialV
     return Array.from({ length: rows }, () => Array<T>(columns).fill(initialValue));
 }
 
-export const getLayerXYFromScreenCoordinates = (layer: Layer, x: number, y: number) => {
+export const getLayerXYFromScreenCoordinates = (layer: Layer, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate) => {
 
-    const xScale = safeZero(layer.width) / safeOne(layer.originalWidth);
-    const yScale = safeZero(layer.height) / safeOne(layer.originalHeight);
+    const xScale = safeDivide(layer.width, layer.originalWidth);
+    const yScale = safeDivide(layer.height, layer.originalHeight);
 
     let dx = ((x - 256 / 2) - layer.x) / xScale;
     let dy = ((y - 192 / 2) - layer.y) / yScale;

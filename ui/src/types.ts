@@ -16,7 +16,6 @@ export type Hsl = Rgb;
 
 export type Grid<T> = T[][]
 
-export type FlatMaskData = Uint16Array; // most significant bit = leftmost pixel
 export type FlatRgbData = number[];
 
 export type RgbImage = Grid<Rgb>;
@@ -36,30 +35,38 @@ export interface withId {
     id: Id;
 }
 
-export enum LocalStorageKeys {
-    state = 'state',
+export enum Keys {
+    state = '_state',
     imageData = '_imageData',
-    maskData = '_maskData'
+    maskData = '_maskData',
+
+    adjustedPixels = '_adjustedPixels',
+    attributes = '_attributes',
+    pixels = '_pixels',
+
+    manualPixels = '_manualPixels',
+    manualAttributes = '_manualAttributes',
+
+    patternCache = '_patternCache'
 }
 
 export interface ExtendedWindow extends Window {
-    [LocalStorageKeys.maskData]: { [key: Id]: Uint16Array; }; // key = layer id
-    [LocalStorageKeys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
+    [Keys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
+    [Keys.maskData]: { [key: Id]: Uint16Array; }; // key = layer id 
 
-    patternCache: { [key: Id]: PatternCache }
+    [Keys.patternCache]: { [key: Id]: PatternCache }
 
     // source image pixels modified by layer settings - same size as source image
-    adjustedPixels: { [key: Id]: PartialRgbImage }
+    [Keys.adjustedPixels]: { [key: Id]: PartialRgbImage }
 
     // source image pixels computed from adjustedPixels and layer settings - spectrum screen sized
-    pixels: { [key: Id]: PartialBitImage }
+    [Keys.pixels]: { [key: Id]: PartialBitImage }
     // source image attributes computed from adjustedPixels and layer settings - spectrum screen sized
-    attributes: { [key: Id]: PartialAttributeImage }
+    [Keys.attributes]: { [key: Id]: PartialAttributeImage }
 
     // manually set pixels and attributes - spectrum screen sized
-    manualPixels: { [key: Id]: GrowableGrid<boolean> }
-    manualAttributes: { [key: Id]: GrowableGrid<Color> }
-
+    [Keys.manualPixels]: { [key: Id]: GrowableGrid<boolean> }
+    [Keys.manualAttributes]: { [key: Id]: GrowableGrid<Color> }
 }
 
 export type DragState = {
@@ -78,6 +85,11 @@ export interface GrowableGrid<T> {
     offsetX: number;
     offsetY: number;
     data: (Nullable<T>)[][];
+}
+
+export interface XY<T> {
+    x: T,
+    y: T
 }
 
 export interface ImageFileData {

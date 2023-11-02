@@ -1,4 +1,4 @@
-import { ExtendedWindow, Layer, SourceImageCoordinate, Undefinable } from '../types';
+import { ExtendedWindow, Keys, Layer, SourceImageCoordinate, Undefinable } from '../types';
 import { getLayerXYFromScreenCoordinates, getWindow, safeZero } from './utils';
 
 const withMaskCoordinates = <T>(
@@ -33,12 +33,12 @@ export const confirmMask = (layer: Layer, x: number = 0, y: number = 0) => {
     const correctArraySize = rowWidth * layer.originalHeight!;
 
     const win = getWindow();
-    if (!win._maskData) {
-        win._maskData = {};
+    if (!win[Keys.maskData]) {
+        win[Keys.maskData] = {};
     }
-    const maskData = win._maskData[layer.id];
+    const maskData = win[Keys.maskData][layer.id];
     if (!maskData || maskData.length < correctArraySize) {
-        win._maskData[layer.id] = new Uint16Array(correctArraySize).fill(0);
+        win[Keys.maskData][layer.id] = new Uint16Array(correctArraySize).fill(0);
     }
 
     return { win, offset, bit };
@@ -54,7 +54,7 @@ export const isMaskSet = (layer: Layer, x: number, y: number, spectrumScreenCoor
             && layerY >= 0
             && layerX < safeZero(layer.originalWidth)
             && layerY < safeZero(layer.originalHeight)
-            && (!!((win._maskData[layer.id][offset] >>> bit) & 1) || false)
+            && (!!((win[Keys.maskData][layer.id][offset] >>> bit) & 1) || false)
         )
     ) || false; // in case mask does not exit
 }
@@ -72,8 +72,8 @@ export const setMask = (layer: Layer, x: number, y: number, value: boolean, spec
             && layerY < safeZero(layer.originalHeight)
             && (
                 value
-                    ? win._maskData[layer.id][offset] |= 1 << bit
-                    : win._maskData[layer.id][offset] &= ~(1 << bit)
+                    ? win[Keys.maskData][layer.id][offset] |= 1 << bit
+                    : win[Keys.maskData][layer.id][offset] &= ~(1 << bit)
             )
         )
     );
@@ -83,7 +83,7 @@ export const mutateMask = (layer: Layer, modificationFunc: (value: boolean) => b
 
     const { win } = confirmMask(layer);
 
-    win._maskData[layer.id] = win._maskData[layer.id].map((value: number) => {
+    win[Keys.maskData][layer.id] = win[Keys.maskData][layer.id].map((value: number) => {
         let newValue = 0;
         for (let j = 0; j < 16; j++) {
             if (modificationFunc(!!((value >> j) & 1))) {

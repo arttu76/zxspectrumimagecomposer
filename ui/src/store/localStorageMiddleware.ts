@@ -1,9 +1,9 @@
-import { debounce, persistStateImageMaskData } from "../utils/utils";
+import { debounce, persistStateImageMaskPixelAttributeData } from "../utils/utils";
 import store from "./store";
 
 
 const updateLocalStorage = () => {
-    persistStateImageMaskData(store.getState());
+    persistStateImageMaskPixelAttributeData(store.getState());
 }
 
 const updateLocalStorageDebounced = debounce(() => updateLocalStorage(), 100);

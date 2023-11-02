@@ -1,5 +1,5 @@
 import * as R from "ramda";
-import { Color, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb } from "../types";
+import { Color, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb } from "../types";
 import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from "../utils/colors";
 import { computeAttributeBlockColor, isDitheredPixelSet } from "../utils/dithering";
 import { initializeLayerContext } from "../utils/layerContextManager";
@@ -47,8 +47,8 @@ import store from "./store";
 const updateAdjustedPixelsIfRequired = () => {
 
     const win = getWindow();
-    if (!win.adjustedPixels) {
-        win.adjustedPixels = {};
+    if (!win[Keys.adjustedPixels]) {
+        win[Keys.adjustedPixels] = {};
     }
 
     store.getState().layers.layers
@@ -60,14 +60,14 @@ const updateAdjustedPixelsIfRequired = () => {
 
             // initialize original pixels if source image has changed (=different dimensions)
             if (
-                !win.adjustedPixels[layer.id]
-                || win.adjustedPixels[layer.id].length !== height
+                !win[Keys.adjustedPixels][layer.id]
+                || win[Keys.adjustedPixels][layer.id].length !== height
                 || (
-                    win.adjustedPixels[layer.id][0].length > 0
-                    && win.adjustedPixels[layer.id][0].length !== width
+                    win[Keys.adjustedPixels][layer.id][0].length > 0
+                    && win[Keys.adjustedPixels][layer.id][0].length !== width
                 )
             ) {
-                win.adjustedPixels[layer.id] = getInitialized2DArray<Nullable<Rgb>>(192, 256, null);
+                win[Keys.adjustedPixels][layer.id] = getInitialized2DArray<Nullable<Rgb>>(192, 256, null);
             }
 
             let adjustedPixels: PartialRgbImage = getInitialized2DArray<Nullable<Rgb>>(192, 256, null);
@@ -89,7 +89,7 @@ const updateAdjustedPixelsIfRequired = () => {
                 adjustedPixels = edgeEnhance(adjustedPixels, layer.edgeEnhance / 100);
             }
 
-            getWindow().adjustedPixels[layer.id] = adjustedPixels;
+            getWindow()[Keys.adjustedPixels][layer.id] = adjustedPixels;
 
             store.dispatch(setLayerRequireAdjustedPixelsRefresh({ layer, required: false }))
         });
@@ -98,8 +98,8 @@ const updateAdjustedPixelsIfRequired = () => {
 const updatePatternCacheIfRequired = () => {
 
     const win = getWindow();
-    if (!win.patternCache) {
-        win.patternCache = {};
+    if (!win[Keys.patternCache]) {
+        win[Keys.patternCache] = {};
     }
     const state = store.getState();
 
@@ -107,11 +107,11 @@ const updatePatternCacheIfRequired = () => {
         .filter((layer: Layer) => layer.requirePatternCacheRefresh)
         .forEach((layer: Layer) => {
 
-            if (!win.patternCache[layer.id]) {
-                win.patternCache[layer.id] = [];
+            if (!win[Keys.patternCache][layer.id]) {
+                win[Keys.patternCache][layer.id] = [];
             }
 
-            win.patternCache[layer.id] = rangeExclusive(256).map(brightness => R.reduce(
+            win[Keys.patternCache][layer.id] = rangeExclusive(256).map(brightness => R.reduce(
                 (acc, pattern) => (acc !== layer.patterns[layer.patterns.length - 1].pattern)
                     ? acc // already chose something other than the last pattern
                     : brightness < pattern.limit ? pattern.pattern : acc,
@@ -125,16 +125,16 @@ const updatePatternCacheIfRequired = () => {
     store.dispatch(repaint());
 }
 
-const updateSpectrumPixelsIfRequired = () => {
+const updateSpectrumPixelsAndAttributesIfRequired = () => {
 
     const win = getWindow();
     updateAdjustedPixelsIfRequired(); // make sure source adjusted pixels are up to date
 
-    if (!win.attributes) {
-        win.attributes = {};
+    if (!win[Keys.attributes]) {
+        win[Keys.attributes] = {};
     }
-    if (!win.pixels) {
-        win.pixels = {};
+    if (!win[Keys.pixels]) {
+        win[Keys.pixels] = {};
     }
 
     const state = store.getState();
@@ -143,12 +143,12 @@ const updateSpectrumPixelsIfRequired = () => {
         .filter((layer: Layer) => layer.requireSpectrumPixelsRefresh)
         .forEach((layer: Layer) => {
 
-            if (!win.attributes[layer.id]) {
-                win.attributes[layer.id] = getInitialized2DArray<Nullable<Color>>(24, 32, null);
+            if (!win[Keys.attributes][layer.id]) {
+                win[Keys.attributes][layer.id] = getInitialized2DArray<Nullable<Color>>(24, 32, null);
             }
 
-            if (!win.pixels[layer.id]) {
-                win.pixels[layer.id] = getInitialized2DArray<Nullable<boolean>>(192, 256, null);
+            if (!win[Keys.pixels][layer.id]) {
+                win[Keys.pixels][layer.id] = getInitialized2DArray<Nullable<boolean>>(192, 256, null);
             }
 
             const ditheringContext = initializeLayerContext(
@@ -161,15 +161,24 @@ const updateSpectrumPixelsIfRequired = () => {
                 const attrY = Math.floor(y / 8);
 
                 if (x % 8 === 0 && y % 8 === 0) {
-                    win.attributes[layer.id][attrY][attrX] = layer.pixelateSource === PixelationSource.targetColor
-                        ? layer.pixelateTargetColor
-                        : computeAttributeBlockColor(layer, x, y);
+                    let allPixelsInCharEmpty = rangeExclusive(8).every(
+                        yOffset => rangeExclusive(8).every(
+                            xOffset => win[Keys.adjustedPixels][layer.id][y + yOffset][x + xOffset] === null)
+                    );
+
+                    if (allPixelsInCharEmpty) {
+                        win[Keys.attributes][layer.id][attrY][attrX] = null;
+                    } else {
+                        win[Keys.attributes][layer.id][attrY][attrX] = layer.pixelateSource === PixelationSource.targetColor
+                            ? layer.pixelateTargetColor
+                            : computeAttributeBlockColor(layer, x, y);
+                    }
                 }
 
-                const attribute = win.attributes[layer.id][attrY][attrX];
+                const attribute = win[Keys.attributes][layer.id][attrY][attrX];
 
-                win.pixels[layer.id][y][x] = (
-                    attribute // if there is no attribute, no use checking pixels
+                win[Keys.pixels][layer.id][y][x] = (
+                    attribute // if there is no attribute, no use checking if pixel is to be dithered or not
                         ? isDitheredPixelSet(ditheringContext, x, y)
                         : null
                 );
@@ -255,7 +264,7 @@ const repaintScreenMiddleware = (storeApi: any) => (next: any) => (action: any) 
     ].includes(action.type)) {
         updateAdjustedPixelsIfRequired();
         updatePatternCacheIfRequired();
-        updateSpectrumPixelsIfRequired();
+        updateSpectrumPixelsAndAttributesIfRequired();
     }
 
     return originalActionResult;

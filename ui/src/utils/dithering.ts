@@ -1,4 +1,4 @@
-import { Color, DitheringErrorBuffer, Layer, Nullable, PatternCache, Percentage, PixelationSource, PixelationType, Rgb, SpectrumPixelCoordinate } from '../types';
+import { Color, DitheringErrorBuffer, Keys, Layer, Nullable, PatternCache, Percentage, PixelationSource, PixelationType, Rgb, SpectrumPixelCoordinate } from '../types';
 import { getInkIntensity, getIntensity, getIntensityDifference, getPaperIntensity, spectrumColor } from './colors';
 import { LayerContext } from './layerContextManager';
 import { applyRange2DExclusive, getWindow } from './utils';
@@ -85,8 +85,8 @@ const pattern = (source: Rgb, x: number, y: number, layerPatternCache: PatternCa
 export const isDitheredPixelSet = (ctx: LayerContext, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate): Nullable<boolean> => {
 
     const win = getWindow();
-    const sourceRgb = win.adjustedPixels[ctx.layer.id][y][x];
-    const targetAttribute = win.attributes[ctx.layer.id][Math.floor(y / 8)][Math.floor(x / 8)]
+    const sourceRgb = win[Keys.adjustedPixels][ctx.layer.id][y][x];
+    const targetAttribute = win[Keys.attributes][ctx.layer.id][Math.floor(y / 8)][Math.floor(x / 8)]
     if (sourceRgb === null || targetAttribute! === null) {
         return null;
     }
@@ -103,7 +103,7 @@ export const isDitheredPixelSet = (ctx: LayerContext, x: SpectrumPixelCoordinate
     }
 
     if (ctx.layer.pixelate === PixelationType.pattern) {
-        return pattern(sourceRgb, x, y, win.patternCache[ctx.layer.id], targetAttribute);
+        return pattern(sourceRgb, x, y, win[Keys.patternCache][ctx.layer.id], targetAttribute);
     }
 
     return null;
@@ -119,11 +119,11 @@ export const computeAttributeBlockColor = (layer: Layer, x: SpectrumPixelCoordin
     const contributingAdjustedPixels: Rgb[] = [];
     applyRange2DExclusive(8, 8, (yOffset, xOffset) => {
         if (
-            win.adjustedPixels
-            && win.adjustedPixels[layer.id]
-            && win.adjustedPixels[layer.id][y + yOffset]
+            win[Keys.adjustedPixels]
+            && win[Keys.adjustedPixels][layer.id]
+            && win[Keys.adjustedPixels][layer.id][y + yOffset]
         ) {
-            const rgb = win.adjustedPixels[layer.id][y + yOffset]?.[x + xOffset] || null;
+            const rgb = win[Keys.adjustedPixels][layer.id][y + yOffset]?.[x + xOffset] || null;
             if (rgb !== null) {
                 contributingAdjustedPixels.push(rgb);
             }

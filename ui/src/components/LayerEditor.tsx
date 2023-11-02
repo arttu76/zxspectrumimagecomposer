@@ -5,7 +5,7 @@ import { useAppDispatch } from "../store/store";
 import { LayerPropertyEditor } from "./LayerPropertyEditor";
 import { PatternEditor } from "./PatternEditor";
 
-import { Layer, PixelationSource, PixelationType, Undefinable } from "../types";
+import { Keys, Layer, PixelationSource, PixelationType } from "../types";
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -45,7 +45,7 @@ import {
 } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { confirmMask } from '../utils/maskManager';
-import { getWindow } from '../utils/utils';
+import { getWindow, safeDivide, safeZero } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
@@ -84,13 +84,13 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
             const win = getWindow();
-            if (!win._imageData) {
-                win._imageData = {};
+            if (!win[Keys.imageData]) {
+                win[Keys.imageData] = {};
             }
-            win._imageData[layer.id] = Array.from(data).filter((_, idx) => idx % 4 < 3);
+            win[Keys.imageData][layer.id] = Array.from(data).filter((_, idx) => idx % 4 < 3);
 
-            if (!win._maskData) {
-                win._maskData = {};
+            if (!win[Keys.maskData]) {
+                win[Keys.maskData] = {};
             }
             confirmMask(layer);
 
@@ -120,9 +120,6 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             dispatch(removeLayer({ layer }));
         }
     };
-
-    const safeZero = (value: Undefinable<number>) => typeof value === "undefined" ? 0 : value;
-    const safeOne = (value: Undefinable<number>) => typeof value === "undefined" ? 1 : value;
 
     return (
         <div
@@ -196,13 +193,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         reset={layer.originalWidth}
                         min={1}
                         max={safeZero(layer.originalWidth) * 2}
-                        extra={
-                            Math.round(
-                                (safeZero(layer.width) * 1000) / safeOne(layer.originalWidth)
-                            ) /
-                            10 +
-                            "%"
-                        }
+                        extra={Math.round(safeDivide((safeZero(layer.width) * 1000), layer.originalWidth)) / 10 + "%"}
                     />
                     <div style={{ textAlign: "center" }}>
                         <Button
@@ -219,13 +210,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         reset={layer.originalHeight}
                         min={1}
                         max={safeZero(layer.originalHeight) * 2}
-                        extra={
-                            Math.round(
-                                (safeZero(layer.height) * 1000) / safeOne(layer.originalHeight)
-                            ) /
-                            10 +
-                            "%"
-                        }
+                        extra={Math.round(safeDivide((safeZero(layer.height) * 1000), layer.originalHeight)) / 10 + "%"}
                     />
                     <LayerPropertyEditor
                         title="Rotate"

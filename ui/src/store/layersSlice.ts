@@ -2,7 +2,7 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 
 import * as R from "ramda";
 
-import { Color, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
+import { Color, Keys, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
 import { scrollGrowableGrid } from "../utils/growableGridManager";
 import { getHeightForAspectRatio, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
 
@@ -139,15 +139,15 @@ const layersSlice = createSlice({
 
             const win = getWindow();
 
-            if (win.manualPixels?.[layer.id]) {
-                win.manualPixels[layer.id] = scrollGrowableGrid(win.manualPixels[layer.id], diffX, 0);
+            if (win[Keys.manualPixels]?.[layer.id]) {
+                win[Keys.manualPixels][layer.id] = scrollGrowableGrid(win[Keys.manualPixels][layer.id], diffX, 0);
             }
 
-            if (win.manualAttributes?.[layer.id]) {
+            if (win[Keys.manualAttributes]?.[layer.id]) {
                 layer.manualAttributesOffsetX = (layer.manualAttributesOffsetX || 0) + diffX;
                 const offsetRemainder = layer.manualAttributesOffsetX % 8;
                 const charactersToScroll = layer.manualAttributesOffsetX - offsetRemainder;
-                win.manualAttributes[layer.id] = scrollGrowableGrid(win.manualAttributes[layer.id], charactersToScroll / 8, 0);
+                win[Keys.manualAttributes][layer.id] = scrollGrowableGrid(win[Keys.manualAttributes][layer.id], charactersToScroll / 8, 0);
                 layer.manualAttributesOffsetX = offsetRemainder;
             }
 
@@ -159,15 +159,15 @@ const layersSlice = createSlice({
 
             const win = getWindow();
 
-            if (win.manualPixels?.[layer.id]) {
-                win.manualPixels[layer.id] = scrollGrowableGrid(win.manualPixels[layer.id], 0, diffY);
+            if (win[Keys.manualPixels]?.[layer.id]) {
+                win[Keys.manualPixels][layer.id] = scrollGrowableGrid(win[Keys.manualPixels][layer.id], 0, diffY);
             }
 
-            if (win.manualAttributes?.[layer.id]) {
+            if (win[Keys.manualAttributes]?.[layer.id]) {
                 layer.manualAttributesOffsetY = (layer.manualAttributesOffsetY || 0) + diffY;
                 const offsetRemainder = layer.manualAttributesOffsetY % 8;
                 const charactersToScroll = layer.manualAttributesOffsetY - offsetRemainder;
-                win.manualAttributes[layer.id] = scrollGrowableGrid(win.manualAttributes[layer.id], 0, charactersToScroll / 8);
+                win[Keys.manualAttributes][layer.id] = scrollGrowableGrid(win[Keys.manualAttributes][layer.id], 0, charactersToScroll / 8);
                 layer.manualAttributesOffsetY = offsetRemainder;
             }
 
@@ -313,11 +313,14 @@ const layersSlice = createSlice({
             const win = getWindow();
             const layerId = action.payload.layer.id;
 
-            win._imageData && delete win._imageData[layerId];
-            win._maskData && delete win._maskData[layerId];
-            win.adjustedPixels && delete win.adjustedPixels[layerId];
-            win.pixels && delete win.pixels[layerId];
-            win.patternCache && delete win.patternCache[layerId];
+            win[Keys.imageData] && delete win[Keys.imageData][layerId];
+            win[Keys.maskData] && delete win[Keys.maskData][layerId];
+            win[Keys.adjustedPixels] && delete win[Keys.adjustedPixels][layerId];
+            win[Keys.pixels] && delete win[Keys.pixels][layerId];
+            win[Keys.attributes] && delete win[Keys.attributes][layerId];
+            win[Keys.patternCache] && delete win[Keys.patternCache][layerId];
+            win[Keys.manualPixels] && delete win[Keys.manualPixels][layerId];
+            win[Keys.manualAttributes] && delete win[Keys.manualAttributes][layerId];
 
             const idx = state.layers.map(layer => layer.id).indexOf(layerId);
             state.layers = state.layers.filter(layer => layer.id !== layerId);
@@ -341,11 +344,11 @@ const layersSlice = createSlice({
                 name: "Copy of " + layer.name
             };
 
-            win._imageData[newLayer.id] = R.clone(win._imageData[layer.id]);
-            win._maskData[newLayer.id] = R.clone(win._maskData[layer.id]);
+            win[Keys.imageData][newLayer.id] = R.clone(win[Keys.imageData][layer.id]);
+            win[Keys.maskData][newLayer.id] = R.clone(win[Keys.maskData][layer.id]);
 
-            win.manualPixels[newLayer.id] = R.clone(win.manualPixels[layer.id]);
-            win.manualAttributes[newLayer.id] = R.clone(win.manualAttributes[layer.id]);
+            win[Keys.manualPixels][newLayer.id] = R.clone(win[Keys.manualPixels][layer.id]);
+            win[Keys.manualAttributes][newLayer.id] = R.clone(win[Keys.manualAttributes][layer.id]);
 
             state.layers = [
                 newLayer,
