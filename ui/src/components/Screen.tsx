@@ -8,9 +8,10 @@ import { setLayerX, setLayerY } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { setZoom } from '../store/toolsSlice';
 import { AttributeBrushType, Color, DragState, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
-import { spectrumColor } from '../utils/colors';
+import { getSpectrumRgb, spectrumColor } from '../utils/colors';
 import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
 import { isMaskSet, setMask } from '../utils/maskManager';
+import { getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, getSpectrumMemoryPixelOffsetAndBit, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
 import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
 import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getWindow } from "../utils/utils";
 
@@ -104,6 +105,10 @@ export const Screen = () => {
             mouseY
         );
 
+        win[Keys.spectrumMemoryAttribute] = new Uint8Array(192 / 8 * 256 / 8)
+            .fill(getSpectrumMemoryAttributeByte({ ink: 7, paper: bg === -1 ? 7 : bg, bright: false }));
+        win[Keys.spectrumMemoryBitmap] = new Uint8Array(192 * 256 / 8).fill(0);
+
         applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
 
             let manualPixel: Nullable<boolean> = null;
@@ -173,12 +178,20 @@ export const Screen = () => {
                 && adjustedPixel === null
             ) {
                 renderedPixel = replaceEmptyWithBackground(topmostAdjustedPixel, x, y, bg);
+                setSpectrumMemoryPixel(win[Keys.spectrumMemoryBitmap], x, y, false);
+                if (x % 8 === 0 && y % 8 === 0) {
+                    setSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y, {
+                        ink: 0,
+                        paper: bg === -1 ? 7 : bg,
+                        bright: false
+                    });
+                }
             } else {
                 let pixel = manualPixel || adjustedPixel;
 
                 let attribute = manualAttribute || adjustedAttribute || {
                     ink: 0,
-                    paper: 7,
+                    paper: bg === -1 ? 7 : bg,
                     bright: false
                 };
 
@@ -186,11 +199,14 @@ export const Screen = () => {
                     ? spectrumColor.bright
                     : spectrumColor.normal;
 
-
                 renderedPixel = pixel
                     ? normalOrBrightColors[attribute.ink]
                     : normalOrBrightColors[attribute.paper]
 
+                setSpectrumMemoryPixel(win[Keys.spectrumMemoryBitmap], x, y, !!pixel);
+                if (x % 8 === 0 && y % 8 === 0) {
+                    setSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y, attribute);
+                }
             }
 
             const offset = (y * 255 + x) * 4;
@@ -214,12 +230,35 @@ export const Screen = () => {
             imageData.data[offset + 3] = 255;
         });
 
+        if (currentTool === ToolType.export) {
+            applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
+                const pixelLocation = getSpectrumMemoryPixelOffsetAndBit(x, y);
+                const bitmapPixel = !!(win[Keys.spectrumMemoryBitmap][pixelLocation[0]] >> (pixelLocation[1]) & 1);
+                const attr = getSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y);
+                const rgb = getSpectrumRgb(attr, bitmapPixel);
+
+                const offset = (y * 255 + x) * 4;
+                if (miniMapCtx && miniMapImageData) {
+                    miniMapImageData.data[offset] = rgb[0];
+                    miniMapImageData.data[offset + 1] = rgb[1];
+                    miniMapImageData.data[offset + 2] = rgb[2];
+                    miniMapImageData.data[offset + 3] = 255;
+                }
+
+                imageData.data[offset] = rgb[0];
+                imageData.data[offset + 1] = rgb[1];
+                imageData.data[offset + 2] = rgb[2];
+                imageData.data[offset + 3] = 255;
+            });
+
+        }
+
         miniMapCtx && miniMapCtx.putImageData(miniMapImageData, 0, 0);
         screenCtx.putImageData(imageData, 0, 0);
     };
 
     const handleMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>, mouseDown: Undefinable<boolean> = undefined) => {
-        if (!activeLayer) {
+        if (!activeLayer || currentTool === ToolType.export) {
             return;
         }
 
@@ -373,7 +412,7 @@ export const Screen = () => {
                 }}>
                 <canvas
                     style={{
-                        cursor: currentTool === "nudge" ? "move" : "none",
+                        cursor: currentTool === ToolType.nudge ? "move" : currentTool === ToolType.export ? "not-allowed" : "none",
                         transformOrigin: "top left",
                         transform: "scale(" + currentZoom + ")",
                         imageRendering: currentCrisp ? "pixelated" : "inherit"

@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 
 import * as R from "ramda";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
 import { repaint } from '../store/repaintSlice';
 import {
@@ -22,8 +22,10 @@ import {
     setTool,
     setZoom
 } from "../store/toolsSlice";
-import { AttributeBrushType, BrushShape, MaskBrushType, PixelBrushType, ToolType } from "../types";
+import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
+import { getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
+import { getWindow } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
@@ -121,6 +123,43 @@ export const Toolbar = () => {
             dispatch(setAttributeGridOpacity(attributeGridOpacity > 0.1 ? 0 : attributeGridOpacity + 0.05));
         }
     };
+
+    const [playerInitializing, setPlayerInitializing] = useState<boolean>(false);
+    const [player, setPlayer] = useState<Nullable<AudioBufferSourceNode>>(null);
+
+    const play = () => {
+        if (playerInitializing) {
+            return;
+        }
+
+        // stop 
+        if (player) {
+            player.stop();
+            setPlayer(null);
+            return;
+        }
+
+        // play (trigger the useEffect below)
+        setPlayerInitializing(true);
+    }
+
+    useEffect(() => {
+        if (playerInitializing) {
+            setTimeout(
+                () => {
+                    const win = getWindow();
+                    const tapeSound = getTapeSoundAudioBufferSourceNode(win[Keys.spectrumMemoryBitmap], win[Keys.spectrumMemoryAttribute]);
+                    setPlayer(tapeSound);
+                    tapeSound.start();
+                    setPlayerInitializing(false);
+                    tapeSound.onended = () => {
+                        console.log("on end?")
+                        setPlayer(null);
+                        setPlayerInitializing(false);
+                    }
+                }, 1);
+        }
+    }, [playerInitializing])
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyDown);
@@ -266,6 +305,15 @@ export const Toolbar = () => {
                 </Group>
             </>}
 
+            {tool === ToolType.export && <>
+                <Group title="Export" disableClose={true}>
+                    <Button
+                        icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
+                        tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
+                        onClick={play} />
+                </Group>
+            </>}
+
             <Group title="Zoom" disableClose={true}>
                 {[1, 2, 3, 4, 5, 10, 20].map((zoomLevel) => <Button
                     key={zoomLevel}
@@ -275,40 +323,43 @@ export const Toolbar = () => {
                 )}
             </Group>
 
-            <Group title="Visibility" disableClose={true}>
-                <Button
-                    dimmed={hideSourceImage}
-                    icon="image"
-                    tooltip={hideSourceImage ? 'Source image is hidden' : 'Source image is displayed'}
-                    onClick={() => dispatch(setHideSourceImage(!hideSourceImage))} />
-                <Button
-                    dimmed={hideManualPixels}
-                    icon="gradient"
-                    tooltip={hideManualPixels ? 'Manually drawn pixels are hidden' : 'Manually drawn pixels are displayed'}
-                    onClick={() => dispatch(setHideManualPixels(!hideManualPixels))} />
-                <Button
-                    dimmed={hideManualAttributes}
-                    icon="palette"
-                    tooltip={hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
-                    onClick={() => dispatch(setHideManualAttributes(!hideManualAttributes))} />
-            </Group>
-
-            <Group title="Display" disableClose={true}>
-                <Input
-                    tooltip="Attribute grid visibility (v)"
-                    style={{ width: "50px" }}
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(attributeGridOpacity * 200)}
-                    onChange={(e) => dispatch(setAttributeGridOpacity(parseFloat(e.target.value) / 200))}
-                />
-                &nbsp;
-                <Button
-                    icon={crisp ? 'blur_off' : 'blur_on'}
-                    tooltip={crisp ? 'Crisp scaling' : 'Blurry scaling'}
-                    onClick={() => dispatch(setCrispScaling(!crisp))} />
-            </Group>
+            {
+                tool !== ToolType.export && <>
+                    <Group title="Visibility" disableClose={true}>
+                        <Button
+                            dimmed={hideSourceImage}
+                            icon="image"
+                            tooltip={hideSourceImage ? 'Source image is hidden' : 'Source image is displayed'}
+                            onClick={() => dispatch(setHideSourceImage(!hideSourceImage))} />
+                        <Button
+                            dimmed={hideManualPixels}
+                            icon="gradient"
+                            tooltip={hideManualPixels ? 'Manually drawn pixels are hidden' : 'Manually drawn pixels are displayed'}
+                            onClick={() => dispatch(setHideManualPixels(!hideManualPixels))} />
+                        <Button
+                            dimmed={hideManualAttributes}
+                            icon="palette"
+                            tooltip={hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
+                            onClick={() => dispatch(setHideManualAttributes(!hideManualAttributes))} />
+                    </Group>
+                    <Group title="Display" disableClose={true}>
+                        <Input
+                            tooltip="Attribute grid visibility (v)"
+                            style={{ width: "50px" }}
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={Math.round(attributeGridOpacity * 200)}
+                            onChange={(e) => dispatch(setAttributeGridOpacity(parseFloat(e.target.value) / 200))}
+                        />
+                        &nbsp;
+                        <Button
+                            icon={crisp ? 'blur_off' : 'blur_on'}
+                            tooltip={crisp ? 'Crisp scaling' : 'Blurry scaling'}
+                            onClick={() => dispatch(setCrispScaling(!crisp))} />
+                    </Group>
+                </>
+            }
 
             <Button
                 icon='warning'
@@ -316,6 +367,6 @@ export const Toolbar = () => {
                 className="reset"
                 onClick={reset} />
 
-        </div>
+        </div >
     );
 };

@@ -65,7 +65,8 @@ export const getCoordinatesCoveredByCursor = (
 
     // no cursor
     if (
-        tool === ToolType.nudge
+        tool === ToolType.nudge ||
+        tool === ToolType.export
     ) {
         return [];
     }

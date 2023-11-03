@@ -175,6 +175,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         reset={0}
                         min={-safeZero(layer.width)}
                         max={255}
+                        allowOutOfBounds={true}
                     />
                     <LayerPropertyEditor
                         title="Y"
@@ -184,6 +185,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         reset={0}
                         min={0}
                         max={192}
+                        allowOutOfBounds={true}
                     />
                     <LayerPropertyEditor
                         title="Width"
@@ -193,6 +195,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         reset={layer.originalWidth}
                         min={1}
                         max={safeZero(layer.originalWidth) * 2}
+                        allowOutOfBounds={true}
                         extra={Math.round(safeDivide((safeZero(layer.width) * 1000), layer.originalWidth)) / 10 + "%"}
                     />
                     <div style={{ textAlign: "center" }}>
@@ -210,6 +213,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         reset={layer.originalHeight}
                         min={1}
                         max={safeZero(layer.originalHeight) * 2}
+                        allowOutOfBounds={true}
                         extra={Math.round(safeDivide((safeZero(layer.height) * 1000), layer.originalHeight)) / 10 + "%"}
                     />
                     <LayerPropertyEditor

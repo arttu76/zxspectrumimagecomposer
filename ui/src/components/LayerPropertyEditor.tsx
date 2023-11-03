@@ -9,10 +9,11 @@ export const LayerPropertyEditor: React.FC<{
 	change: (action: any, fieldName: keyof Layer, value: number | boolean) => void;
 	min: number;
 	max: number;
+	allowOutOfBounds?: boolean; // can adjust value outside of min/max
 	title: string;
 	reset?: number;
 	extra?: string;
-}> = ({ layer, fieldName, change, min, max, title, reset, extra }) => {
+}> = ({ layer, fieldName, change, min, max, allowOutOfBounds, title, reset, extra }) => {
 	const value = parseInt(layer[fieldName] as string, 10) || 0;
 
 	const changeValue = (newValue: string | number) =>
@@ -27,10 +28,10 @@ export const LayerPropertyEditor: React.FC<{
 				<div>
 					<Button
 						tooltip="Change by -8"
-						onClick={() => changeValue(Math.max(min, value - 8))}>-8</Button>
+						onClick={() => allowOutOfBounds ? changeValue(value - 8) : changeValue(Math.max(min, value - 8))}>-8</Button>
 					<Button
 						tooltip="Change by -1"
-						onClick={() => changeValue(Math.max(min, value - 1))}>-1</Button>
+						onClick={() => allowOutOfBounds ? changeValue(value - 1) : changeValue(Math.max(min, value - 1))}>-1</Button>
 					<input
 						size={5}
 						type="text"
@@ -39,10 +40,10 @@ export const LayerPropertyEditor: React.FC<{
 					/>
 					<Button
 						tooltip="Change by +1"
-						onClick={() => changeValue(Math.min(max, value + 1))}>+1</Button>
+						onClick={() => allowOutOfBounds ? changeValue(value + 1) : changeValue(Math.min(max, value + 1))}>+1</Button>
 					<Button
 						tooltip="Change by +8"
-						onClick={() => changeValue(Math.min(max, value + 8))}>+8</Button>
+						onClick={() => allowOutOfBounds ? changeValue(value + 8) : changeValue(Math.min(max, value + 8))}>+8</Button>
 					{reset !== undefined && <Button
 						dimmed={value === reset}
 						icon="settings_backup_restore"

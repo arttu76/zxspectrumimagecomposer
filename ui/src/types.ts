@@ -31,6 +31,8 @@ export type DitheringErrorBuffer = Grid<number>;
 
 export type PatternCache = BitImage[];
 
+export type SpectrumMemoryFragment = Uint8Array;
+
 export interface withId {
     id: Id;
 }
@@ -47,7 +49,10 @@ export enum Keys {
     manualPixels = '_manualPixels',
     manualAttributes = '_manualAttributes',
 
-    patternCache = '_patternCache'
+    patternCache = '_patternCache',
+
+    spectrumMemoryBitmap = '_spectrumMemoryBitmap',
+    spectrumMemoryAttribute = '_spectrumMemoryAttribute',
 }
 
 export interface ExtendedWindow extends Window {
@@ -67,6 +72,11 @@ export interface ExtendedWindow extends Window {
     // manually set pixels and attributes - spectrum screen sized
     [Keys.manualPixels]: { [key: Id]: GrowableGrid<boolean> }
     [Keys.manualAttributes]: { [key: Id]: GrowableGrid<Color> }
+
+    // pixels and attributes in spectrum memory map format
+    [Keys.spectrumMemoryBitmap]: SpectrumMemoryFragment
+    [Keys.spectrumMemoryAttribute]: SpectrumMemoryFragment
+
 }
 
 export type DragState = {
