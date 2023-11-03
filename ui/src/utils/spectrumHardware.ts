@@ -21,7 +21,6 @@ export const getSpectrumMemoryAttribute = (mem: SpectrumMemoryFragment, x: Spect
 }
 
 export const getSpectrumMemoryPixelOffsetAndBit = (x: number, y: number): [number, number] => {
-
     const xBytePos = x >> 3;
     const third = Math.floor(y / 64);
     const thirdOffset = third * 32 * 8 * 8;
@@ -64,52 +63,59 @@ export const getTapeSoundAudioBufferSourceNode = (pixels: SpectrumMemoryFragment
     const zeroBit = generatePulses(2, 855);
     const oneBit = generatePulses(2, 1710);
 
-    const data = (mem: Uint8Array): Float32Array => {
-        const checksum = mem.reduce((acc, val) => acc ^ val, 0);
-        const result = [...mem, checksum].reduce(
-            (acc, val) => [
-                ...acc,
-                ...(((val >> 0) & 0x1) ? oneBit : zeroBit),
-                ...(((val >> 1) & 0x1) ? oneBit : zeroBit),
-                ...(((val >> 2) & 0x1) ? oneBit : zeroBit),
-                ...(((val >> 3) & 0x1) ? oneBit : zeroBit),
-                ...(((val >> 4) & 0x1) ? oneBit : zeroBit),
-                ...(((val >> 5) & 0x1) ? oneBit : zeroBit),
-                ...(((val >> 6) & 0x1) ? oneBit : zeroBit),
-                ...(((val >> 7) & 0x1) ? oneBit : zeroBit)
-            ],
-            [] as number[]
-        );
-        return new Float32Array(result);
+    const data = (dataBlock: boolean, mem: SpectrumMemoryFragment): Float32Array => {
+        const dataOrHeaderMarker = dataBlock ? 255 : 0;
+        const data = [
+            dataOrHeaderMarker,
+            ...mem,
+            [dataOrHeaderMarker, ...mem].reduce((acc, val) => acc ^ val, 0) // each block ends with checksum which is all bytes xorred together
+        ];
+
+        const numberOfOnes = data.map(byte => byte.toString(2).split('1').length - 1).reduce((acc, val) => acc + val, 0);
+        const numberOfZeroes = data.length * 8 - numberOfOnes;
+
+        const bufferSize = zeroBit.length * numberOfZeroes + oneBit.length * numberOfOnes;
+
+        const result = new Float32Array(bufferSize);
+        let offset = 0;
+        for (const value of data) {
+            for (let i = 0; i < 8; i++) {
+                const zeroOrOnePulse = (value >> i) & 0x1
+                    ? oneBit
+                    : zeroBit;
+
+                result.set(zeroOrOnePulse, offset);
+                offset += zeroOrOnePulse.length;
+            }
+        }
+
+        return result;
     }
 
-    const dataBlockLength = 6144 + 768; // pixels + attrs
-    const headerData = new Uint8Array(17);
-    headerData[0] = 3; // this is header for code
-    headerData[1] = 65; // title
-    headerData[2] = 65; // title
-    headerData[3] = 65; // title
-    headerData[4] = 66; // title
-    headerData[5] = 32; // title
-    headerData[6] = 32; // title
-    headerData[7] = 32; // title
-    headerData[8] = 32; // title
-    headerData[9] = 32; // title
-    headerData[10] = 32; // title
-    headerData[11] = dataBlockLength & 0xFF; // length of data block
-    headerData[12] = (dataBlockLength >> 8) & 0xFF; // length of data block
-    headerData[13] = 0; // screen memory start adderess is 0x4000
-    headerData[14] = 0x40; // screen memory start adderess is 0x4000
-    headerData[15] = 0; // static value 0x8000 for code blocks
-    headerData[16] = 0x80; // static value 0x8000 for code blocks 
+    const headerData = [
+        0x03, // this is header for code
+        0x53, // title
+        0x68, // title
+        0x72, // title
+        0x65, // title
+        0x64, // title
+        0x2E, // title
+        0x7A, // title
+        0x6F, // title
+        0x6E, // title
+        0x65, // title
+        0x00, 0x1B, // length
+        0x00, 0x40, // start address
+        0x00, 0x00 // tape loader header param 2 unused
+    ];
 
     const pulses = [
         ...pilotSignalForHeaderBlock,
         ...sync,
-        ...data(headerData),
+        ...data(false, new Uint8Array(headerData)),
         ...pilotSignalForDataBlock,
         ...sync,
-        ...data(new Uint8Array([...pixels, ...attributes]))
+        ...data(true, new Uint8Array([...pixels, ...attributes]))
     ];
 
     const buffer = audioContext.createBuffer(1, pulses.length, audioContext.sampleRate);

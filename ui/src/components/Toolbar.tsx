@@ -153,7 +153,6 @@ export const Toolbar = () => {
                     tapeSound.start();
                     setPlayerInitializing(false);
                     tapeSound.onended = () => {
-                        console.log("on end?")
                         setPlayer(null);
                         setPlayerInitializing(false);
                     }

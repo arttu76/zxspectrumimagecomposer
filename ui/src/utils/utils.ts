@@ -75,30 +75,39 @@ export const persistStateImageMaskPixelAttributeData = (state: State) => {
 export const restoreStateImageMaskPixelAttributeData = (): State | undefined => {
     const win = getWindow();
 
-    win[Keys.imageData] = {};
-    win[Keys.maskData] = {};
-    const packedImageDataJSON = localStorage.getItem(Keys.imageData);
-    if (packedImageDataJSON) {
-        const parsed = JSON.parse(packedImageDataJSON);
-        const keys = Object.keys(parsed);
-        win[Keys.imageData] = keys.reduce(
-            (acc, val) => ({ ...acc, [val]: unpack8bit(parsed[val]) }),
-            {}
-        )
-    }
+    try {
 
-    const packedMaskDataJSON = localStorage.getItem(Keys.maskData);
-    if (packedMaskDataJSON) {
-        const parsed = JSON.parse(packedMaskDataJSON);
-        const keys = Object.keys(parsed);
-        win[Keys.maskData] = keys.reduce(
-            (acc, val) => ({ ...acc, [val]: parsed[val].split('').map((item: string) => item.charCodeAt(0)) }),
-            {}
-        )
-    }
+        win[Keys.imageData] = {};
+        win[Keys.maskData] = {};
+        const packedImageDataJSON = localStorage.getItem(Keys.imageData);
+        if (packedImageDataJSON) {
+            const parsed = JSON.parse(packedImageDataJSON);
+            const keys = Object.keys(parsed);
+            win[Keys.imageData] = keys.reduce(
+                (acc, val) => ({ ...acc, [val]: unpack8bit(parsed[val]) }),
+                {}
+            )
+        }
 
-    win[Keys.manualPixels] = JSON.parse(localStorage.getItem(Keys.manualPixels) || '{}');
-    win[Keys.manualAttributes] = JSON.parse(localStorage.getItem(Keys.manualAttributes) || '{}');
+        const packedMaskDataJSON = localStorage.getItem(Keys.maskData);
+        if (packedMaskDataJSON) {
+            const parsed = JSON.parse(packedMaskDataJSON);
+            const keys = Object.keys(parsed);
+            win[Keys.maskData] = keys.reduce(
+                (acc, val) => ({ ...acc, [val]: parsed[val].split('').map((item: string) => item.charCodeAt(0)) }),
+                {}
+            )
+        }
+
+        win[Keys.manualPixels] = JSON.parse(localStorage.getItem(Keys.manualPixels) || '{}');
+        win[Keys.manualAttributes] = JSON.parse(localStorage.getItem(Keys.manualAttributes) || '{}');
+
+    } catch (err) {
+        console.log(err);
+        alert('Unable to restore previous session. Sorry about that!');
+        localStorage.clear();
+        location.reload();
+    }
 
     win[Keys.patternCache] = {};
     win[Keys.adjustedPixels] = {};
