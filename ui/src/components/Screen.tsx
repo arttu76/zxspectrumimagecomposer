@@ -109,6 +109,8 @@ export const Screen = () => {
             .fill(getSpectrumMemoryAttributeByte({ ink: 7, paper: bg === -1 ? 7 : bg, bright: false }));
         win[Keys.spectrumMemoryBitmap] = new Uint8Array(192 * 256 / 8).fill(0);
 
+        const shownLayers = layers.filter(layer => layer.shown);
+
         applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
 
             let manualPixel: Nullable<boolean> = null;
@@ -122,7 +124,7 @@ export const Screen = () => {
             let renderedPixel: Nullable<Rgb> = null;
 
             // loop visible layers from top to bottom
-            for (const layer of layers.filter(layer => layer.shown)) {
+            for (const layer of shownLayers) {
 
                 if (manualAttribute === null) {
                     manualAttribute = !hideManualAttributes

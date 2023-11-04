@@ -193,8 +193,6 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
 
 const repaintScreenMiddleware = (storeApi: any) => (next: any) => (action: any) => {
 
-    console.log(action.type);
-
     const originalActionResult = next(action);
 
     // do source pixels have to be updated?

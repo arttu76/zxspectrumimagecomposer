@@ -54,9 +54,12 @@ export enum Keys {
 }
 
 export interface ExtendedWindow extends Window {
+    // unmodified source image
     [Keys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
+    // mask data (same size as source image)
     [Keys.maskData]: { [key: Id]: Uint16Array; }; // key = layer id
 
+    // to speed up dithering
     [Keys.patternCache]: { [key: Id]: PatternCache }
 
     // source image pixels modified by layer settings - same size as source image

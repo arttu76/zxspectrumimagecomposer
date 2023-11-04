@@ -26,7 +26,7 @@ export const addMaskUiToLayer = (source: Rgb, layer: Nullable<Layer>, toolType: 
         || !getWindow()?._maskData
         || !getWindow()?._maskData[layer.id]
     ) {
-        return [...source];
+        return source;
     }
 
     return isMaskSet(layer, x, y, true)
@@ -35,26 +35,30 @@ export const addMaskUiToLayer = (source: Rgb, layer: Nullable<Layer>, toolType: 
             Math.round(0 * 0.8 + source[1] * 0.2),
             Math.round(0 * 0.8 + source[2] * 0.2),
         ]
-        : [...source];
+        : source;
 }
 
 export const addAttributeGridUi = (attributeGridOpacity: number, rgb: Rgb, x: number, y: number): Rgb => {
     if (attributeGridOpacity === 0) {
-        return [...rgb];
+        return rgb;
     }
 
     const evenX = (x % 16 < 8);
     const evenY = (y % 16 < 8);
     const target = ((evenX && !evenY) || (!evenX && evenY)) ? 255 : 0;
 
+    const inverseAttributeGridOpacity = 1 - attributeGridOpacity;
+    const grid = target * attributeGridOpacity;
+
     return [
-        Math.round(rgb[0] * (1 - attributeGridOpacity) + target * attributeGridOpacity),
-        Math.round(rgb[1] * (1 - attributeGridOpacity) + target * attributeGridOpacity),
-        Math.round(rgb[2] * (1 - attributeGridOpacity) + target * attributeGridOpacity)
+        Math.round(rgb[0] * inverseAttributeGridOpacity + grid),
+        Math.round(rgb[1] * inverseAttributeGridOpacity + grid),
+        Math.round(rgb[2] * inverseAttributeGridOpacity + grid)
     ];
 
 }
 
+// return LAST (the most bottom-right) coordinate first for performance reasons
 export const getCoordinatesCoveredByCursor = (
     tool: ToolType,
     brushShape: BrushShape,
@@ -83,7 +87,7 @@ export const getCoordinatesCoveredByCursor = (
                 result.push({ x: xAttempt, y: yAttempt });
             }
         });
-        return result;
+        return result.reverse();
     }
 
     if (brushSize === 1) {
@@ -95,7 +99,7 @@ export const getCoordinatesCoveredByCursor = (
             { x: x + 1, y },
             { x, y: y + 1 },
             { x: x + 1, y: y + 1 }
-        ].filter(xy => xy.x < 256 && xy.y < 192);
+        ].filter(xy => xy.x < 256 && xy.y < 192).reverse();
     }
 
     const halfSize = brushSize / 2;
@@ -103,9 +107,9 @@ export const getCoordinatesCoveredByCursor = (
     applyRange2DExclusive(192, 256, (yAttempt, xAttempt) => {
         if (
             xAttempt < (x - halfSize)
-            || xAttempt > (x + brushSize)
-            || yAttempt < (y - brushSize)
-            || yAttempt > (y + brushSize)
+            || xAttempt > (x + halfSize)
+            || yAttempt < (y - halfSize)
+            || yAttempt > (y + halfSize)
         ) {
             return;
         }
@@ -122,7 +126,7 @@ export const getCoordinatesCoveredByCursor = (
         }
     });
 
-    return result;
+    return result.reverse();
 }
 
 export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (coordinates: XY<SpectrumPixelCoordinate>[], layer: Layer): XY<SourceImageCoordinate>[] => {
@@ -214,7 +218,20 @@ export const addMouseCursor = (
     y: SpectrumPixelCoordinate,
     coordinatesCoveredByCursor: XY<SpectrumPixelCoordinate>[]
 ): Rgb => {
-    return coordinatesCoveredByCursor.find(xy => xy.x === x && xy.y === y)
-        ? rgb.map(c => bias(c, 255 - c, 0.25)) as Rgb
-        : [...rgb];
+    if (!coordinatesCoveredByCursor.length) {
+        return rgb;
+    }
+
+    const xy = coordinatesCoveredByCursor[coordinatesCoveredByCursor.length - 1];
+
+    if (xy.x === x && xy.y === y) {
+        coordinatesCoveredByCursor.pop();
+        return [
+            bias(255 - rgb[0], rgb[0], 0.75),
+            bias(255 - rgb[1], rgb[1], 0.75),
+            bias(255 - rgb[2], rgb[2], 0.75)
+        ];
+    }
+
+    return rgb;
 }
