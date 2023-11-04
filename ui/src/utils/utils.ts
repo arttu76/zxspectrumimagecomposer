@@ -168,16 +168,6 @@ export const getUuid = (): string => {
     });
 }
 
-export const fetchJson = async <T>(url: string): Promise<T> => {
-    try {
-        const response = await fetch(url);
-        return await response.json();
-    } catch (err) {
-        console.error("Error fetching json: " + err);
-        throw err;
-    }
-}
-
 export const debounce = (func: Function, wait: number) => {
     let timeout: Undefinable<ReturnType<typeof setTimeout>>;
     return (...args: any[]) => {

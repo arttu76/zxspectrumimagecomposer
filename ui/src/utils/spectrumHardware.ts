@@ -44,86 +44,102 @@ export const setSpectrumMemoryPixel = (mem: SpectrumMemoryFragment, x: SpectrumP
 export const getTapeSoundAudioBufferSourceNode = (pixels: SpectrumMemoryFragment, attributes: SpectrumMemoryFragment): AudioBufferSourceNode => {
 
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    let pulseValue = -0.95;
 
     const generatePulses = (pulseCount: number, pulseLengthInTStates: number): Float32Array => {
-        const numSamples = (pulseLengthInTStates * pulseCount * (1 / 3500000)) * audioContext.sampleRate;
+
+        const tStatesInSecond = 1 / 3546000;
+        const samplesPerPulse = pulseLengthInTStates * tStatesInSecond * audioContext.sampleRate;
+        const numSamples = Math.round(samplesPerPulse * pulseCount);
+
         const buffer = new Float32Array(numSamples);
-        const frequency = 1 / (2 * pulseLengthInTStates * (1 / 3500000));
+
+        let sampleCursor = 0;
         for (let i = 0; i < numSamples; i++) {
-            buffer[i] = Math.sin(2 * Math.PI * frequency * i / audioContext.sampleRate) > 0 ? 1 : -1;
+            sampleCursor++;
+            if (
+                sampleCursor > samplesPerPulse // next pulse, we need an edge
+                || i === numSamples - 1 // last sample, we need an edge
+            ) {
+                pulseValue = -pulseValue;
+                sampleCursor -= samplesPerPulse;
+            }
+            buffer[i] = pulseValue;
         }
+
+        pulseValue = buffer[buffer.length - 1];
         return buffer;
     }
 
-    const pilotSignalForHeaderBlock = generatePulses(8063, 2168);
-    const pilotSignalForDataBlock = generatePulses(3223, 2168);
+    const generatePilotSignalForHeaderBlock = () => generatePulses(8063, 2168);
+    const generatePilotSignalForDataBlock = () => generatePulses(3223, 2168);
+    const generateSyncPulses = () => [...generatePulses(1, 667), ...generatePulses(1, 735)];
+    const generateZeroBitPulses = () => generatePulses(2, 855);
+    const generateOneBitPulses = () => generatePulses(2, 1710);
 
-    const sync = [...generatePulses(1, 667), ...generatePulses(1, 735)];
+    const zeroBitPulseLength = generateZeroBitPulses().length;
+    const oneBitPulseLength = generateOneBitPulses().length;
 
-    const zeroBit = generatePulses(2, 855);
-    const oneBit = generatePulses(2, 1710);
-
-    const data = (dataBlock: boolean, mem: SpectrumMemoryFragment): Float32Array => {
-        const dataOrHeaderMarker = dataBlock ? 255 : 0;
-        const data = [
-            dataOrHeaderMarker,
-            ...mem,
-            [dataOrHeaderMarker, ...mem].reduce((acc, val) => acc ^ val, 0) // each block ends with checksum which is all bytes xorred together
+    const generateDataPulses = (dataBlock: boolean, mem: SpectrumMemoryFragment): Float32Array => {
+        const dataWithHeader = [dataBlock ? 255 : 0, ...mem];
+        const dataWithHeaderAndChecksum = [
+            ...dataWithHeader,
+            dataWithHeader.reduce((acc, val) => acc ^ val, 0) // each block ends with checksum which is all bytes xorred together
         ];
 
-        const numberOfOnes = data.map(byte => byte.toString(2).split('1').length - 1).reduce((acc, val) => acc + val, 0);
-        const numberOfZeroes = data.length * 8 - numberOfOnes;
+        const numberOfOnes = dataWithHeaderAndChecksum
+            .map(byte => byte.toString(2).split('1').length - 1)
+            .reduce((acc, val) => acc + val, 0);
+        const numberOfZeroes = dataWithHeaderAndChecksum.length * 8 - numberOfOnes;
 
-        const bufferSize = zeroBit.length * numberOfZeroes + oneBit.length * numberOfOnes;
+        const bufferSize = zeroBitPulseLength * numberOfZeroes + oneBitPulseLength * numberOfOnes;
 
         const result = new Float32Array(bufferSize);
         let offset = 0;
-        for (const value of data) {
-            for (let i = 0; i < 8; i++) {
-                const zeroOrOnePulse = (value >> i) & 0x1
-                    ? oneBit
-                    : zeroBit;
-
-                result.set(zeroOrOnePulse, offset);
-                offset += zeroOrOnePulse.length;
+        for (const value of dataWithHeaderAndChecksum) {
+            for (let i = 7; i > -1; i--) {
+                const pulse = ((value >> i) & 0b1) ? generateOneBitPulses() : generateZeroBitPulses();
+                result.set(pulse, offset);
+                offset += pulse.length;
             }
         }
 
         return result;
     }
 
-    const headerData = [
-        0x03, // this is header for code
-        0x53, // title
-        0x68, // title
-        0x72, // title
-        0x65, // title
-        0x64, // title
-        0x2E, // title
-        0x7A, // title
-        0x6F, // title
-        0x6E, // title
-        0x65, // title
-        0x00, 0x1B, // length
-        0x00, 0x40, // start address
-        0x00, 0x00 // tape loader header param 2 unused
-    ];
-
     const pulses = [
-        ...pilotSignalForHeaderBlock,
-        ...sync,
-        ...data(false, new Uint8Array(headerData)),
-        ...pilotSignalForDataBlock,
-        ...sync,
-        ...data(true, new Uint8Array([...pixels, ...attributes]))
+        ...generatePilotSignalForHeaderBlock(),
+        ...generateSyncPulses(),
+        ...generateDataPulses(false, new Uint8Array([
+            0x03, // this is header for code
+            0x4A, // title J
+            0x50, // title P
+            0x53, // title S
+            0x50, // title P
+            0x20, // title
+            0x20, // title
+            0x20, // title
+            0x20, // title
+            0x20, // title
+            0x20, // title
+            0x00, 0x1B, // length
+            0x00, 0x40, // start address
+            0x00, 0x80 // tape loader header parameter 2 is unused
+        ])),
+        ...new Array<number>(10000).fill(0),
+        ...generatePilotSignalForDataBlock(),
+        ...generateSyncPulses(),
+        ...generateDataPulses(true, new Uint8Array([...pixels, ...attributes]))
     ];
 
     const buffer = audioContext.createBuffer(1, pulses.length, audioContext.sampleRate);
     buffer.copyToChannel(new Float32Array(pulses), 0);
+
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.connect(audioContext.destination);
     source.loop = false;
+
     return source;
 }
 
