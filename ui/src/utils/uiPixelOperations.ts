@@ -3,16 +3,20 @@ import { spectrumColor } from "./colors";
 import { isMaskSet } from "./maskManager";
 import { applyRange2DExclusive, bias, getLayerXYFromScreenCoordinates, getWindow } from "./utils";
 
+export const getBackgroundValue = (x: number, y: number): number => {
+    return 128
+        + Math.floor(((x / 8) + Math.floor((y / 8) % 2)) % 2) * 64
+        + (x + y % 2) % 2 * 34;
+}
+
 export const replaceEmptyWithBackground = (source: Nullable<Rgb>, x: number, y: number, backgroundColor: number): Rgb => {
     if (source) {
         return source;
     }
 
     if (backgroundColor < 0) {
-        const base = 128
-            + Math.floor(((x / 8) + Math.floor((y / 8) % 2)) % 2) * 64
-            + (x + y % 2) % 2 * 34;
-        return [base, base, base];
+        const bg = getBackgroundValue(x, y);
+        return [bg, bg, bg];
     }
 
     return spectrumColor.normal[backgroundColor];

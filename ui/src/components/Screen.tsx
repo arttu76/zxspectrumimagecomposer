@@ -12,7 +12,7 @@ import { getSpectrumRgb, spectrumColor } from '../utils/colors';
 import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
 import { isMaskSet, setMask } from '../utils/maskManager';
 import { getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, getSpectrumMemoryPixelOffsetAndBit, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
-import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
+import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getBackgroundValue, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
 import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getWindow } from "../utils/utils";
 
 const win = getWindow();
@@ -216,6 +216,11 @@ export const Screen = () => {
                 if (x % 8 === 0 && y % 8 === 0) {
                     setSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y, attribute);
                 }
+            }
+
+            if (!renderedPixel) {
+                const bg = getBackgroundValue(x, y);
+                renderedPixel = [bg, bg, bg];
             }
 
             const offset = (y * 255 + x) * 4;

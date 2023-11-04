@@ -2,93 +2,82 @@ import { Grid, GrowableGrid, Nullable } from "../types";
 
 const getExistingRowSize = <T>(grid: GrowableGrid<T>): number => grid?.data[0]?.length || 0;
 
-const cloneGrid = <T>(grid: GrowableGrid<T>) => JSON.parse(JSON.stringify(grid)) as GrowableGrid<T>;
-
 const growIfRequired = <T>(grid: GrowableGrid<T>, x: number, y: number): GrowableGrid<T> => {
 
-    const newGrid = cloneGrid(grid);
     const existingRowSize = getExistingRowSize(grid);
 
     // grow up
-    if (y < newGrid.offsetY) {
-        for (let i = 0; i < newGrid.offsetY - y; i++) {
-            newGrid.data.unshift(
-                Array(existingRowSize).fill(null)
-            );
+    if (y < grid.offsetY) {
+        for (let i = 0; i < grid.offsetY - y; i++) {
+            grid.data.unshift(Array(existingRowSize).fill(null));
         }
-        newGrid.offsetY = y;
+        grid.offsetY = y;
     }
 
     // grow down
-    if (newGrid.data[y - newGrid.offsetY] === undefined) {
-        const missingRows = y - newGrid.offsetY - newGrid.data.length + 1;
+    if (grid.data[y - grid.offsetY] === undefined) {
+        const missingRows = y - grid.offsetY - grid.data.length + 1;
         for (let i = 0; i < missingRows; i++) {
-            newGrid.data.push(
-                Array(existingRowSize).fill(null)
-            );
+            grid.data.push(Array(existingRowSize).fill(null));
         }
     }
 
     // grow left
-    if (x < newGrid.offsetX) {
-        newGrid.data = newGrid.data.map(row => [
-            ...Array(newGrid.offsetX - x).fill(null),
+    if (x < grid.offsetX) {
+        grid.data = grid.data.map(row => [
+            ...Array(grid.offsetX - x).fill(null),
             ...row
         ]);
-        newGrid.offsetX = x;
+        grid.offsetX = x;
     }
 
     // grow right
-    const needToAddToRight = x - newGrid.offsetX - getExistingRowSize(newGrid) + 1;
+    const needToAddToRight = x - grid.offsetX - getExistingRowSize(grid) + 1;
     if (needToAddToRight > 0) {
-
-        newGrid.data = newGrid.data.map(row => [
-            ...row,
-            ...Array(needToAddToRight).fill(null)
-        ] as Nullable<T>[]);
+        for (let i = 0; i < grid.data.length; i++) {
+            grid.data[i] = [...grid.data[i], ...Array(needToAddToRight).fill(null)];
+        }
     }
 
-    return newGrid;
+    return grid;
 };
 
 const shrinkGridIfPossible = <T>(grid: GrowableGrid<T>): GrowableGrid<T> => {
-    let newGrid = cloneGrid(grid);
-
     // shrink topmost row
     while (
-        newGrid.data.length > 0
-        && newGrid.data[0].every(cell => cell === null)
+        grid.data.length > 0
+        && grid.data[0].every(cell => cell === null)
     ) {
-        newGrid.data.shift();
-        newGrid.offsetY += 1;
+        grid.data.shift();
+        grid.offsetY += 1;
     }
 
     // shrink leftmost column
     while (
-        newGrid.data.length > 0
-        && newGrid.data.every(row => row[0] === null)
+        grid.data.length > 0
+        && grid.data.every(row => row[0] === null)
     ) {
-        newGrid.data.forEach(row => row.shift());
-        newGrid.offsetX += 1;
+        grid.data.forEach(row => row.shift());
+        grid.offsetX += 1;
     }
 
     // purge data from right making it smaller
     while (
-        newGrid.data.length > 0
-        && newGrid.data.every(row => row[row.length - 1] === null)
+        grid.data.length > 0
+        && grid.data.every(row => row[row.length - 1] === null)
     ) {
-        newGrid.data.forEach(row => row.pop());
+        grid.data.forEach(row => row.pop());
     }
 
     // shrink bottom row
     while (
-        newGrid.data.length > 0
-        && newGrid.data[newGrid.data.length - 1].every(cell => cell === null)
+        grid.data.length > 0
+        && grid.data[grid.data.length - 1].every(cell => cell === null)
     ) {
-        newGrid.data.pop();
+        grid.data.pop();
     }
 
-    return newGrid;
+    return grid;
 };
 
 
@@ -149,9 +138,7 @@ export const getGrowableGridData = <T>(grid: GrowableGrid<T>, x: number, y: numb
 };
 
 export const scrollGrowableGrid = <T>(grid: GrowableGrid<T>, x: number, y: number): GrowableGrid<T> => {
-    return {
-        ...grid,
-        offsetX: grid.offsetX + x,
-        offsetY: grid.offsetY + y
-    };
+    grid.offsetX += x;
+    grid.offsetY += y;
+    return grid;
 }
