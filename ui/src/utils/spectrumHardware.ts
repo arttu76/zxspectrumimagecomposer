@@ -12,6 +12,23 @@ export const getColorFromAttributeByte = (value: number): Color => {
     }
 }
 
+export const getInvertedBitmap = (
+    mem: SpectrumMemoryFragment,
+    invert: boolean
+): SpectrumMemoryFragment => invert
+        ? mem.map(value => value ^ 255)
+        : mem;
+
+export const getInvertedAttributes = (
+    mem: SpectrumMemoryFragment,
+    invert: boolean
+): SpectrumMemoryFragment => invert
+        ? mem.map(value => {
+            const { ink, paper, bright } = getColorFromAttributeByte(value);
+            return getSpectrumMemoryAttributeByte({ ink: paper, paper: ink, bright });
+        })
+        : mem;
+
 export const setSpectrumMemoryAttribute = (mem: SpectrumMemoryFragment, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate, color: Color) => {
     mem[Math.floor(x / 8) + Math.floor(y / 8) * 32] = getSpectrumMemoryAttributeByte(color);
 }

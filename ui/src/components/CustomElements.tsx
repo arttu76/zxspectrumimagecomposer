@@ -35,12 +35,13 @@ export const Input: React.FC<
 
     if (props.type === 'checkbox') {
         return <Icon
-            className="CustomElements"
+            className={"CustomElements InputCustomElements_" + props.type}
             style={{ opacity: dimmed ? 0.5 : 1 }}
             {...inputProps}
             onPaste={undefined}
             icon={props.checked ? 'select_check_box' : 'check_box_outline_blank'}
             onClick={props.onClick}
+            tooltip={tooltip}
         />
     }
 

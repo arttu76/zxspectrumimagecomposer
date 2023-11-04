@@ -12,6 +12,7 @@ const initialState: ToolsSliceState = {
     brushSize: 10,
     brushShape: BrushShape.block,
     zoom: 1,
+    invertExportedImage: false,
     crisp: true,
     manualAttribute: {
         ink: 7,
@@ -66,6 +67,9 @@ const toolsSlice = createSlice({
         },
         setAttributeGridOpacity: (state, action: PayloadAction<number>) => {
             state.attributeGridOpacity = action.payload;
+        },
+        setInvertExportedImage: (state, action: PayloadAction<boolean>) => {
+            state.invertExportedImage = action.payload;
         }
     }
 })
@@ -83,7 +87,8 @@ export const {
     setHideSourceImage,
     setHideManualPixels,
     setHideManualAttributes,
-    setAttributeGridOpacity
+    setAttributeGridOpacity,
+    setInvertExportedImage
 } = toolsSlice.actions;
 
 export default toolsSlice.reducer;

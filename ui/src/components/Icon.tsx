@@ -6,11 +6,15 @@ export const Icon: React.FC<{
     onClick?: Undefinable<MouseEventHandler>;
     className?: string;
 
+    tooltip?: string;
+
     onPaste?: (event: React.ClipboardEvent<HTMLDivElement>) => void
-}> = ({ icon, onClick, className, onPaste }) => <>
+}> = ({ icon, onClick, className, tooltip, onPaste }) => <>
     <span
         className={`Icon material-symbols-outlined ${className || ''}`}
         onClick={e => onClick && onClick(e)}
+        data-tooltip-id="my-tooltip"
+        data-tooltip-content={tooltip}
     >{icon}</span>
     {onPaste && <>
         <div

@@ -16,6 +16,7 @@ import {
     setHideManualAttributes,
     setHideManualPixels,
     setHideSourceImage,
+    setInvertExportedImage,
     setManualAttribute,
     setMaskBrushType,
     setPixelBrushType,
@@ -24,7 +25,7 @@ import {
 } from "../store/toolsSlice";
 import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
-import { getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
+import { getInvertedAttributes, getInvertedBitmap, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
 import { getWindow } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
@@ -33,6 +34,7 @@ import { Group } from './Group';
 export const Toolbar = () => {
 
     const tool = useAppSelector((state) => state.tools.tool);
+    const invertExportedImage = useAppSelector((state) => state.tools.invertExportedImage);
     const maskBrushType = useAppSelector((state) => state.tools.maskBrushType);
     const pixelBrushType = useAppSelector((state) => state.tools.pixelBrushType);
     const attributeBrushType = useAppSelector((state) => state.tools.attributeBrushType);
@@ -124,6 +126,29 @@ export const Toolbar = () => {
         }
     };
 
+    const copyCode = () => {
+        const win = getWindow();
+
+        const defb = "        DEFB    ";
+        const linePrefix = (name?: string) => name ? name + ":" + defb.substring(name.length + 1) : defb;
+        const toHex = (value: number) => '$' + value.toString(16).toUpperCase().padStart(2, '0');
+        const convert = (name: string, data: Uint8Array) => data.reduce(
+            (acc, val, idx) => acc
+                + ((idx === 0) ? linePrefix(name) : (idx % 8 === 0) ? linePrefix() : ", ")
+                + toHex(val)
+                + ((idx % 8 === 7) ? "\n" : ""),
+            ""
+        );
+
+        navigator.clipboard.writeText(
+            convert("bitmap", getInvertedBitmap(win[Keys.spectrumMemoryBitmap], invertExportedImage))
+            + "\n\n"
+            + convert("attrs", getInvertedAttributes(win[Keys.spectrumMemoryAttribute], invertExportedImage))
+        );
+
+        alert('Code copied to clipboard');
+    }
+
     const [playerInitializing, setPlayerInitializing] = useState<boolean>(false);
     const [player, setPlayer] = useState<Nullable<AudioBufferSourceNode>>(null);
 
@@ -132,7 +157,7 @@ export const Toolbar = () => {
             return;
         }
 
-        // stop 
+        // stop
         if (player) {
             player.stop();
             setPlayer(null);
@@ -148,7 +173,10 @@ export const Toolbar = () => {
             setTimeout(
                 () => {
                     const win = getWindow();
-                    const tapeSound = getTapeSoundAudioBufferSourceNode(win[Keys.spectrumMemoryBitmap], win[Keys.spectrumMemoryAttribute]);
+                    const tapeSound = getTapeSoundAudioBufferSourceNode(
+                        getInvertedBitmap(win[Keys.spectrumMemoryBitmap], invertExportedImage),
+                        getInvertedAttributes(win[Keys.spectrumMemoryAttribute], invertExportedImage)
+                    );
                     setPlayer(tapeSound);
                     tapeSound.start();
                     setPlayerInitializing(false);
@@ -307,9 +335,25 @@ export const Toolbar = () => {
             {tool === ToolType.export && <>
                 <Group title="Export" disableClose={true}>
                     <Button
+                        icon="code"
+                        tooltip="Copy image data as code"
+                        onClick={copyCode} />
+                    <Button
                         icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
                         tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
                         onClick={play} />
+
+                    <span style={{ position: 'relative', top: '-4px' }}>
+                        &nbsp;Invert:&nbsp;
+                    </span>
+                    <span style={{ position: 'relative', top: '-3px' }}>
+                        <Input
+                            tooltip="Invert paper & ink in exported code/image"
+                            type="checkbox"
+                            checked={invertExportedImage}
+                            onClick={() => dispatch(setInvertExportedImage(!invertExportedImage))}
+                        />
+                    </span>
                 </Group>
             </>}
 
@@ -366,6 +410,6 @@ export const Toolbar = () => {
                 className="reset"
                 onClick={reset} />
 
-        </div >
+        </div>
     );
 };

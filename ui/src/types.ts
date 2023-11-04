@@ -7,8 +7,6 @@ export type SourceImageCoordinate = number;
 
 export type SpectrumPixelCoordinate = number;
 
-export type Distance = number;
-
 export type Id = string;
 
 export type Rgb = [number, number, number];
@@ -57,7 +55,7 @@ export enum Keys {
 
 export interface ExtendedWindow extends Window {
     [Keys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
-    [Keys.maskData]: { [key: Id]: Uint16Array; }; // key = layer id 
+    [Keys.maskData]: { [key: Id]: Uint16Array; }; // key = layer id
 
     [Keys.patternCache]: { [key: Id]: PatternCache }
 
@@ -102,14 +100,6 @@ export interface XY<T> {
     y: T
 }
 
-export interface ImageFileData {
-    id: string;
-    timestamp: number;
-    width: number;
-    height: number;
-    data: number[]; // r,g,b,r,g,b,r,g,b,r,g,b...
-}
-
 export enum PixelationType {
     none = 'none',
     simple = 'simple',
@@ -122,7 +112,6 @@ export enum PixelationSource {
     targetColor = 'targetColor',
     autoColor = 'autoColor'
 }
-
 
 export interface PixelationPattern extends withId {
     limit: number;
@@ -205,6 +194,7 @@ export enum AttributeBrushType {
 }
 
 export interface ToolsSliceState {
+    invertExportedImage: boolean,
     zoom: number;
     crisp: boolean;
     tool: ToolType;
