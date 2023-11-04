@@ -126,6 +126,30 @@ export const Toolbar = () => {
         }
     };
 
+    const download = (filename: string, downloadBitmap: boolean, downloadAttributes: boolean) => {
+        const win = getWindow();
+
+        const bitmap = downloadBitmap ? getInvertedBitmap(win[Keys.spectrumMemoryBitmap], invertExportedImage) : [];
+        const attributes = downloadAttributes ? getInvertedAttributes(win[Keys.spectrumMemoryAttribute], invertExportedImage) : [];
+
+        const data = new Uint8Array(bitmap.length + attributes.length);
+        if (downloadBitmap) {
+            data.set(bitmap);
+        }
+        if (downloadAttributes) {
+            data.set(attributes, downloadBitmap ? bitmap.length : 0);
+        }
+
+        const blob = new Blob([data], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
     const copyCode = () => {
         const win = getWindow();
 
@@ -333,15 +357,7 @@ export const Toolbar = () => {
             </>}
 
             {tool === ToolType.export && <>
-                <Group title="Export" disableClose={true}>
-                    <Button
-                        icon="code"
-                        tooltip="Copy image data as code"
-                        onClick={copyCode} />
-                    <Button
-                        icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
-                        tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
-                        onClick={play} />
+                <Group title="Export settings" disableClose={true}>
 
                     <span style={{ position: 'relative', top: '-4px' }}>
                         &nbsp;Invert:&nbsp;
@@ -355,6 +371,34 @@ export const Toolbar = () => {
                         />
                     </span>
                 </Group>
+                <Group title="Download" disableClose={true}>
+                    <Button
+                        icon="image"
+                        tooltip="Download bitmap and attributes as combined binary file"
+                        onClick={() => download("image.bin", true, true)} />
+
+                    <Button
+                        icon="gradient"
+                        tooltip="Download bitmap only as binary file"
+                        onClick={() => download("bitmap.bin", true, false)} />
+                    <Button
+                        icon="palette"
+                        tooltip="Download attributes only as binary file"
+                        onClick={() => download("attributes.bin", false, true)} />
+                </Group>
+                <Group title="Code" disableClose={true}>
+                    <Button
+                        icon="code"
+                        tooltip="Copy image data as code"
+                        onClick={copyCode} />
+                </Group>
+                <Group title="Play" disableClose={true}>
+                    <Button
+                        icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
+                        tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
+                        onClick={play} />
+                </Group>
+
             </>}
 
             <Group title="Zoom" disableClose={true}>

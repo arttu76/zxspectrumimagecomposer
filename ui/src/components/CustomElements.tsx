@@ -22,7 +22,7 @@ export const Button: React.FC<
         {...buttonProps}
         data-tooltip-id="my-tooltip"
         data-tooltip-content={tooltip + (hotkey ? ` (${hotkey})` : '')}>
-        {icon && <Icon icon={icon} />}
+        {icon && <Icon icon={icon} tooltip={tooltip} />}
         {props.children}
     </button>
 }
@@ -41,6 +41,7 @@ export const Input: React.FC<
             onPaste={undefined}
             icon={props.checked ? 'select_check_box' : 'check_box_outline_blank'}
             onClick={props.onClick}
+            data-tooltip-id="my-tooltip"
             tooltip={tooltip}
         />
     }
