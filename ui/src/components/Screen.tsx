@@ -35,6 +35,8 @@ export const Screen = () => {
     const hideSourceImage = useAppSelector((state) => state.tools.hideSourceImage);
     const hideManualPixels = useAppSelector((state) => state.tools.hideManualPixels);
     const hideManualAttributes = useAppSelector((state) => state.tools.hideManualAttributes);
+
+    const hideAllAttributes = useAppSelector((state) => state.tools.hideAllAttributes);
     const currentManualAttribute = useAppSelector((state) => state.tools.manualAttribute) || {
         ink: 7,
         paper: 0,
@@ -169,6 +171,11 @@ export const Screen = () => {
                     )
                         ? win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
                         : null;
+                }
+
+                if (hideAllAttributes) {
+                    manualAttribute = { ink: 0, paper: 7, bright: false };
+                    adjustedAttribute = { ink: 0, paper: 7, bright: false };
                 }
 
             }

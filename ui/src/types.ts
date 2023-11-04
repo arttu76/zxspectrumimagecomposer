@@ -210,6 +210,7 @@ export interface ToolsSliceState {
     hideSourceImage: boolean;
     hideManualPixels: boolean;
     hideManualAttributes: boolean;
+    hideAllAttributes: boolean;
     attributeGridOpacity: number;
 }
 

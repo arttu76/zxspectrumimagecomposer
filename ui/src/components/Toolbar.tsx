@@ -13,6 +13,7 @@ import {
     setBrushShape,
     setBrushSize,
     setCrispScaling,
+    setHideAllAttributes,
     setHideManualAttributes,
     setHideManualPixels,
     setHideSourceImage,
@@ -46,6 +47,7 @@ export const Toolbar = () => {
     const hideSourceImage = useAppSelector((state) => state.tools.hideSourceImage);
     const hideManualPixels = useAppSelector((state) => state.tools.hideManualPixels);
     const hideManualAttributes = useAppSelector((state) => state.tools.hideManualAttributes);
+    const hideAllAttributes = useAppSelector((state) => state.tools.hideAllAttributes);
     const attributeGridOpacity = useAppSelector((state) => state.tools.attributeGridOpacity);
 
     const layers = useAppSelector((state) => state.layers.layers);
@@ -428,6 +430,12 @@ export const Toolbar = () => {
                             icon="palette"
                             tooltip={hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
                             onClick={() => dispatch(setHideManualAttributes(!hideManualAttributes))} />
+                        &nbsp;
+                        <Button
+                            dimmed={!hideAllAttributes}
+                            icon="invert_colors_off"
+                            tooltip={hideAllAttributes ? 'All attributes are ink:7 paper:0' : 'Using attributes'}
+                            onClick={() => dispatch(setHideAllAttributes(!hideAllAttributes))} />
                     </Group>
                     <Group title="Display" disableClose={true}>
                         <Input

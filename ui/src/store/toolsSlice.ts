@@ -22,6 +22,7 @@ const initialState: ToolsSliceState = {
     hideSourceImage: false,
     hideManualPixels: false,
     hideManualAttributes: false,
+    hideAllAttributes: false,
     attributeGridOpacity: 0
 }
 
@@ -65,6 +66,9 @@ const toolsSlice = createSlice({
         setHideManualAttributes: (state, action: PayloadAction<boolean>) => {
             state.hideManualAttributes = action.payload;
         },
+        setHideAllAttributes: (state, action: PayloadAction<boolean>) => {
+            state.hideAllAttributes = action.payload;
+        },
         setAttributeGridOpacity: (state, action: PayloadAction<number>) => {
             state.attributeGridOpacity = action.payload;
         },
@@ -88,6 +92,7 @@ export const {
     setHideManualPixels,
     setHideManualAttributes,
     setAttributeGridOpacity,
+    setHideAllAttributes,
     setInvertExportedImage
 } = toolsSlice.actions;
 
