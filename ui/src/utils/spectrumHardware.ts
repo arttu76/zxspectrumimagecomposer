@@ -46,29 +46,20 @@ export const getTapeSoundAudioBufferSourceNode = (pixels: SpectrumMemoryFragment
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     let pulseValue = -0.95;
 
+    const getSampleCountForTStates = (tStates: number): number => Math.round(tStates * (1 / 3546000) * audioContext.sampleRate);
+
+    const getPulseSamples = (numberOfSamples: number): Float32Array => {
+        pulseValue = -pulseValue;
+        return new Float32Array(getSampleCountForTStates(numberOfSamples)).fill(pulseValue);
+    }
+
     const generatePulses = (pulseCount: number, pulseLengthInTStates: number): Float32Array => {
-
-        const tStatesInSecond = 1 / 3546000;
-        const samplesPerPulse = pulseLengthInTStates * tStatesInSecond * audioContext.sampleRate;
-        const numSamples = Math.round(samplesPerPulse * pulseCount);
-
-        const buffer = new Float32Array(numSamples);
-
-        let sampleCursor = 0;
-        for (let i = 0; i < numSamples; i++) {
-            sampleCursor++;
-            if (
-                sampleCursor > samplesPerPulse // next pulse, we need an edge
-                || i === numSamples - 1 // last sample, we need an edge
-            ) {
-                pulseValue = -pulseValue;
-                sampleCursor -= samplesPerPulse;
-            }
-            buffer[i] = pulseValue;
+        const sampleCountForOnePulse = getSampleCountForTStates(pulseLengthInTStates);
+        const result = new Float32Array(sampleCountForOnePulse * pulseCount);
+        for (let i = 0; i < pulseCount; i++) {
+            result.set(getPulseSamples(pulseLengthInTStates), i * sampleCountForOnePulse);
         }
-
-        pulseValue = buffer[buffer.length - 1];
-        return buffer;
+        return result;
     }
 
     const generatePilotSignalForHeaderBlock = () => generatePulses(8063, 2168);
