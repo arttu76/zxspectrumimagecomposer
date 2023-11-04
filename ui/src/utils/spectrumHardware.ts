@@ -120,14 +120,14 @@ export const getTapeSoundAudioBufferSourceNode = (pixels: SpectrumMemoryFragment
         ...generateSyncPulses(),
         ...generateDataPulses(false, new Uint8Array([
             0x03, // this is header for code
-            0x4A, // title J
+            0x45, // title E
+            0x58, // title X
             0x50, // title P
-            0x53, // title S
-            0x50, // title P
-            0x20, // title
-            0x20, // title
-            0x20, // title
-            0x20, // title
+            0x4F, // title O
+            0x52, // title R
+            0x54, // title T
+            0x45, // title E
+            0x44, // title D
             0x20, // title
             0x20, // title
             0x00, 0x1B, // length
