@@ -81,6 +81,10 @@ export const getCoordinatesCoveredByCursor = (
 
     const result: XY<SpectrumPixelCoordinate>[] = [];
 
+    const finalizeResults = (coords: XY<SpectrumPixelCoordinate>[]) => coords
+        .filter(xy => xy.x > -1 && xy.x < 256 && xy.y > -1 && xy.y < 192)
+        .sort((a, b) => a.y !== b.y ? b.y - a.y : b.x - a.x);
+
     // attribute block cursor
     if (tool === ToolType.attributes) {
         applyRange2DExclusive(192, 256, (yAttempt, xAttempt) => {
@@ -91,19 +95,19 @@ export const getCoordinatesCoveredByCursor = (
                 result.push({ x: xAttempt, y: yAttempt });
             }
         });
-        return result.reverse();
+        return finalizeResults(result);
     }
 
     if (brushSize === 1) {
         return [{ x, y }];
     }
     if (brushSize === 2) {
-        return [
+        return finalizeResults([
             { x, y },
             { x: x + 1, y },
             { x, y: y + 1 },
             { x: x + 1, y: y + 1 }
-        ].filter(xy => xy.x < 256 && xy.y < 192).reverse();
+        ]);
     }
 
     const halfSize = brushSize / 2;
@@ -130,7 +134,7 @@ export const getCoordinatesCoveredByCursor = (
         }
     });
 
-    return result.reverse();
+    return finalizeResults(result);
 }
 
 export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (coordinates: XY<SpectrumPixelCoordinate>[], layer: Layer): XY<SourceImageCoordinate>[] => {
@@ -155,6 +159,7 @@ export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (coordinate
     }
 
     const groupedByY = coordinates
+        .sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x) // must be top-left first
         .reduce((acc, val) => {
             if (!acc.length) {
                 return [{

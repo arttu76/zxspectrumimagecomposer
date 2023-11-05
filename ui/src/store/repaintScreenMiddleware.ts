@@ -156,7 +156,7 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
                 state.tools.tool
             );
 
-            applyRange2DExclusive(192, 255, (y, x) => {
+            applyRange2DExclusive(192, 256, (y, x) => {
                 const attrX = Math.floor(x / 8);
                 const attrY = Math.floor(y / 8);
 

@@ -113,7 +113,7 @@ export const Screen = () => {
 
         const shownLayers = layers.filter(layer => layer.shown);
 
-        applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
+        applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
 
             let manualPixel: Nullable<boolean> = null;
             let manualAttribute: Nullable<Color> = null;
@@ -245,7 +245,7 @@ export const Screen = () => {
         });
 
         if (currentTool === ToolType.export) {
-            applyRange2DExclusive<SpectrumPixelCoordinate>(192, 255, (y, x) => {
+            applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
                 const pixelLocation = getSpectrumMemoryPixelOffsetAndBit(x, y);
                 const bitmapPixel = !!(win[Keys.spectrumMemoryBitmap][pixelLocation[0]] >> (pixelLocation[1]) & 1);
                 const attr = getSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y);
