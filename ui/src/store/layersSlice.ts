@@ -2,7 +2,7 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 
 import * as R from "ramda";
 
-import { Color, Keys, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
+import { Color, Id, Keys, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
 import { scrollGrowableGrid } from "../utils/growableGridManager";
 import { getHeightForAspectRatio, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
 
@@ -41,6 +41,7 @@ const layersSlice = createSlice({
                     shown: true,
                     expanded: true,
                     name: 'My layer',
+                    imageId: null,
                     loading: false,
                     loaded: false,
                     originalHeight: undefined,
@@ -69,6 +70,7 @@ const layersSlice = createSlice({
                     invert: false,
                     requireSpectrumPixelsRefresh: true,
                     pixelate: PixelationType.none,
+                    pixelateToggle: PixelationType.simple,
                     requirePatternCacheRefresh: true,
                     patterns: [
                         {
@@ -121,11 +123,12 @@ const layersSlice = createSlice({
         setLayerRequireAdjustedPixelsRefresh: (state, action: LayerAction<{ required: boolean }>) => {
             const layer = getLayer(state, action);
             layer.requireAdjustedPixelsRefresh = action.payload.required;
-            // refresh speccy image if source pixels have changed 
+            // refresh speccy image if source pixels have changed
             layer.requireSpectrumPixelsRefresh = layer.requireSpectrumPixelsRefresh || action.payload.required;
         },
-        setLayerSrcDimensions: (state, action: LayerAction<{ height: number, width: number }>) => {
+        setLayerSrcImage: (state, action: LayerAction<{ imageId: Id, height: number, width: number }>) => {
             const layer = getLayer(state, action);
+            layer.imageId = action.payload.imageId;
             layer.originalHeight = action.payload.height;
             layer.height = action.payload.height;
             layer.originalWidth = action.payload.width;
@@ -247,7 +250,11 @@ const layersSlice = createSlice({
             getLayer(state, action).requireSpectrumPixelsRefresh = action.payload.required;
         },
         setLayerPixelate: (state, action: LayerAction<{ pixelate: PixelationType }>) => {
-            getLayer(state, action).pixelate = action.payload.pixelate;
+            const layer = getLayer(state, action);
+            layer.pixelate = action.payload.pixelate;
+            if (action.payload.pixelate !== PixelationType.none) {
+                layer.pixelateToggle = action.payload.pixelate;
+            }
         },
         setLayerPixelateSource: (state, action: LayerAction<{ pixelateSource: PixelationSource }>) => {
             getLayer(state, action).pixelateSource = action.payload.pixelateSource;
@@ -311,9 +318,16 @@ const layersSlice = createSlice({
         },
         removeLayer: (state, action: LayerAction) => {
             const win = getWindow();
-            const layerId = action.payload.layer.id;
+            const layer = action.payload.layer;
+            const layerId = layer.id;
 
-            win[Keys.imageData] && delete win[Keys.imageData][layerId];
+            const otherLayersUsingSameImage = layer.imageId
+                ? state.layers.filter(l => l.id !== layer.id && l.imageId === layer.imageId).length
+                : 0;
+
+            if (!otherLayersUsingSameImage && layer.imageId) {
+                win[Keys.imageData] && delete win[Keys.imageData][layer.imageId];
+            }
             win[Keys.maskData] && delete win[Keys.maskData][layerId];
             win[Keys.adjustedPixels] && delete win[Keys.adjustedPixels][layerId];
             win[Keys.pixels] && delete win[Keys.pixels][layerId];
@@ -344,7 +358,6 @@ const layersSlice = createSlice({
                 name: "Copy of " + layer.name
             };
 
-            win[Keys.imageData][newLayer.id] = R.clone(win[Keys.imageData][layer.id]);
             win[Keys.maskData][newLayer.id] = R.clone(win[Keys.maskData][layer.id]);
 
             win[Keys.manualPixels][newLayer.id] = R.clone(win[Keys.manualPixels][layer.id]);
@@ -370,7 +383,7 @@ export const {
     expandLayer,
     setLayerName,
     setLayerRequireAdjustedPixelsRefresh,
-    setLayerSrcDimensions,
+    setLayerSrcImage,
     setLayerX,
     setLayerY,
     setLayerHeight,

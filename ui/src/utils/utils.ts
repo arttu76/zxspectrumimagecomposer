@@ -123,6 +123,10 @@ export const getSourceRgb = (
     y: SpectrumPixelCoordinate,
     currentTool: ToolType = ToolType.nudge
 ): Nullable<Rgb> => {
+    if (!layer.imageId) {
+        return null;
+    }
+
     const win = getWindow();
     if (!win || !win[Keys.imageData]) {
         return null;
@@ -140,7 +144,7 @@ export const getSourceRgb = (
     const layerOffset = (layerX + layerY * safeZero(layer.originalWidth)) * 3;
 
     return (
-        typeof win?._imageData[layer.id] === 'object'
+        typeof win?._imageData[layer.imageId] === 'object'
         && layer.loaded
         && layer.shown
         && layerX >= 0
@@ -153,9 +157,9 @@ export const getSourceRgb = (
         )
     )
         ? [
-            win?._imageData[layer.id][layerOffset],
-            win?._imageData[layer.id][layerOffset + 1],
-            win?._imageData[layer.id][layerOffset + 2]
+            win?._imageData[layer.imageId][layerOffset],
+            win?._imageData[layer.imageId][layerOffset + 1],
+            win?._imageData[layer.imageId][layerOffset + 2]
         ] as Rgb
         : null;
 }

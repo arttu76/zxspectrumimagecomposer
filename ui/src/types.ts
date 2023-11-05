@@ -55,7 +55,7 @@ export enum Keys {
 
 export interface ExtendedWindow extends Window {
     // unmodified source image
-    [Keys.imageData]: { [key: Id]: FlatRgbData }; // { layer.id: [r,g,b,a, r,g,b,a ...] }
+    [Keys.imageData]: { [key: Id]: FlatRgbData }; // { image.id: [r,g,b,a, r,g,b,a ...] }
     // mask data (same size as source image)
     [Keys.maskData]: { [key: Id]: Uint16Array; }; // key = layer id
 
@@ -122,6 +122,7 @@ export interface PixelationPattern extends withId {
 }
 
 export interface Layer extends withId {
+    imageId: Nullable<Id>
     active: boolean;
     shown: boolean;
     expanded: boolean;
@@ -154,6 +155,7 @@ export interface Layer extends withId {
     invert: boolean;
     requireSpectrumPixelsRefresh: boolean; // when settings have been adjusted so that window[layer.id].pixels and attributes need to be updated
     pixelate: PixelationType;
+    pixelateToggle: PixelationType; // toggle between None and this pixelation type by using hotkey
     requirePatternCacheRefresh: boolean;
     patterns: PixelationPattern[];
     pixelateSource: PixelationSource;

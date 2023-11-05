@@ -34,7 +34,7 @@ import {
     setLayerRotate,
     setLayerSaturation,
     setLayerShadows,
-    setLayerSrcDimensions,
+    setLayerSrcImage,
     setLayerWidth,
     setLayerX,
     setLayerY,
@@ -198,7 +198,7 @@ const repaintScreenMiddleware = (storeApi: any) => (next: any) => (action: any) 
     // do source pixels have to be updated?
     if ([
         showHideLayer.type,
-        setLayerSrcDimensions.type,
+        setLayerSrcImage.type,
         setLayerX.type,
         setLayerY.type,
         setLayerHeight.type,

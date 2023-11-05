@@ -16,13 +16,14 @@ export const Button: React.FC<
     & React.ButtonHTMLAttributes<HTMLButtonElement>
 > = (props) => {
     const { dimmed, tooltip, hotkey, icon, ...buttonProps } = props;
+    const tooltipContent = tooltip + (hotkey ? ` (${hotkey})` : '');
     return <button
         className="CustomElements"
         style={{ opacity: dimmed ? 0.5 : 1 }}
         {...buttonProps}
         data-tooltip-id="my-tooltip"
-        data-tooltip-content={tooltip + (hotkey ? ` (${hotkey})` : '')}>
-        {icon && <Icon icon={icon} tooltip={tooltip} />}
+        data-tooltip-content={tooltipContent}>
+        {icon && <Icon icon={icon} tooltip={tooltipContent} />}
         {props.children}
     </button>
 }

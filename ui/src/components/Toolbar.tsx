@@ -2,10 +2,8 @@ import '../styles/Toolbar.scss';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 
-import * as R from "ramda";
-
 import { useEffect, useState } from 'react';
-import { setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
+import { setLayerPixelate, setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
 import { repaint } from '../store/repaintSlice';
 import {
     setAttributeBrushType,
@@ -24,7 +22,7 @@ import {
     setTool,
     setZoom
 } from "../store/toolsSlice";
-import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, ToolType } from "../types";
+import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
 import { getWindow } from '../utils/utils';
@@ -55,13 +53,12 @@ export const Toolbar = () => {
     const dispatch = useAppDispatch();
 
     const applyActiveLayer = (applyFunc: (oldValue: boolean) => boolean): void => {
-        const activeLayer = R.find(layer => layer.active, layers);
+        const activeLayer = layers.find(layer => layer.active);
         if (!activeLayer) {
             return;
         }
 
         mutateMask(activeLayer, applyFunc);
-
         dispatch(setLayerRequireAdjustedPixelsRefresh({ layer: activeLayer, required: true }));
         dispatch(repaint());
     }
@@ -123,8 +120,24 @@ export const Toolbar = () => {
             dispatch(setBrushSize(brushSizeByKey[1]));
         }
 
+        if (event.key === 'c') {
+            const activeLayer = layers.find(layer => layer.active);
+            if (activeLayer) {
+                dispatch(setLayerPixelate({
+                    layer: activeLayer,
+                    pixelate: (activeLayer.pixelate === PixelationType.none)
+                        ? activeLayer.pixelateToggle
+                        : PixelationType.none
+                }));
+            }
+        }
+
         if (event.key === 'v') {
-            dispatch(setAttributeGridOpacity(attributeGridOpacity > 0.1 ? 0 : attributeGridOpacity + 0.05));
+            dispatch(setAttributeGridOpacity(
+                attributeGridOpacity > 0.1
+                    ? 0
+                    : attributeGridOpacity + 0.05
+            ));
         }
     };
 
@@ -219,7 +232,7 @@ export const Toolbar = () => {
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [tool, maskBrushType, pixelBrushType, attributeBrushType, attributeGridOpacity]);
+    }, [tool, maskBrushType, pixelBrushType, attributeBrushType, attributeGridOpacity, layers]);
 
     return (
         <div className="Toolbar">

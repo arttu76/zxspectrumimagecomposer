@@ -37,7 +37,7 @@ import {
     setLayerRotate,
     setLayerSaturation,
     setLayerShadows,
-    setLayerSrcDimensions,
+    setLayerSrcImage,
     setLayerWidth,
     setLayerX,
     setLayerY,
@@ -45,7 +45,7 @@ import {
 } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { confirmMask } from '../utils/maskManager';
-import { getWindow, safeDivide, safeZero } from '../utils/utils';
+import { getUuid, getWindow, safeDivide, safeZero } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
@@ -56,7 +56,6 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
     // for uploads
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const imageRef = useRef<HTMLImageElement>(null);
-
 
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         const items = event.nativeEvent.clipboardData?.items || [];
@@ -87,7 +86,9 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             if (!win[Keys.imageData]) {
                 win[Keys.imageData] = {};
             }
-            win[Keys.imageData][layer.id] = Array.from(data).filter((_, idx) => idx % 4 < 3);
+
+            const imageId = getUuid();
+            win[Keys.imageData][imageId] = Array.from(data).filter((_, idx) => idx % 4 < 3);
 
             if (!win[Keys.maskData]) {
                 win[Keys.maskData] = {};
@@ -99,7 +100,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                 div => div.innerHTML = ''
             );
 
-            dispatch(setLayerSrcDimensions({ layer, width: canvas.width, height: canvas.height }));
+            dispatch(setLayerSrcImage({ layer, imageId, width: canvas.width, height: canvas.height }));
             dispatch(repaint());
         }
     }
@@ -372,19 +373,19 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                             dimmed={layer.pixelate !== PixelationType.none}
                             onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.none }))}>None</Button>
                         <Button
-                            tooltip='Two-tone pixelation'
+                            tooltip='Two-tone pixelation (press C to toggle between this and original image)'
                             dimmed={layer.pixelate !== PixelationType.simple}
                             onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.simple }))}>Simple</Button>
                         <Button
-                            tooltip='Probability noise pixelation'
+                            tooltip='Probability noise pixelation (press C to toggle between this and original image)'
                             dimmed={layer.pixelate !== PixelationType.noise}
                             onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.noise }))}>Noise</Button>
                         <Button
-                            tooltip='Floyd-Steinberg pixelation'
+                            tooltip='Floyd-Steinberg pixelation (press C to toggle between this and original image)'
                             dimmed={layer.pixelate !== PixelationType.floydsteinberg}
                             onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.floydsteinberg }))}>Floyd-Steinberg</Button>
                         <Button
-                            tooltip='User-defined pixelation'
+                            tooltip='User-defined pixelation (press C to toggle between this and original image)'
                             dimmed={layer.pixelate !== PixelationType.pattern}
                             onClick={() => dispatch(setLayerPixelate({ layer, pixelate: PixelationType.pattern }))}>Pattern</Button>
                     </div>
