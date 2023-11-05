@@ -9,7 +9,7 @@ const withMaskCoordinates = <T>(
     func: (win: ExtendedWindow, offset: number, bit: number, layerX: SourceImageCoordinate, layerY: SourceImageCoordinate) => T
 ): Undefinable<T> => {
     if (
-        !layer?.loaded
+        !layer?.imageId
         || !layer.originalHeight
         || !layer.originalWidth
     ) {

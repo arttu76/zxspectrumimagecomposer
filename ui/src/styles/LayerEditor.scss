@@ -2,6 +2,47 @@
 
 .LayerEditor {
 
+    transition: filter 0.5s;
+
+    &.layerActive {
+        filter: brightness(100%);
+    }
+
+    &.layerInactive {
+        filter: brightness(50%);
+    }
+
+    .LayerEditorHeaderControls {
+        display: flex;
+
+        >div {
+            display: flex;
+            flex-wrap: nowrap;
+
+            &:first-child {
+                width: 100px;
+            }
+
+            &:nth-child(2) {
+                width: 130px;
+
+                input {
+                    position: relative;
+                    top: -2px;
+                    width: 100%;
+                }
+
+                justify-self: center;
+            }
+
+            &:nth-child(3) {
+                width: 60px;
+                justify-self: end;
+            }
+
+        }
+    }
+
     button,
     input,
     select {
@@ -16,7 +57,7 @@
 
     .ImageUploaderIcon {
         position: relative;
-        top: 4px;
+        top: -2px;
         margin-left: 1px;
 
         background-color: rgba(0, 0, 0, 0.1);
@@ -32,7 +73,7 @@
         color: rgba(0, 0, 0, 0);
         display: inline-block;
         position: relative;
-        top: 3px;
+        top: -2px;
         left: -40px;
         height: 20px;
         width: 40px;

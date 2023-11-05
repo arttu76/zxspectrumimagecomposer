@@ -1,13 +1,13 @@
 import '../styles/LayerEditor.scss';
 
-import { useAppDispatch } from "../store/store";
+import { useAppDispatch, useAppSelector } from "../store/store";
 
 import { LayerPropertyEditor } from "./LayerPropertyEditor";
 import { PatternEditor } from "./PatternEditor";
 
 import { Keys, Layer, PixelationSource, PixelationType } from "../types";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     addLayerPattern,
     duplicateLayer,
@@ -29,6 +29,7 @@ import {
     setLayerHue,
     setLayerInvert,
     setLayerMidtones,
+    setLayerName,
     setLayerPixelate,
     setLayerPixelateAutoColors,
     setLayerPixelateSource,
@@ -56,6 +57,8 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
     // for uploads
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const imageRef = useRef<HTMLImageElement>(null);
+
+    const layers = useAppSelector(state => state.layers.layers);
 
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         const items = event.nativeEvent.clipboardData?.items || [];
@@ -87,8 +90,15 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                 win[Keys.imageData] = {};
             }
 
+            const otherLayersUsingSameImageId = !!layers.find(l => l.id !== layer.id && l.imageId === layer.imageId);
+            if (!otherLayersUsingSameImageId && layer.imageId) {
+                delete win[Keys.imageData][layer.imageId];
+            }
+
             const imageId = getUuid();
             win[Keys.imageData][imageId] = Array.from(data).filter((_, idx) => idx % 4 < 3);
+
+            console.log("read the pixels ", imageId);
 
             if (!win[Keys.maskData]) {
                 win[Keys.maskData] = {};
@@ -96,22 +106,16 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             confirmMask(layer);
 
             setImageUrl(null);
-            [...document.querySelectorAll('div[contentEditable=true]')].forEach(
-                div => div.innerHTML = ''
-            );
+            [...document.querySelectorAll('div[contentEditable=true]')].forEach(div => div.innerHTML = '');
 
             dispatch(setLayerSrcImage({ layer, imageId, width: canvas.width, height: canvas.height }));
             dispatch(repaint());
         }
     }
 
-    useEffect(() => {
-        readPixelValues();
-    }, [imageUrl]);
-
     const dispatch = useAppDispatch();
 
-    const changeLayerAttribute = (action: any) => (layer: Layer, fieldName: keyof Layer, value: number | boolean) => {
+    const changeLayerAttribute = (action: any) => (layer: Layer, fieldName: keyof Layer, value: number | boolean | string) => {
         dispatch(action({ layer, [fieldName]: value }));
     };
 
@@ -124,47 +128,55 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
     return (
         <div
-            className={"LayerEditor layerItem" + (layer.active ? " layerActive" : "")}
+            className={"LayerEditor layerItem " + (layer.active ? "layerActive" : "layerInactive")}
             key={layer.id}
             style={{ opacity: layer.shown ? 1 : 0.75 }}
-            onClick={() => dispatch(setActive({ layer }))}
-        >
+            onClick={() => dispatch(setActive({ layer }))}>
 
-            <Button
-                style={{ float: 'right' }}
-                icon="delete"
-                tooltip="Delete layer"
-                onClick={(e) => remove(e)}
-            />
-
-            <Button
-                style={{ float: 'right' }}
-                icon="control_point_duplicate"
-                tooltip="Duplicate layer"
-                onClick={(e) => {
-                    dispatch(duplicateLayer({ layer }));
-                    e.stopPropagation();
-                }}
-            />
-
-            <Button
-                icon={layer.shown ? 'visibility' : 'visibility_off'}
-                tooltip={layer.shown ? 'Layer is visible' : 'Layer is hidden'}
-                onClick={() => dispatch(showHideLayer({ layer }))}
-            />
-            <Button
-                icon={layer.expanded ? "Compress" : "Expand"}
-                tooltip={layer.expanded ? "Hide layer attributes" : "Show layer attributes"}
-                onClick={() => dispatch(expandLayer({ layer }))} />
-            <Icon icon="image"
-                className="ImageUploaderIcon"
-                onPaste={handlePaste} />
-            {imageUrl && <img src={imageUrl}
-                style={{ "display": "none" }}
-                alt="Pasted content"
-                ref={imageRef}
-                onLoad={readPixelValues} />}
-
+            <div className="LayerEditorHeaderControls">
+                <div>
+                    <Button
+                        icon={layer.shown ? 'visibility' : 'visibility_off'}
+                        tooltip={layer.shown ? 'Layer is visible' : 'Layer is hidden'}
+                        onClick={() => dispatch(showHideLayer({ layer }))}
+                    />
+                    <Button
+                        icon={layer.expanded ? "Compress" : "Expand"}
+                        tooltip={layer.expanded ? "Hide layer attributes" : "Show layer attributes"}
+                        onClick={() => dispatch(expandLayer({ layer }))} />
+                    <Icon icon="image"
+                        className="ImageUploaderIcon"
+                        onPaste={handlePaste} />
+                    {imageUrl && <img src={imageUrl}
+                        style={{ "display": "none" }}
+                        alt="Pasted content"
+                        ref={imageRef}
+                        onLoad={readPixelValues} />}
+                </div>
+                <div>
+                    <Input
+                        tooltip="Layer name for your reference"
+                        type="text"
+                        value={layer.name}
+                        onChange={(e) => changeLayerAttribute(setLayerName)(layer, 'name', e.currentTarget.value)}
+                    />
+                </div>
+                <div>
+                    <Button
+                        icon="control_point_duplicate"
+                        tooltip="Duplicate layer"
+                        onClick={(e) => {
+                            dispatch(duplicateLayer({ layer }));
+                            e.stopPropagation();
+                        }}
+                    />
+                    <Button
+                        icon="delete"
+                        tooltip="Delete layer"
+                        onClick={(e) => remove(e)}
+                    />
+                </div>
+            </div>
 
             {layer.expanded && <div>
                 <Group title="Size & position">

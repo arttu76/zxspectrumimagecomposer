@@ -42,8 +42,6 @@ const layersSlice = createSlice({
                     expanded: true,
                     name: 'My layer',
                     imageId: null,
-                    loading: false,
-                    loaded: false,
                     originalHeight: undefined,
                     originalWidth: undefined,
                     requireAdjustedPixelsRefresh: true,
@@ -133,8 +131,6 @@ const layersSlice = createSlice({
             layer.height = action.payload.height;
             layer.originalWidth = action.payload.width;
             layer.width = action.payload.width;
-            layer.loading = false;
-            layer.loaded = true;
         },
         setLayerX: (state, action: LayerAction<{ x: number }>) => {
             const layer = getLayer(state, action);
@@ -355,6 +351,9 @@ const layersSlice = createSlice({
                 ...layer,
                 id: getUuid(),
                 active: true,
+                requirePatternCacheRefresh: true,
+                requireAdjustedPixelsRefresh: true,
+                requireSpectrumPixelsRefresh: true,
                 name: "Copy of " + layer.name
             };
 
@@ -367,7 +366,6 @@ const layersSlice = createSlice({
                 newLayer,
                 ...state.layers.map(layer => ({ ...layer, active: false }))
             ];
-
         },
         changeBackground: (state, action) => {
             state.background = action.payload.background;

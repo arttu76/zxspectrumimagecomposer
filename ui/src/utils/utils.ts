@@ -145,7 +145,7 @@ export const getSourceRgb = (
 
     return (
         typeof win?._imageData[layer.imageId] === 'object'
-        && layer.loaded
+        && layer.imageId
         && layer.shown
         && layerX >= 0
         && layerX < safeZero(layer.originalWidth)

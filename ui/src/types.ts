@@ -127,8 +127,6 @@ export interface Layer extends withId {
     shown: boolean;
     expanded: boolean;
     name: string;
-    loading: boolean;
-    loaded: boolean;
     originalHeight: Undefinable<number>;
     originalWidth: Undefinable<number>;
     requireAdjustedPixelsRefresh: boolean; // when settings have been adjusted so that window[layer.id].adjustedPixels needs to be updated
