@@ -31,7 +31,9 @@ export const Layers = () => {
             </div>
             <div className="layerItem layerBackground">
                 <Icon icon='background_replace' /> Background:
-                <select value={background} onChange={(e) => dispatch(changeBackground({ background: e.target.value }))}>
+                <select
+                    value={background}
+                    onChange={(e) => dispatch(changeBackground({ background: e.target.value }))}>
                     <option value={-1}>Transparent</option>
                     <option value={0}>Black (0)</option>
                     <option value={1}>Blue (1)</option>

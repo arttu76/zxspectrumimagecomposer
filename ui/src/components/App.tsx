@@ -9,13 +9,16 @@ export const App = () => {
 
   useEffect(() => {
     const resize = () => {
+      setTimeout(
+        () => {
 
-      const toolbarHeight = document.querySelector('.Toolbar')?.clientHeight;
-      if (toolbarHeight) {
-        document.querySelectorAll('.AppContainer > *').forEach(
-          el => (el as HTMLElement).style.height = `calc(100vh - ${toolbarHeight}px)`
-        );
-      }
+          const toolbarHeight = document.querySelector('.Toolbar')?.clientHeight;
+          if (toolbarHeight) {
+            document.querySelectorAll('.AppContainer > *').forEach(
+              el => (el as HTMLElement).style.height = `calc(100vh - ${toolbarHeight}px)`
+            );
+          }
+        }, 500);
     }
 
     window.addEventListener('resize', resize);
