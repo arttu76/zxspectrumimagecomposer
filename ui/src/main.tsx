@@ -3,7 +3,7 @@ import 'react-tooltip/dist/react-tooltip.css';
 import './main.scss';
 
 import ReactDOM from 'react-dom/client';
-import App from './components/App.tsx';
+import { App } from './components/App.tsx';
 
 import { Provider } from "react-redux";
 import store from "./store/store.ts";

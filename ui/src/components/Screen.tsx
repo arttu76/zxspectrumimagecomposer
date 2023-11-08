@@ -56,9 +56,12 @@ export const Screen = () => {
                     )
                 ));
             }
+
         }
 
         window.addEventListener('resize', resize);
+        resize();
+
         return () => window.removeEventListener('resize', resize);
     }, []);
 

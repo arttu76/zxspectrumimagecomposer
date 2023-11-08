@@ -427,7 +427,7 @@ export const Toolbar = () => {
                 {[1, 2, 3, 4, 5, 10, 20].map((zoomLevel) => <Button
                     key={zoomLevel}
                     dimmed={zoom !== zoomLevel}
-                    tooltip={`Show picture using ${zoomLevel} x${zoomLevel} pixels`}
+                    tooltip={`Show picture using ${zoomLevel}x${zoomLevel} pixels`}
                     onClick={() => dispatch(setZoom(zoomLevel))} >{zoomLevel}</Button>
                 )}
             </Group>
@@ -476,11 +476,13 @@ export const Toolbar = () => {
                 </>
             }
 
-            <Button
-                icon='warning'
-                tooltip={"Reset everything, lose all your work"}
-                className="reset"
-                onClick={reset} />
+            <Group title="Reset" disableClose={true}>
+                <Button
+                    icon='warning'
+                    tooltip={"Reset everything, lose all your work"}
+                    className="reset"
+                    onClick={reset} />
+            </Group>
 
         </div>
     );

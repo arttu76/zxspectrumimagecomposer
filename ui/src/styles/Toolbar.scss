@@ -1,12 +1,11 @@
 @import "./variables";
 
 .Toolbar {
-    box-sizing: border-box;
-    padding: 0 0 15px 0;
-    height: 50px;
+    position: relative;
 
     .Group {
         display: inline-block;
+        margin: 3px 2px 0;
 
         .GroupTitle {
             background-color: $background;
@@ -58,15 +57,15 @@
     }
 
     .reset {
-        float: right;
-        position: relative;
-        top: 15px;
-        right: 10px;
         background-color: #900;
         border: none;
         border-radius: 5px;
         cursor: pointer;
         box-shadow: 3px 3px 7px 2px rgba(0, 0, 0, 0.5) inset;
+
+        .Icon {
+            top: 2px;
+        }
 
         &:hover {
             color: yellow;
