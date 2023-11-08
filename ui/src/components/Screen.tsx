@@ -125,6 +125,7 @@ export const Screen = () => {
 
             let renderedPixel: Nullable<Rgb> = null;
 
+
             // loop visible layers from top to bottom
             for (const layer of shownLayers) {
 
@@ -163,14 +164,18 @@ export const Screen = () => {
                 } else {
                     if (isMaskSet(layer, x, y, true) && currentTool !== ToolType.mask) continue;
                     // dithered image
-                    adjustedPixel = booleanOrNull(win[Keys.pixels]?.[layer.id]?.[y][x]);
-                    adjustedAttribute = (
-                        win[Keys.attributes]
-                        && win[Keys.attributes]?.[layer.id]
-                        && win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)]
-                    )
-                        ? win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
-                        : null;
+                    if (adjustedPixel === null) {
+                        adjustedPixel = booleanOrNull(win[Keys.pixels]?.[layer.id]?.[y][x]);
+                    }
+                    if (adjustedAttribute === null) {
+                        adjustedAttribute = (
+                            win[Keys.attributes]
+                            && win[Keys.attributes]?.[layer.id]
+                            && win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)]
+                        )
+                            ? win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
+                            : null;
+                    }
                 }
 
                 if (hideAllAttributes) {
