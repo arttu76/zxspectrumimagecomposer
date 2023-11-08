@@ -2,16 +2,12 @@ import '../styles/Layers.scss';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 
-import { DragDropContext, Draggable, DraggingStyle, DropReason, DropResult, Droppable, NotDraggingStyle } from "react-beautiful-dnd";
-
 import { LayerEditor } from "./LayerEditor";
 
 import {
     addLayer,
-    changeBackground,
-    changeLayerOrdering
+    changeBackground
 } from "../store/layersSlice";
-import { Undefinable } from '../types';
 import { Button } from './CustomElements';
 import { Icon } from './Icon';
 
@@ -20,22 +16,6 @@ export const Layers = () => {
     const layers = useAppSelector((state) => state.layers.layers);
     const background = useAppSelector((state) => state.layers.background);
     const dispatch = useAppDispatch();
-
-    const onDragEnd = (result: DropResult): void => {
-        if (result.reason === 'DROP' as DropReason && result.destination) {
-            dispatch(changeLayerOrdering({
-                fromIndex: result.source.index,
-                toIndex: result.destination.index
-            }));
-        }
-    };
-
-    const getItemStyle = (isDragging: boolean, draggableStyle: Undefinable<DraggingStyle | NotDraggingStyle>): any => ({
-        ...draggableStyle,
-        userSelect: "none",
-        opacity: isDragging ? "0.75" : "1",
-        boxShadow: isDragging ? '2px 2px 15px 0 rgba(0,0,0,0.75)' : 'none'
-    });
 
     return (
         <div className="Layers">
@@ -47,35 +27,7 @@ export const Layers = () => {
                     onClick={() => dispatch(addLayer())} >Add layer</Button>
             </div>
             <div>
-                <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="droppable">
-                        {(provided) => (
-                            <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                            >
-                                {layers.map((layer, index) => (
-                                    <Draggable key={layer.id}
-                                        draggableId={'layer_' + layer.id}
-                                        index={index}>
-                                        {(provided, snapshot) => (
-                                            <div
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
-                                                {...provided.dragHandleProps}
-                                                style={getItemStyle(
-                                                    snapshot.isDragging,
-                                                    provided.draggableProps.style
-                                                )}
-                                            ><LayerEditor layer={layer}></LayerEditor></div>
-                                        )}
-                                    </Draggable>
-                                ))}
-                                {provided.placeholder}
-                            </div>
-                        )}
-                    </Droppable>
-                </DragDropContext>
+                {layers.map((layer) => <LayerEditor key={layer.id} layer={layer}></LayerEditor>)}
             </div>
             <div className="layerItem layerBackground">
                 <Icon icon='background_replace' /> Background:

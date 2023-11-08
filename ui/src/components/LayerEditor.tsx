@@ -42,7 +42,8 @@ import {
     setLayerWidth,
     setLayerX,
     setLayerY,
-    showHideLayer
+    showHideLayer,
+    swapLayerPositions
 } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { confirmMask } from '../utils/maskManager';
@@ -126,6 +127,13 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
         }
     };
 
+    const layerIndex = layers.indexOf(layer);
+    const aboveLayerName = layerIndex > 0 ? layers[layerIndex - 1].name : null;
+    const belowLayerName = layerIndex < layers.length - 1 ? layers[layerIndex + 1].name : null;
+    const swapLayers = (indexA: number, indexB: number) => {
+        dispatch(swapLayerPositions({ indexA, indexB }));
+    }
+
     return (
         <div
             className={"LayerEditor layerItem " + (layer.active ? "layerActive" : "layerInactive")}
@@ -141,17 +149,17 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         onClick={() => dispatch(showHideLayer({ layer }))}
                     />
                     <Button
-                        icon={layer.expanded ? "Compress" : "Expand"}
+                        icon={layer.expanded ? "compress" : "expand"}
                         tooltip={layer.expanded ? "Hide layer attributes" : "Show layer attributes"}
                         onClick={() => dispatch(expandLayer({ layer }))} />
-                    <Icon icon="image"
-                        className="ImageUploaderIcon"
-                        onPaste={handlePaste} />
-                    {imageUrl && <img src={imageUrl}
-                        style={{ "display": "none" }}
-                        alt="Pasted content"
-                        ref={imageRef}
-                        onLoad={readPixelValues} />}
+                    {aboveLayerName && <Button
+                        icon="arrow_upward"
+                        tooltip={"Swap places with layer " + aboveLayerName}
+                        onClick={() => swapLayers(layerIndex, layerIndex - 1)} />}
+                    {belowLayerName && <Button
+                        icon="arrow_downward"
+                        tooltip={"Swap places with layer " + aboveLayerName}
+                        onClick={() => swapLayers(layerIndex, layerIndex + 1)} />}
                 </div>
                 <div>
                     <Input
@@ -179,6 +187,16 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             </div>
 
             {layer.expanded && <div>
+                <Group title="Upload source image">
+                    <Icon icon="image"
+                        className="ImageUploaderIcon"
+                        onPaste={handlePaste} />
+                    {imageUrl && <img src={imageUrl}
+                        style={{ "display": "none" }}
+                        alt="Pasted content"
+                        ref={imageRef}
+                        onLoad={readPixelValues} />}
+                </Group>
                 <Group title="Size & position">
                     <LayerPropertyEditor
                         title="X"

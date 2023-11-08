@@ -312,6 +312,13 @@ const layersSlice = createSlice({
         removeLayerPattern: (state, action: LayerAction<{ idx: number }>) => {
             getLayer(state, action).patterns.splice(action.payload.idx, 1);
         },
+        swapLayerPositions: (state, action: PayloadAction<{ indexA: number, indexB: number }>) => {
+            const a = state.layers[action.payload.indexA];
+            const b = state.layers[action.payload.indexB];
+
+            state.layers[action.payload.indexA] = b;
+            state.layers[action.payload.indexB] = a;
+        },
         removeLayer: (state, action: LayerAction) => {
             const win = getWindow();
             const layer = action.payload.layer;
@@ -409,6 +416,7 @@ export const {
     setLayerPixelateAutoColors,
     setLayerPixelateTargetColor,
     setLayerBrightnessThreshold,
+    swapLayerPositions,
     removeLayer,
     duplicateLayer,
     setLayerRequirePatternCacheRefresh,

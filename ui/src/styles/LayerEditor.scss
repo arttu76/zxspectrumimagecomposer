@@ -57,8 +57,9 @@
 
     .ImageUploaderIcon {
         position: relative;
-        top: -2px;
-        margin-left: 1px;
+        width: 240px;
+        text-align: center;
+        margin: 2px 0 10px;
 
         background-color: rgba(0, 0, 0, 0.1);
         color: rgba(255, 255, 255, 0.25);
@@ -70,13 +71,13 @@
 
     .IconPasteArea {
         overflow: hidden;
+        position: absolute;
         color: rgba(0, 0, 0, 0);
         display: inline-block;
-        position: relative;
-        top: -2px;
-        left: -40px;
-        height: 20px;
-        width: 40px;
+        top: 8px;
+        left: 1px;
+        height: 25px;
+        width: 270px;
         outline: none;
     }
 
