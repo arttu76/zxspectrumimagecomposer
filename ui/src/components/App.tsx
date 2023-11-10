@@ -3,6 +3,7 @@ import '../styles/App.scss';
 
 import { Layers } from "./Layers";
 import { Screen } from "./Screen";
+import { Splash } from './Splash';
 import { Toolbar } from "./Toolbar";
 
 export const App = () => {
@@ -36,6 +37,7 @@ export const App = () => {
           <Layers />
         </div>
       </div>
+      <Splash />
     </>
   )
 }

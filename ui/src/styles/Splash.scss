@@ -1,0 +1,45 @@
+@import "./variables";
+
+.Splash {
+
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .SplashContent {
+        cursor: pointer;
+
+        margin: 0 auto;
+        width: 400px;
+        background: $background;
+        border-radius: 5px;
+        overflow: hidden;
+        box-shadow: 3px 3px 25px 0 rgba(0, 0, 0, 1);
+
+        img {
+            width: 100%;
+        }
+
+        .SplashTextContent {
+            padding: 10px;
+
+            h1 {
+                padding: 0 0 10px 0;
+                margin: 0;
+                font-size: 20px;
+                color: white;
+            }
+
+            text-shadow: 1px 1px 1px black;
+        }
+    }
+
+}
