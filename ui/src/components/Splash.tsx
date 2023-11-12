@@ -15,12 +15,15 @@ export const Splash = () => {
                     ZX Spectrum Image Composer
                 </h1>
                 Compose &amp; edit images and convert them to ZX Spectrum format.
-                Manually edit pixels and attributes. Export as binary, assembler source or play back as audio to real hardware.
+                Manually edit pixels and attributes. Export full screen or part of screen as
+                binary, assembler source or play back as a fake tape audio to real hardware.
                 <br />
                 <br />
                 Feel free to use generated images in your own projects, but I'd really
                 appreciate if could you let me (arttu@solvalou.com) know if you have used this application.
                 Thanks!
+                <br />
+                <span style={{ float: 'right', opacity: 0.25, margin: '0 0 10px 0' }}>v0.1</span>
             </div>
         </div>
     </div>

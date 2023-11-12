@@ -239,6 +239,15 @@ export const Toolbar = () => {
                         getInvertedAttributes(win[Keys.spectrumMemoryAttribute], tools.invertExportedImage)
                     );
                     setPlayer(tapeSound);
+
+                    alert(
+                        'Connect your ZX Spectrum to your computer\'s audio output - set the volume to relatively high level.'
+                        + '\n\n'
+                        + 'On the Spectrum, write LOAD""SCREEN$ and press ENTER. Then click OK on this computer to start playback.'
+                        + '\n\n'
+                        + 'Surely you know how all this works.'
+                    );
+
                     tapeSound.start();
                     setPlayerInitializing(false);
                     tapeSound.onended = () => {
@@ -315,7 +324,7 @@ export const Toolbar = () => {
                     <Button
                         dimmed={tools.pixelBrushType !== PixelBrushType.eraser}
                         icon="ink_eraser"
-                        tooltip="Erase ink & paper (a)"
+                        tooltip="Erase manually set ink, paper & brightness (a)"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.eraser))} />
                     <Button
                         dimmed={tools.pixelBrushType !== PixelBrushType.ink}
@@ -334,7 +343,7 @@ export const Toolbar = () => {
                     <Button
                         dimmed={tools.attributeBrushType !== AttributeBrushType.eraser}
                         icon="ink_eraser"
-                        tooltip="Erase attribute (a)"
+                        tooltip="Erase manually set attributes (a)"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.eraser))} />
                     <Button
                         dimmed={tools.attributeBrushType !== AttributeBrushType.all}
