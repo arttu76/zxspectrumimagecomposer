@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zximage-service
+spec:
+  ports:
+    - port: 80
+      targetPort: zximage-port
+  selector:
+    app: zximage-deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zximage-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zximage-deployment
+  template:
+    metadata:
+      labels:
+        app: zximage-deployment
+    spec:
+      containers:
+        - name: zximage-deployment
+          image: registry.digitalocean.com/solvalou-docker/zximage:latest
+          imagePullPolicy: Always
+          ports:
+            - name: zximage-port
+              containerPort: 80
+              protocol: TCP
+          tty: true
+          livenessProbe:
+            httpGet:
+              path: /
+              port: zximage-port
+            initialDelaySeconds: 3
+            periodSeconds: 120
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: zximage-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: zximage-deployment
