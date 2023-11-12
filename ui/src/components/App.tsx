@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import '../styles/App.scss';
 
+import { Demo } from './Demo';
 import { Layers } from "./Layers";
 import { Screen } from "./Screen";
 import { Splash } from './Splash';
@@ -27,6 +28,10 @@ export const App = () => {
 
     return () => window.removeEventListener('resize', resize);
   }, []);
+
+  if (location.hash.includes('demo')) {
+    return <Demo />
+  }
 
   return (
     <>

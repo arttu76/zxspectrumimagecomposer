@@ -198,6 +198,12 @@ export enum AttributeBrushType {
 
 export interface ToolsSliceState {
     invertExportedImage: boolean,
+
+    exportFullScreen: boolean,
+    exportCharX: number,
+    exportCharY: number,
+    exportCharWidth: number,
+    exportCharHeight: number,
     zoom: number;
     crisp: boolean;
     tool: ToolType;

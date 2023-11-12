@@ -23,20 +23,7 @@ export const Screen = () => {
 
     const [showMiniMap, setShowMiniMap] = useState(true);
 
-    const currentZoom = useAppSelector((state) => state.tools.zoom);
-    const currentCrisp = useAppSelector((state) => state.tools.crisp);
-    const currentTool = useAppSelector((state) => state.tools.tool);
-    const currentMaskBrushType = useAppSelector((state) => state.tools.maskBrushType);
-    const currentPixelBrushType = useAppSelector((state) => state.tools.pixelBrushType);
-    const currentAttributeBrushType = useAppSelector((state) => state.tools.attributeBrushType);
-
-    const currentBrushShape = useAppSelector((state) => state.tools.brushShape);
-    const currentBrushSize = useAppSelector((state) => state.tools.brushSize);
-    const hideSourceImage = useAppSelector((state) => state.tools.hideSourceImage);
-    const hideManualPixels = useAppSelector((state) => state.tools.hideManualPixels);
-    const hideManualAttributes = useAppSelector((state) => state.tools.hideManualAttributes);
-
-    const hideAllAttributes = useAppSelector((state) => state.tools.hideAllAttributes);
+    const tools = useAppSelector((state) => state.tools);
     const currentManualAttribute = useAppSelector((state) => state.tools.manualAttribute) || {
         ink: 7,
         paper: 0,
@@ -77,7 +64,7 @@ export const Screen = () => {
     const [mouseX, setMouseX] = useState<SpectrumPixelCoordinate>(0);
     const [mouseY, setMouseY] = useState<SpectrumPixelCoordinate>(0);
 
-    const drawCursor = mouseOnScreen && currentTool !== ToolType.nudge;
+    const drawCursor = mouseOnScreen && tools.tool !== ToolType.nudge;
 
     const [dragState, setDragState] = useState<DragState>({
         dragging: false,
@@ -103,9 +90,9 @@ export const Screen = () => {
             : null;
 
         const coordinatesCoveredByCursor = getCoordinatesCoveredByCursor(
-            currentTool,
-            currentBrushShape,
-            currentBrushSize,
+            tools.tool,
+            tools.brushShape,
+            tools.brushSize,
             mouseX,
             mouseY
         );
@@ -119,29 +106,36 @@ export const Screen = () => {
         applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
 
             let manualPixel: Nullable<boolean> = null;
+            let manualPixelDepth = 9999; // index of layer, the higher the deeper
             let manualAttribute: Nullable<Color> = null;
 
             let adjustedPixel: Nullable<boolean> = null;
+            let adjustedPixelDepth = 9999; // index of layer, the higher the deeper
             let adjustedAttribute: Nullable<Color> = null;
 
             let topmostAdjustedPixel: Nullable<Rgb> = null;
+            let topmostAdjustedPixelDepth = 9999; // index of layer, the higher the deeper
 
             let renderedPixel: Nullable<Rgb> = null;
-
 
             // loop visible layers from top to bottom
             for (const layer of shownLayers) {
 
+                const depth = shownLayers.indexOf(layer);
+
                 if (manualAttribute === null) {
-                    manualAttribute = !hideManualAttributes
+                    manualAttribute = !tools.hideManualAttributes
                         ? getGrowableGridData<Color>(win[Keys.manualAttributes]?.[layer.id], Math.floor(x / 8), Math.floor(y / 8))
                         : null;
                 }
 
                 if (manualPixel === null) {
-                    manualPixel = !hideManualPixels
+                    manualPixel = !tools.hideManualPixels
                         ? getGrowableGridData<boolean>(win[Keys.manualPixels]?.[layer.id], x, y)
                         : null;
+                    if (manualPixel !== null) {
+                        manualPixelDepth = depth;
+                    }
                 }
 
                 // we already know what to render, no need for source/adjusted image
@@ -150,7 +144,7 @@ export const Screen = () => {
                 }
 
                 // code below deals with source/adjusted/dithered image, ignore it if user so wishes
-                if (hideSourceImage) {
+                if (tools.hideSourceImage) {
                     continue;
                 }
 
@@ -160,15 +154,21 @@ export const Screen = () => {
                         topmostAdjustedPixel === null
                         && win[Keys.adjustedPixels][layer.id]
                         && win[Keys.adjustedPixels][layer.id]?.[y]
-                        && (currentTool === ToolType.mask || !isMaskSet(layer, x, y, true))
+                        && (tools.tool === ToolType.mask || !isMaskSet(layer, x, y, true))
                     ) {
                         topmostAdjustedPixel = win[Keys.adjustedPixels][layer.id]?.[y][x] || null;
+                        if (topmostAdjustedPixel !== null) {
+                            topmostAdjustedPixelDepth = depth;
+                        }
                     }
                 } else {
-                    if (isMaskSet(layer, x, y, true) && currentTool !== ToolType.mask) continue;
+                    if (isMaskSet(layer, x, y, true) && tools.tool !== ToolType.mask) continue;
                     // dithered image
                     if (adjustedPixel === null) {
                         adjustedPixel = booleanOrNull(win[Keys.pixels]?.[layer.id]?.[y][x]);
+                        if (adjustedPixel !== null) {
+                            adjustedPixelDepth = depth;
+                        }
                     }
                     if (adjustedAttribute === null) {
                         adjustedAttribute = (
@@ -181,18 +181,26 @@ export const Screen = () => {
                     }
                 }
 
-                if (hideAllAttributes) {
+                if (tools.hideAllAttributes) {
                     manualAttribute = { ink: 0, paper: 7, bright: false };
                     adjustedAttribute = { ink: 0, paper: 7, bright: false };
                 }
 
-            }
+            } // ...all layers
 
             if (
-                manualPixel === null
-                && manualAttribute === null
-                && adjustedAttribute === null
-                && adjustedPixel === null
+                // no pixel
+                (
+                    manualPixel === null
+                    && manualAttribute === null
+                    && adjustedAttribute === null
+                    && adjustedPixel === null
+                )
+                ||
+                (
+                    topmostAdjustedPixelDepth < adjustedPixelDepth
+                    && topmostAdjustedPixelDepth < manualPixelDepth
+                )
             ) {
                 renderedPixel = replaceEmptyWithBackground(topmostAdjustedPixel, x, y, bg);
                 setSpectrumMemoryPixel(win[Keys.spectrumMemoryBitmap], x, y, false);
@@ -239,7 +247,7 @@ export const Screen = () => {
                 miniMapImageData.data[offset + 3] = 255;
             }
 
-            renderedPixel = addMaskUiToLayer(renderedPixel, activeLayer, currentTool, x, y);
+            renderedPixel = addMaskUiToLayer(renderedPixel, activeLayer, tools.tool, x, y);
             renderedPixel = addAttributeGridUi(attributeGridOpacity, renderedPixel, x, y);
 
             if (drawCursor) {
@@ -252,12 +260,28 @@ export const Screen = () => {
             imageData.data[offset + 3] = 255;
         });
 
-        if (currentTool === ToolType.export) {
+        if (tools.tool === ToolType.export) {
             applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
-                const pixelLocation = getSpectrumMemoryPixelOffsetAndBit(x, y);
-                const bitmapPixel = !!(win[Keys.spectrumMemoryBitmap][pixelLocation[0]] >> (pixelLocation[1]) & 1);
-                const attr = getSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y);
-                const rgb = getSpectrumRgb(attr, bitmapPixel);
+
+                let rgb: Rgb;
+
+                if (
+                    !tools.exportFullScreen
+                    && (
+                        x / 8 < tools.exportCharX
+                        || y / 8 < tools.exportCharY
+                        || x / 8 >= tools.exportCharX + tools.exportCharWidth
+                        || y / 8 >= tools.exportCharY + tools.exportCharHeight
+                    )
+                ) {
+                    const bg = getBackgroundValue(x, y);
+                    rgb = [bg, bg, bg];
+                } else {
+                    const pixelLocation = getSpectrumMemoryPixelOffsetAndBit(x, y);
+                    const bitmapPixel = !!(win[Keys.spectrumMemoryBitmap][pixelLocation[0]] >> (pixelLocation[1]) & 1);
+                    const attr = getSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y);
+                    rgb = getSpectrumRgb(attr, bitmapPixel);
+                }
 
                 const offset = (y * 255 + x) * 4;
                 if (miniMapCtx && miniMapImageData) {
@@ -280,7 +304,7 @@ export const Screen = () => {
     };
 
     const handleMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>, mouseDown: Undefinable<boolean> = undefined) => {
-        if (!activeLayer || currentTool === ToolType.export) {
+        if (!activeLayer || tools.tool === ToolType.export) {
             return;
         }
 
@@ -288,7 +312,7 @@ export const Screen = () => {
 
         const layer = activeLayer as unknown as Layer;
 
-        if (currentTool === ToolType.nudge) {
+        if (tools.tool === ToolType.nudge) {
             const nowDragging = mouseDown === undefined
                 ? dragState.dragging
                 : mouseDown;
@@ -307,10 +331,10 @@ export const Screen = () => {
                     const diffY = event.clientY - dragPreviousY;
 
                     if (Math.abs(diffX) > 0) {
-                        dispatch(setLayerX({ layer, x: Math.round(layer.x + diffX / currentZoom) }));
+                        dispatch(setLayerX({ layer, x: Math.round(layer.x + diffX / tools.zoom) }));
                     }
                     if (Math.abs(diffY) > 0) {
-                        dispatch(setLayerY({ layer, y: Math.round(layer.y + diffY / currentZoom) }));
+                        dispatch(setLayerY({ layer, y: Math.round(layer.y + diffY / tools.zoom) }));
                     }
                 }
                 dragPreviousX = event.clientX;
@@ -326,8 +350,8 @@ export const Screen = () => {
             return;
         }
 
-        const mouseX = clamp8Bit((event.clientX - event.currentTarget.getBoundingClientRect().left) / currentZoom);
-        const mouseY = clamp8Bit((event.clientY - event.currentTarget.getBoundingClientRect().top) / currentZoom);
+        const mouseX = clamp8Bit((event.clientX - event.currentTarget.getBoundingClientRect().left) / tools.zoom);
+        const mouseY = clamp8Bit((event.clientY - event.currentTarget.getBoundingClientRect().top) / tools.zoom);
 
         if (mouseDown === true || mouseDown === false) {
             setMouseDownState(mouseDown);
@@ -336,51 +360,51 @@ export const Screen = () => {
         // use layer cordinates if drawing mask (as mask is same size as source image), otherwise use screen coordinates
         if (mouseDown || (!mouseDown && mouseDownState)) {
 
-            if (currentTool === ToolType.mask || currentTool === ToolType.pixels) {
+            if (tools.tool === ToolType.mask || tools.tool === ToolType.pixels) {
 
                 const coordinatesCoveredByCursor = getCoordinatesCoveredByCursor(
-                    currentTool,
-                    currentBrushShape,
-                    currentBrushSize,
+                    tools.tool,
+                    tools.brushShape,
+                    tools.brushSize,
                     mouseX,
                     mouseY
                 );
 
-                if (currentTool === ToolType.mask) {
+                if (tools.tool === ToolType.mask) {
                     getCoordinatesCoveredByCursorInSourceImageCoordinates(coordinatesCoveredByCursor, activeLayer).forEach(xy => {
-                        setMask(layer, xy.x, xy.y, currentMaskBrushType === MaskBrushType.brush, false);
+                        setMask(layer, xy.x, xy.y, tools.maskBrushType === MaskBrushType.brush, false);
                     });
                 }
 
-                if (currentTool === ToolType.pixels) {
+                if (tools.tool === ToolType.pixels) {
                     coordinatesCoveredByCursor.forEach(xy => {
                         if (!win[Keys.manualPixels]) {
                             win[Keys.manualPixels] = {};
                         }
-                        if (currentPixelBrushType === PixelBrushType.eraser) {
+                        if (tools.pixelBrushType === PixelBrushType.eraser) {
                             win[Keys.manualPixels][layer.id] = setGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y, null);
                         }
-                        if (currentPixelBrushType === PixelBrushType.ink) {
+                        if (tools.pixelBrushType === PixelBrushType.ink) {
                             win[Keys.manualPixels][layer.id] = setGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y, true);
                         }
-                        if (currentPixelBrushType === PixelBrushType.paper) {
+                        if (tools.pixelBrushType === PixelBrushType.paper) {
                             win[Keys.manualPixels][layer.id] = setGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y, false);
                         }
                     });
                 }
             }
 
-            if (currentTool === ToolType.attributes) {
+            if (tools.tool === ToolType.attributes) {
                 const cursorX = Math.floor(mouseX / 8);
                 const cursorY = Math.floor(mouseY / 8);
 
                 if (!win[Keys.manualAttributes]) {
                     win[Keys.manualAttributes] = {};
                 }
-                if (currentAttributeBrushType === AttributeBrushType.eraser) {
+                if (tools.attributeBrushType === AttributeBrushType.eraser) {
                     win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, null);
                 }
-                if (currentAttributeBrushType === AttributeBrushType.all) {
+                if (tools.attributeBrushType === AttributeBrushType.all) {
                     win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, currentManualAttribute);
                 }
 
@@ -389,19 +413,19 @@ export const Screen = () => {
                     paper: 7,
                     bright: false
                 };
-                if (currentAttributeBrushType === AttributeBrushType.ink) {
+                if (tools.attributeBrushType === AttributeBrushType.ink) {
                     win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, {
                         ...existingAttribute,
                         ink: currentManualAttribute.ink
                     });
                 }
-                if (currentAttributeBrushType === AttributeBrushType.paper) {
+                if (tools.attributeBrushType === AttributeBrushType.paper) {
                     win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, {
                         ...existingAttribute,
                         paper: currentManualAttribute.paper
                     });
                 }
-                if (currentAttributeBrushType === AttributeBrushType.bright) {
+                if (tools.attributeBrushType === AttributeBrushType.bright) {
                     win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, {
                         ...existingAttribute,
                         bright: currentManualAttribute.bright
@@ -429,15 +453,15 @@ export const Screen = () => {
             ref={screenRef}>
             <div className="ScreenCanvasContainer"
                 style={{
-                    width: 255 * currentZoom,
-                    height: 192 * currentZoom
+                    width: 255 * tools.zoom,
+                    height: 192 * tools.zoom
                 }}>
                 <canvas
                     style={{
-                        cursor: currentTool === ToolType.nudge ? "move" : currentTool === ToolType.export ? "not-allowed" : "none",
+                        cursor: tools.tool === ToolType.nudge ? "move" : tools.tool === ToolType.export ? "not-allowed" : "none",
                         transformOrigin: "top left",
-                        transform: "scale(" + currentZoom + ")",
-                        imageRendering: currentCrisp ? "pixelated" : "inherit"
+                        transform: "scale(" + tools.zoom + ")",
+                        imageRendering: tools.crisp ? "pixelated" : "inherit"
                     }}
                     width={255}
                     height={192}
@@ -450,7 +474,7 @@ export const Screen = () => {
                 ></canvas>
             </div>
             <canvas
-                style={{ display: currentZoom > 1 ? 'block' : 'none' }}
+                style={{ display: tools.zoom > 1 ? 'block' : 'none' }}
                 className={`miniMap${showMiniMap ? ' show' : ' hide'}`}
                 onClick={() => setShowMiniMap(!showMiniMap)}
                 width={255}

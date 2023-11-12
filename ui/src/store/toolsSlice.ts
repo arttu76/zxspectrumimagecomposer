@@ -13,6 +13,11 @@ const initialState: ToolsSliceState = {
     brushShape: BrushShape.block,
     zoom: 1,
     invertExportedImage: false,
+    exportFullScreen: true,
+    exportCharX: 0,
+    exportCharY: 0,
+    exportCharWidth: 32,
+    exportCharHeight: 24,
     crisp: true,
     manualAttribute: {
         ink: 7,
@@ -74,6 +79,29 @@ const toolsSlice = createSlice({
         },
         setInvertExportedImage: (state, action: PayloadAction<boolean>) => {
             state.invertExportedImage = action.payload;
+        },
+        setExportFullScreen: (state, action: PayloadAction<boolean>) => {
+            state.exportFullScreen = action.payload;
+        },
+        setExportCharX: (state, action: PayloadAction<number>) => {
+            state.exportCharX = action.payload;
+            state.exportCharWidth = Math.min(
+                state.exportCharWidth,
+                256 / 8 - state.exportCharX
+            );
+        },
+        setExportCharY: (state, action: PayloadAction<number>) => {
+            state.exportCharY = action.payload;
+            state.exportCharHeight = Math.min(
+                state.exportCharHeight,
+                192 / 8 - state.exportCharHeight
+            );
+        },
+        setExportCharWidth: (state, action: PayloadAction<number>) => {
+            state.exportCharWidth = action.payload;
+        },
+        setExportCharHeight: (state, action: PayloadAction<number>) => {
+            state.exportCharHeight = action.payload;
         }
     }
 })
@@ -93,7 +121,13 @@ export const {
     setHideManualAttributes,
     setAttributeGridOpacity,
     setHideAllAttributes,
-    setInvertExportedImage
+    setInvertExportedImage,
+    setExportFullScreen,
+    setExportCharX,
+    setExportCharY,
+    setExportCharWidth,
+    setExportCharHeight
+
 } = toolsSlice.actions;
 
 export default toolsSlice.reducer;

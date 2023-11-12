@@ -11,6 +11,11 @@ import {
     setBrushShape,
     setBrushSize,
     setCrispScaling,
+    setExportCharHeight,
+    setExportCharWidth,
+    setExportCharX,
+    setExportCharY,
+    setExportFullScreen,
     setHideAllAttributes,
     setHideManualAttributes,
     setHideManualPixels,
@@ -24,29 +29,15 @@ import {
 } from "../store/toolsSlice";
 import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
-import { getInvertedAttributes, getInvertedBitmap, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
-import { getWindow } from '../utils/utils';
+import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
+import { applyRange2DExclusive, getWindow, rangeExclusive } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
 
 export const Toolbar = () => {
 
-    const tool = useAppSelector((state) => state.tools.tool);
-    const invertExportedImage = useAppSelector((state) => state.tools.invertExportedImage);
-    const maskBrushType = useAppSelector((state) => state.tools.maskBrushType);
-    const pixelBrushType = useAppSelector((state) => state.tools.pixelBrushType);
-    const attributeBrushType = useAppSelector((state) => state.tools.attributeBrushType);
-    const brushSize = useAppSelector((state) => state.tools.brushSize);
-    const brushShape = useAppSelector((state) => state.tools.brushShape);
-    const manualAttribute = useAppSelector((state) => state.tools.manualAttribute);
-    const zoom = useAppSelector((state) => state.tools.zoom);
-    const crisp = useAppSelector((state) => state.tools.crisp);
-    const hideSourceImage = useAppSelector((state) => state.tools.hideSourceImage);
-    const hideManualPixels = useAppSelector((state) => state.tools.hideManualPixels);
-    const hideManualAttributes = useAppSelector((state) => state.tools.hideManualAttributes);
-    const hideAllAttributes = useAppSelector((state) => state.tools.hideAllAttributes);
-    const attributeGridOpacity = useAppSelector((state) => state.tools.attributeGridOpacity);
+    const tools = useAppSelector((state) => state.tools);
 
     const layers = useAppSelector((state) => state.layers.layers);
 
@@ -103,18 +94,18 @@ export const Toolbar = () => {
             dispatch(setTool(ToolType.attributes));
         }
 
-        if (tool === ToolType.mask) {
+        if (tools.tool === ToolType.mask) {
             if (event.key === 'a') dispatch(setMaskBrushType(MaskBrushType.eraser));
             if (event.key === 's') dispatch(setMaskBrushType(MaskBrushType.brush));
         }
 
-        if (tool === ToolType.pixels) {
+        if (tools.tool === ToolType.pixels) {
             if (event.key === 'a') dispatch(setPixelBrushType(PixelBrushType.eraser));
             if (event.key === 's') dispatch(setPixelBrushType(PixelBrushType.ink));
             if (event.key === 'd') dispatch(setPixelBrushType(PixelBrushType.paper));
         }
 
-        if (tool === ToolType.attributes) {
+        if (tools.tool === ToolType.attributes) {
             if (event.key === 'a') dispatch(setAttributeBrushType(AttributeBrushType.eraser));
             if (event.key === 's') dispatch(setAttributeBrushType(AttributeBrushType.all));
             if (event.key === 'd') dispatch(setAttributeBrushType(AttributeBrushType.ink));
@@ -141,26 +132,50 @@ export const Toolbar = () => {
 
         if (event.key === 'v') {
             dispatch(setAttributeGridOpacity(
-                attributeGridOpacity > 0.1
+                tools.attributeGridOpacity > 0.1
                     ? 0
-                    : attributeGridOpacity + 0.05
+                    : tools.attributeGridOpacity + 0.05
             ));
         }
     };
 
-    const download = (filename: string, downloadBitmap: boolean, downloadAttributes: boolean) => {
+    const getExportedBitmapAndAttributes = (downloadBitmap: boolean, downloadAttributes: boolean): { bitmap: Uint8Array, attributes: Uint8Array } => {
         const win = getWindow();
 
-        const bitmap = downloadBitmap ? getInvertedBitmap(win[Keys.spectrumMemoryBitmap], invertExportedImage) : [];
-        const attributes = downloadAttributes ? getInvertedAttributes(win[Keys.spectrumMemoryAttribute], invertExportedImage) : [];
+        const fullBitmap = getInvertedBitmap(win[Keys.spectrumMemoryBitmap], tools.invertExportedImage);
+        const fullAttributes = getInvertedAttributes(win[Keys.spectrumMemoryAttribute], tools.invertExportedImage);
 
-        const data = new Uint8Array(bitmap.length + attributes.length);
+        if (tools.exportFullScreen) {
+            return {
+                bitmap: downloadBitmap ? fullBitmap : new Uint8Array(),
+                attributes: downloadAttributes ? fullAttributes : new Uint8Array()
+            }
+        }
+
+        const bitmap: number[] = [];
         if (downloadBitmap) {
-            data.set(bitmap);
+            applyRange2DExclusive(tools.exportCharHeight * 8, tools.exportCharWidth, (offsetCharY, offsetCharX) => {
+                bitmap.push(fullBitmap[getSpectrumMemoryPixelOffsetAndBit((offsetCharX + tools.exportCharX) * 8, offsetCharY + tools.exportCharY * 8)[0]]);
+            });
         }
+
+        const attributes: number[] = [];
         if (downloadAttributes) {
-            data.set(attributes, downloadBitmap ? bitmap.length : 0);
+            applyRange2DExclusive(tools.exportCharHeight, tools.exportCharWidth, (offsetCharY, offsetCharX) => {
+                attributes.push(fullAttributes[offsetCharX + tools.exportCharX + (offsetCharY + tools.exportCharY) * 32]);
+            });
         }
+
+        return {
+            bitmap: new Uint8Array(bitmap),
+            attributes: new Uint8Array(attributes)
+        }
+
+    }
+
+    const download = (filename: string, downloadBitmap: boolean, downloadAttributes: boolean) => {
+        const { bitmap, attributes } = getExportedBitmapAndAttributes(downloadBitmap, downloadAttributes);
+        const data = new Uint8Array([...bitmap, ...attributes]);
 
         const blob = new Blob([data], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
@@ -172,8 +187,8 @@ export const Toolbar = () => {
         document.body.removeChild(a);
     }
 
-    const copyCode = () => {
-        const win = getWindow();
+    const copyCode = async () => {
+        const { bitmap, attributes } = getExportedBitmapAndAttributes(true, true);
 
         const defb = "        DEFB    ";
         const linePrefix = (name?: string) => name ? name + ":" + defb.substring(name.length + 1) : defb;
@@ -186,13 +201,13 @@ export const Toolbar = () => {
             ""
         );
 
-        navigator.clipboard.writeText(
-            convert("bitmap", getInvertedBitmap(win[Keys.spectrumMemoryBitmap], invertExportedImage))
+        const exportedCode = convert("bitmap", bitmap)
             + "\n\n"
-            + convert("attrs", getInvertedAttributes(win[Keys.spectrumMemoryAttribute], invertExportedImage))
-        );
+            + convert("attrs", attributes);
 
-        alert('Code copied to clipboard');
+        await navigator.clipboard.writeText(exportedCode);
+
+        alert('Code copied to clipboard\n\n' + exportedCode);
     }
 
     const [playerInitializing, setPlayerInitializing] = useState<boolean>(false);
@@ -220,8 +235,8 @@ export const Toolbar = () => {
                 () => {
                     const win = getWindow();
                     const tapeSound = getTapeSoundAudioBufferSourceNode(
-                        getInvertedBitmap(win[Keys.spectrumMemoryBitmap], invertExportedImage),
-                        getInvertedAttributes(win[Keys.spectrumMemoryAttribute], invertExportedImage)
+                        getInvertedBitmap(win[Keys.spectrumMemoryBitmap], tools.invertExportedImage),
+                        getInvertedAttributes(win[Keys.spectrumMemoryAttribute], tools.invertExportedImage)
                     );
                     setPlayer(tapeSound);
                     tapeSound.start();
@@ -239,41 +254,41 @@ export const Toolbar = () => {
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [tool, maskBrushType, pixelBrushType, attributeBrushType, attributeGridOpacity, layers]);
+    }, [tools.tool, tools.maskBrushType, tools.pixelBrushType, tools.attributeBrushType, tools.attributeGridOpacity, layers]);
 
     return (
         <div className="Toolbar">
             <Group title="Tools" disableClose={true}>
                 <Button
-                    dimmed={tool !== ToolType.nudge}
+                    dimmed={tools.tool !== ToolType.nudge}
                     onClick={() => dispatch(setTool(ToolType.nudge))}
                     icon="open_with"
                     tooltip="Nudge"
                     hotkey='Q'
                 />
                 <Button
-                    dimmed={tool !== ToolType.mask}
+                    dimmed={tools.tool !== ToolType.mask}
                     onClick={() => dispatch(setTool(ToolType.mask))}
                     icon="photo_size_select_large"
                     tooltip="Mask"
                     hotkey='W'
                 />
                 <Button
-                    dimmed={tool !== ToolType.pixels}
+                    dimmed={tools.tool !== ToolType.pixels}
                     onClick={() => dispatch(setTool(ToolType.pixels))}
                     icon="gradient"
                     tooltip="Pixels"
                     hotkey='E'
                 />
                 <Button
-                    dimmed={tool !== ToolType.attributes}
+                    dimmed={tools.tool !== ToolType.attributes}
                     onClick={() => dispatch(setTool(ToolType.attributes))}
                     icon="palette"
                     tooltip="Attributes"
                     hotkey='R'
                 />
                 <Button
-                    dimmed={tool !== ToolType.export}
+                    dimmed={tools.tool !== ToolType.export}
                     onClick={() => dispatch(setTool(ToolType.export))}
                     icon="ios_share"
                     tooltip="Export"
@@ -281,90 +296,90 @@ export const Toolbar = () => {
                 />
             </Group>
 
-            {tool === ToolType.mask && <>
+            {tools.tool === ToolType.mask && <>
                 <Group title="Mask brush" disableClose={true}>
                     <Button
-                        dimmed={maskBrushType !== MaskBrushType.eraser}
+                        dimmed={tools.maskBrushType !== MaskBrushType.eraser}
                         icon="ink_eraser"
                         tooltip="Mask eraser tool (a)"
                         onClick={() => dispatch(setMaskBrushType(MaskBrushType.eraser))} />
                     <Button
-                        dimmed={maskBrushType !== MaskBrushType.brush}
+                        dimmed={tools.maskBrushType !== MaskBrushType.brush}
                         icon="brush"
                         tooltip="Mask draw tool (s)"
                         onClick={() => dispatch(setMaskBrushType(MaskBrushType.brush))} />
                 </Group>
             </>}
-            {tool === ToolType.pixels && <>
+            {tools.tool === ToolType.pixels && <>
                 <Group title="Pixel brush" disableClose={true}>
                     <Button
-                        dimmed={pixelBrushType !== PixelBrushType.eraser}
+                        dimmed={tools.pixelBrushType !== PixelBrushType.eraser}
                         icon="ink_eraser"
                         tooltip="Erase ink & paper (a)"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.eraser))} />
                     <Button
-                        dimmed={pixelBrushType !== PixelBrushType.ink}
+                        dimmed={tools.pixelBrushType !== PixelBrushType.ink}
                         icon="border_color"
                         tooltip="Set pixels as ink (s)"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.ink))} />
                     <Button
-                        dimmed={pixelBrushType !== PixelBrushType.paper}
+                        dimmed={tools.pixelBrushType !== PixelBrushType.paper}
                         icon="check_box_outline_blank"
                         tooltip="Set pixels as paper (d)"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.paper))} />
                 </Group>
             </>}
-            {tool === ToolType.attributes && <>
+            {tools.tool === ToolType.attributes && <>
                 <Group title="Attribute brush" disableClose={true}>
                     <Button
-                        dimmed={attributeBrushType !== AttributeBrushType.eraser}
+                        dimmed={tools.attributeBrushType !== AttributeBrushType.eraser}
                         icon="ink_eraser"
                         tooltip="Erase attribute (a)"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.eraser))} />
                     <Button
-                        dimmed={attributeBrushType !== AttributeBrushType.all}
+                        dimmed={tools.attributeBrushType !== AttributeBrushType.all}
                         icon="filter_3"
                         tooltip="Set ink, paper and brightness (s)"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.all))} />
                     <Button
-                        dimmed={attributeBrushType !== AttributeBrushType.ink}
+                        dimmed={tools.attributeBrushType !== AttributeBrushType.ink}
                         icon="border_color"
                         tooltip="Set ink color only (d)"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.ink))} />
                     <Button
-                        dimmed={attributeBrushType !== AttributeBrushType.paper}
+                        dimmed={tools.attributeBrushType !== AttributeBrushType.paper}
                         icon="check_box_outline_blank"
                         tooltip="Set paper color only (f)"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.paper))} />
                     <Button
-                        dimmed={attributeBrushType !== AttributeBrushType.bright}
+                        dimmed={tools.attributeBrushType !== AttributeBrushType.bright}
                         icon="light_mode"
                         tooltip="Set brightness only (g)"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.bright))} />
                 </Group>
                 <Group className="ManualAttributeGroup" title="Attribute color" disableClose={true}>
                     <ColorPicker title=''
-                        color={manualAttribute}
+                        color={tools.manualAttribute}
                         allowInvert={true}
                         chooseColor={(color) => dispatch(setManualAttribute(color))} />
                 </Group>
             </>}
-            {(tool === ToolType.mask || tool === ToolType.pixels) && <>
+            {(tools.tool === ToolType.mask || tools.tool === ToolType.pixels) && <>
                 <Group title="Brush size" disableClose={true}>
                     <Button
-                        icon={brushShape === BrushShape.block ? "square" : "brightness_1"}
+                        icon={tools.brushShape === BrushShape.block ? "square" : "brightness_1"}
                         tooltip="Click to change tool shape"
-                        onClick={() => dispatch(setBrushShape(brushShape === BrushShape.block ? BrushShape.circle : BrushShape.block))} />
+                        onClick={() => dispatch(setBrushShape(tools.brushShape === BrushShape.block ? BrushShape.circle : BrushShape.block))} />
 
                     {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
                         key={newBrushSize}
-                        dimmed={brushSize !== newBrushSize}
+                        dimmed={tools.brushSize !== newBrushSize}
                         tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
                         onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
                 </Group>
             </>}
 
-            {tool === ToolType.mask && <>
+            {tools.tool === ToolType.mask && <>
                 <Group title="Mask" disableClose={true}>
 
                     <Button onClick={() => invertActiveLayerMaskData()}
@@ -378,19 +393,45 @@ export const Toolbar = () => {
                 </Group>
             </>}
 
-            {tool === ToolType.export && <>
+            {tools.tool === ToolType.export && <>
                 <Group title="Export settings" disableClose={true}>
-
                     <span style={{ position: 'relative', top: '-4px' }}>
                         &nbsp;Invert:&nbsp;
-                    </span>
-                    <span style={{ position: 'relative', top: '-3px' }}>
                         <Input
                             tooltip="Invert paper & ink in exported code/image"
                             type="checkbox"
-                            checked={invertExportedImage}
-                            onClick={() => dispatch(setInvertExportedImage(!invertExportedImage))}
+                            checked={tools.invertExportedImage}
+                            onClick={() => dispatch(setInvertExportedImage(!tools.invertExportedImage))}
                         />
+                        &nbsp;Full screen:&nbsp;
+                        <Input
+                            tooltip={tools.exportFullScreen ? "Export full screen memory dump (Spectrum memory layout)" : "Export part of screen (linear memory layout)"}
+                            type="checkbox"
+                            checked={tools.exportFullScreen}
+                            onClick={() => dispatch(setExportFullScreen(!tools.exportFullScreen))}
+                        />
+                        {!tools.exportFullScreen && <>
+                            &nbsp;X:<select
+                                value={tools.exportCharX}
+                                onChange={(e) => dispatch(setExportCharX(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(32).map(x => <option key={x} value={x}>{x}</option>)}
+                            </select>
+                            &nbsp;Y:<select
+                                value={tools.exportCharY}
+                                onChange={(e) => dispatch(setExportCharY(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(24).map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                            &nbsp;Width:<select
+                                value={tools.exportCharWidth}
+                                onChange={(e) => dispatch(setExportCharWidth(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(33 - tools.exportCharX).map(width => width && <option key={width} value={width}>{width}</option>)}
+                            </select>
+                            &nbsp;Height:<select
+                                value={tools.exportCharHeight}
+                                onChange={(e) => dispatch(setExportCharHeight(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(25 - tools.exportCharY).map(height => height && <option key={height} value={height}>{height}</option>)}
+                            </select>
+                        </>}
                     </span>
                 </Group>
                 <Group title="Download" disableClose={true}>
@@ -414,48 +455,48 @@ export const Toolbar = () => {
                         tooltip="Copy image data as code"
                         onClick={copyCode} />
                 </Group>
-                <Group title="Play" disableClose={true}>
+                {tools.exportFullScreen && <Group title="Play" disableClose={true}>
                     <Button
                         icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
                         tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
                         onClick={play} />
-                </Group>
+                </Group>}
 
             </>}
 
             <Group title="Zoom" disableClose={true}>
                 {[1, 2, 3, 4, 5, 10, 20].map((zoomLevel) => <Button
                     key={zoomLevel}
-                    dimmed={zoom !== zoomLevel}
+                    dimmed={tools.zoom !== zoomLevel}
                     tooltip={`Show picture using ${zoomLevel}x${zoomLevel} pixels`}
                     onClick={() => dispatch(setZoom(zoomLevel))} >{zoomLevel}</Button>
                 )}
             </Group>
 
             {
-                tool !== ToolType.export && <>
+                tools.tool !== ToolType.export && <>
                     <Group title="Visibility" disableClose={true}>
                         <Button
-                            dimmed={hideSourceImage}
+                            dimmed={tools.hideSourceImage}
                             icon="image"
-                            tooltip={hideSourceImage ? 'Source image is hidden' : 'Source image is displayed'}
-                            onClick={() => dispatch(setHideSourceImage(!hideSourceImage))} />
+                            tooltip={tools.hideSourceImage ? 'Source image is hidden' : 'Source image is displayed'}
+                            onClick={() => dispatch(setHideSourceImage(!tools.hideSourceImage))} />
                         <Button
-                            dimmed={hideManualPixels}
+                            dimmed={tools.hideManualPixels}
                             icon="gradient"
-                            tooltip={hideManualPixels ? 'Manually drawn pixels are hidden' : 'Manually drawn pixels are displayed'}
-                            onClick={() => dispatch(setHideManualPixels(!hideManualPixels))} />
+                            tooltip={tools.hideManualPixels ? 'Manually drawn pixels are hidden' : 'Manually drawn pixels are displayed'}
+                            onClick={() => dispatch(setHideManualPixels(!tools.hideManualPixels))} />
                         <Button
-                            dimmed={hideManualAttributes}
+                            dimmed={tools.hideManualAttributes}
                             icon="palette"
-                            tooltip={hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
-                            onClick={() => dispatch(setHideManualAttributes(!hideManualAttributes))} />
+                            tooltip={tools.hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
+                            onClick={() => dispatch(setHideManualAttributes(!tools.hideManualAttributes))} />
                         &nbsp;
                         <Button
-                            dimmed={!hideAllAttributes}
+                            dimmed={!tools.hideAllAttributes}
                             icon="invert_colors_off"
-                            tooltip={hideAllAttributes ? 'All attributes are ink:7 paper:0' : 'Using attributes'}
-                            onClick={() => dispatch(setHideAllAttributes(!hideAllAttributes))} />
+                            tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0' : 'Using attributes'}
+                            onClick={() => dispatch(setHideAllAttributes(!tools.hideAllAttributes))} />
                     </Group>
                     <Group title="Display" disableClose={true}>
                         <Input
@@ -464,14 +505,14 @@ export const Toolbar = () => {
                             type="range"
                             min={0}
                             max={100}
-                            value={Math.round(attributeGridOpacity * 200)}
+                            value={Math.round(tools.attributeGridOpacity * 200)}
                             onChange={(e) => dispatch(setAttributeGridOpacity(parseFloat(e.target.value) / 200))}
                         />
                         &nbsp;
                         <Button
-                            icon={crisp ? 'blur_off' : 'blur_on'}
-                            tooltip={crisp ? 'Crisp scaling' : 'Blurry scaling'}
-                            onClick={() => dispatch(setCrispScaling(!crisp))} />
+                            icon={tools.crisp ? 'blur_off' : 'blur_on'}
+                            tooltip={tools.crisp ? 'Crisp scaling' : 'Blurry scaling'}
+                            onClick={() => dispatch(setCrispScaling(!tools.crisp))} />
                     </Group>
                 </>
             }
