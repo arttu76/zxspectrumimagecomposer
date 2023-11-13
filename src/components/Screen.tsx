@@ -448,6 +448,15 @@ export const Screen = () => {
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => handleMouse(event, true);
     const handleMouseNotDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => handleMouse(event, false);
 
+    if (layers.length === 0) {
+        return <div className="Screen">
+            <div className="addLayerToBegin">
+                Add layer to start
+                <div>Click "Add layer" from the top right</div>
+            </div>
+        </div>
+    }
+
     return (
         <div className="Screen"
             ref={screenRef}>

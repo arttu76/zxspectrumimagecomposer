@@ -73,10 +73,14 @@ export const Toolbar = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
 
         if (
-            event.target instanceof HTMLInputElement
-            || event.target instanceof HTMLTextAreaElement
-            || event.target instanceof HTMLSelectElement
-        ) return;
+            (
+                event.target instanceof HTMLInputElement
+                || event.target instanceof HTMLTextAreaElement
+                || event.target instanceof HTMLSelectElement
+            ) && event.target.type !== 'range'
+        ) {
+            return;
+        }
 
         if (event.key === 'q') {
             dispatch(setTool(ToolType.nudge));

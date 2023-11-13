@@ -88,6 +88,8 @@
         input[type=range] {
             flex: 1 1 auto;
             margin: 0 0 5px 0;
+            outline: none;
+            cursor: pointer;
         }
     }
 

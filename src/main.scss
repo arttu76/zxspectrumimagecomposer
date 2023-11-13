@@ -9,6 +9,8 @@ body {
   width: 100vw;
   color: #999;
   overflow: hidden;
+
+  user-select: none;
 }
 
 ::-webkit-scrollbar {
