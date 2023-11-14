@@ -371,8 +371,14 @@ export const Screen = () => {
                 );
 
                 if (tools.tool === ToolType.mask) {
-                    getCoordinatesCoveredByCursorInSourceImageCoordinates(coordinatesCoveredByCursor, activeLayer).forEach(xy => {
-                        setMask(layer, xy.x, xy.y, tools.maskBrushType === MaskBrushType.brush, false);
+                    getCoordinatesCoveredByCursorInSourceImageCoordinates(
+                        tools.brushShape,
+                        tools.brushSize,
+                        mouseX,
+                        mouseY,
+                        activeLayer
+                    ).forEach(xy => {
+                        setMask(layer, xy.x, xy.y, tools.maskBrushType === MaskBrushType.brush);
                     });
                 }
 
@@ -408,7 +414,9 @@ export const Screen = () => {
                     win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, currentManualAttribute);
                 }
 
-                const existingAttribute = getGrowableGridData<Color>(win[Keys.manualAttributes][layer.id], cursorX, cursorY) || {
+                const existingAttribute = getGrowableGridData<Color>(win[Keys.manualAttributes][layer.id], cursorX, cursorY)
+                    || getSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], cursorX, cursorY)
+                    || {
                     ink: 0,
                     paper: 7,
                     bright: false

@@ -46,7 +46,7 @@ import {
     swapLayerPositions
 } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
-import { confirmMask } from '../utils/maskManager';
+import { makeSureMaskExists } from '../utils/maskManager';
 import { getUuid, getWindow, safeDivide, safeZero } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
@@ -104,7 +104,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             if (!win[Keys.maskData]) {
                 win[Keys.maskData] = {};
             }
-            confirmMask(layer);
+            makeSureMaskExists(layer);
 
             setImageUrl(null);
             [...document.querySelectorAll('div[contentEditable=true]')].forEach(div => div.innerHTML = '');

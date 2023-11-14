@@ -6,7 +6,7 @@ const withMaskCoordinates = <T>(
     x: number,
     y: number,
     spectrumScreenCoordinates: boolean,
-    func: (win: ExtendedWindow, offset: number, bit: number, layerX: SourceImageCoordinate, layerY: SourceImageCoordinate) => T
+    func: (win: ExtendedWindow, offset: number, bit: number, x: SourceImageCoordinate, y: SourceImageCoordinate) => T
 ): Undefinable<T> => {
     if (
         !layer?.imageId
@@ -17,16 +17,16 @@ const withMaskCoordinates = <T>(
     }
 
     if (spectrumScreenCoordinates) {
-        const { layerX, layerY } = getLayerXYFromScreenCoordinates(layer, x, y);
-        const { win, offset, bit } = confirmMask(layer, layerX, layerY);
+        const { x: layerX, y: layerY } = getLayerXYFromScreenCoordinates(layer, x, y);
+        const { win, offset, bit } = makeSureMaskExists(layer, layerX, layerY);
         return func(win, offset, bit, layerX, layerY);
     }
 
-    const { win, offset, bit } = confirmMask(layer, x, y);
+    const { win, offset, bit } = makeSureMaskExists(layer, x, y);
     return func(win, offset, bit, x, y);
 }
 
-export const confirmMask = (layer: Layer, x: number = 0, y: number = 0) => {
+export const makeSureMaskExists = (layer: Layer, x: number = 0, y: number = 0) => {
     const rowWidth = Math.ceil(layer.originalWidth! / 16);
     const bit = x % 16;
     const offset = y * rowWidth + (x - bit) / 16;
@@ -59,12 +59,12 @@ export const isMaskSet = (layer: Layer, x: number, y: number, spectrumScreenCoor
     ) || false; // in case mask does not exit
 }
 
-export const setMask = (layer: Layer, x: number, y: number, value: boolean, spectrumScreenCoordinates: boolean): void => {
+export const setMask = (layer: Layer, x: SourceImageCoordinate, y: SourceImageCoordinate, value: boolean): void => {
     withMaskCoordinates<void>(
         layer,
         x,
         y,
-        spectrumScreenCoordinates,
+        false,
         (win, offset, bit, layerX, layerY) => (
             layerX >= 0
             && layerY >= 0
@@ -81,7 +81,7 @@ export const setMask = (layer: Layer, x: number, y: number, value: boolean, spec
 
 export const mutateMask = (layer: Layer, modificationFunc: (value: boolean) => boolean) => {
 
-    const { win } = confirmMask(layer);
+    const { win } = makeSureMaskExists(layer);
 
     win[Keys.maskData][layer.id] = win[Keys.maskData][layer.id].map((value: number) => {
         let newValue = 0;

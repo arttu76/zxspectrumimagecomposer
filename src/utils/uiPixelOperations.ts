@@ -1,7 +1,7 @@
 import { BrushShape, Layer, Nullable, Rgb, SourceImageCoordinate, SpectrumPixelCoordinate, ToolType, XY } from "../types";
 import { spectrumColor } from "./colors";
 import { isMaskSet } from "./maskManager";
-import { applyRange2DExclusive, bias, getLayerXYFromScreenCoordinates, getWindow } from "./utils";
+import { applyRange2DExclusive, bias, dotProduct, getLayerXYFromScreenCoordinates, getWindow, safeDivide, toFromVector } from "./utils";
 
 export const getBackgroundValue = (x: number, y: number): number => {
     return 128
@@ -137,88 +137,88 @@ export const getCoordinatesCoveredByCursor = (
     return finalizeResults(result);
 }
 
-export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (coordinates: XY<SpectrumPixelCoordinate>[], layer: Layer): XY<SourceImageCoordinate>[] => {
-
-    const scalerFunction = (xy: XY<SpectrumPixelCoordinate>): XY<SourceImageCoordinate> => {
-        const result = getLayerXYFromScreenCoordinates(layer, xy.x, xy.y);
-        return {
-            x: result.layerX,
-            y: result.layerY
-        };
-    };
-
-    const maxY = coordinates.reduce((acc, val) => Math.max(acc, val.y), -1);
-    const yLimitSourceCoordinate: SourceImageCoordinate = scalerFunction({ y: maxY + 1, x: 0 }).y;
-
-    interface CoordinateRow {
-        y: number;
-        nextY: number;
-        minX: number;
-        maxX: number;
-        lastRow?: boolean;
+// specifically for mask tool
+export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (
+    brushShape: BrushShape,
+    brushSize: number,
+    x: SpectrumPixelCoordinate,
+    y: SpectrumPixelCoordinate,
+    layer: Layer
+): XY<SourceImageCoordinate>[] => {
+    if (!layer || !layer.originalWidth || !layer.originalHeight) {
+        return [];
     }
 
-    const groupedByY = coordinates
-        .sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x) // must be top-left first
-        .reduce((acc, val) => {
-            if (!acc.length) {
-                return [{
-                    y: val.y,
-                    lastRow: val.y === maxY,
-                    nextY: val.y === maxY ? val.y : val.y + 1,
-                    minX: val.x,
-                    maxX: val.x
-                }];
+
+    if (brushShape === BrushShape.circle) {
+        const cursorInSourceImage = getLayerXYFromScreenCoordinates(layer, x, y);
+        const scaledBrushSize = safeDivide(brushSize * layer.originalWidth, layer.width);
+        const halfSize = scaledBrushSize / 2;
+        const result: XY<SourceImageCoordinate>[] = [];
+        applyRange2DExclusive(scaledBrushSize, scaledBrushSize, (yOffset, xOffset) => {
+            const xAttempt = cursorInSourceImage.x - halfSize + xOffset;
+            const yAttempt = cursorInSourceImage.y - halfSize + yOffset;
+
+            if (
+                xAttempt < 0
+                || yAttempt < 0
+                || xAttempt >= layer.originalWidth!
+                || yAttempt >= layer.originalHeight!
+            ) {
+                return;
             }
-            const lastItem = acc[acc.length - 1];
 
-            return (lastItem.y === val.y)
-                ? [
-                    ...acc.slice(0, -1),
-                    {
-                        ...lastItem,
-                        maxX: val.x
-                    }
-                ]
-                : [
-                    ...acc,
-                    {
-                        y: val.y,
-                        lastRow: val.y === maxY,
-                        nextY: val.y === maxY ? val.y : val.y + 1,
-                        minX: val.x,
-                        maxX: val.x
-                    }
-                ]
-        },
-            [] as CoordinateRow[]
-        );
-
-    const transformed = groupedByY.map(item => {
-        const yMinX = scalerFunction({ y: item.y, x: item.minX });
-        const nextYmaxX = scalerFunction({ y: item.nextY, x: item.maxX });
-        return {
-            y: yMinX.y,
-            nextY: item.lastRow ? yLimitSourceCoordinate : nextYmaxX.y,
-            minX: yMinX.x,
-            maxX: nextYmaxX.x
-        }
-    });
-
-    const scaled = transformed.reduce((acc, val) => {
-        let result = [...acc];
-        for (let i = val.y; i < val.nextY; i++) {
-            for (let j = val.minX; j < (val.maxX + 1); j++) {
-                result.push({
-                    y: i,
-                    x: j
-                });
+            const xDiff = xAttempt - cursorInSourceImage.x;
+            const yDiff = yAttempt - cursorInSourceImage.y;
+            if (Math.sqrt(xDiff * xDiff + yDiff * yDiff) * 1.1 < halfSize) {
+                result.push({ x: Math.round(xAttempt), y: Math.round(yAttempt) });
             }
-        }
+        });
+
         return result;
-    }, [] as XY<SourceImageCoordinate>[]);
+    }
 
-    return scaled;
+    if (brushShape === BrushShape.block) {
+
+        const halfBrushSize = brushSize / 2;
+
+        const maxBrush = Math.max(
+            safeDivide(brushSize * layer.originalWidth, layer.width),
+            safeDivide(brushSize * layer.originalHeight, layer.height)
+        ) * 2;
+        const maxBrushHalf = maxBrush / 2;
+
+        const a: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x - halfBrushSize, y - halfBrushSize);
+        const b: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x + halfBrushSize, y - halfBrushSize);
+        const c: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x + halfBrushSize, y + halfBrushSize);
+        const d: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x - halfBrushSize, y + halfBrushSize);
+
+        const ab = toFromVector(b, a);
+        const bc = toFromVector(c, b);
+        const cd = toFromVector(d, c);
+        const da = toFromVector(a, d);
+
+        const result: XY<SourceImageCoordinate>[] = [];
+        const cursorInSourceImage = getLayerXYFromScreenCoordinates(layer, x, y);
+        applyRange2DExclusive(maxBrush, maxBrush, (yOffset, xOffset) => {
+            const p: XY<number> = {
+                x: Math.round(cursorInSourceImage.x - maxBrushHalf + xOffset),
+                y: Math.round(cursorInSourceImage.y - maxBrushHalf + yOffset)
+            };
+            if (
+                dotProduct(ab, toFromVector(p, a)) > 0
+                && dotProduct(bc, toFromVector(p, b)) > 0
+                && dotProduct(cd, toFromVector(p, c)) > 0
+                && dotProduct(da, toFromVector(p, d)) > 0
+            ) {
+                result.push(p);
+            }
+        });
+
+        return result;
+    }
+
+    return [];
 }
 
 export const addMouseCursor = (

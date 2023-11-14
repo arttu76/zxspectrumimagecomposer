@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import { ExtendedWindow, Grid, Keys, Layer, Nullable, Percentage, Rgb, SpectrumPixelCoordinate, State, ToolType, Undefinable } from "../types";
+import { ExtendedWindow, Grid, Keys, Layer, Nullable, Percentage, Rgb, SourceImageCoordinate, SpectrumPixelCoordinate, State, ToolType, Undefinable, XY } from "../types";
 import { isMaskSet } from './maskManager';
 
 export const getWindow = () => window as unknown as ExtendedWindow;
@@ -132,7 +132,7 @@ export const getSourceRgb = (
         return null;
     }
 
-    let { layerX, layerY } = getLayerXYFromScreenCoordinates(layer, x, y);
+    let { x: layerX, y: layerY } = getLayerXYFromScreenCoordinates(layer, x, y);
 
     if (layer.flipX && layer.originalWidth) {
         layerX = layer.originalWidth - layerX;
@@ -218,11 +218,16 @@ export const getHeightForAspectRatio = (layer: Layer): number => Math.round(
     safeZero(layer.width) / getOriginalAspectRatio(layer)
 );
 
+
+export const dotProduct = (a: XY<number>, b: XY<number>): number => a.x * b.x + a.y * b.y;
+
+export const toFromVector = (a: XY<number>, b: XY<number>): XY<number> => ({ x: a.x - b.x, y: a.y - b.y });
+
 export const getInitialized2DArray = <T>(rows: number, columns: number, initialValue: T): Grid<T> => {
     return Array.from({ length: rows }, () => Array<T>(columns).fill(initialValue));
 }
 
-export const getLayerXYFromScreenCoordinates = (layer: Layer, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate) => {
+export const getLayerXYFromScreenCoordinates = (layer: Layer, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate): XY<SourceImageCoordinate> => {
 
     const xScale = safeDivide(layer.width, layer.originalWidth);
     const yScale = safeDivide(layer.height, layer.originalHeight);
@@ -241,8 +246,8 @@ export const getLayerXYFromScreenCoordinates = (layer: Layer, x: SpectrumPixelCo
     }
 
     return {
-        layerX: Math.round(safeZero(layer.width) / 2 + dx),
-        layerY: Math.round(safeZero(layer.height) / 2 + dy)
+        x: Math.round(safeZero(layer.width) / 2 + dx),
+        y: Math.round(safeZero(layer.height) / 2 + dy)
     }
 }
 
