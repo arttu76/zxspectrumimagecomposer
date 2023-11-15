@@ -122,6 +122,10 @@ export const Toolbar = () => {
             dispatch(setBrushSize(brushSizeByKey[1]));
         }
 
+        if (event.key === 'x') {
+            dispatch(setHideAllAttributes(!tools.hideAllAttributes));
+        }
+
         if (event.key === 'c') {
             const activeLayer = layers.find(layer => layer.active);
             if (activeLayer) {
@@ -267,7 +271,15 @@ export const Toolbar = () => {
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [tools.tool, tools.maskBrushType, tools.pixelBrushType, tools.attributeBrushType, tools.attributeGridOpacity, layers]);
+    }, [
+        tools.tool,
+        tools.maskBrushType,
+        tools.pixelBrushType,
+        tools.attributeBrushType,
+        tools.hideAllAttributes,
+        tools.attributeGridOpacity,
+        layers
+    ]);
 
     return (
         <div className="Toolbar">
@@ -508,7 +520,7 @@ export const Toolbar = () => {
                         <Button
                             dimmed={!tools.hideAllAttributes}
                             icon="invert_colors_off"
-                            tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0' : 'Using attributes'}
+                            tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0 (x)' : 'Using attributes (x)'}
                             onClick={() => dispatch(setHideAllAttributes(!tools.hideAllAttributes))} />
                     </Group>
                     <Group title="Display" disableClose={true}>

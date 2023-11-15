@@ -181,12 +181,12 @@ export const Screen = () => {
                     }
                 }
 
-                if (tools.hideAllAttributes) {
-                    manualAttribute = { ink: 0, paper: 7, bright: false };
-                    adjustedAttribute = { ink: 0, paper: 7, bright: false };
-                }
-
             } // ...all layers
+
+            if (tools.hideAllAttributes) {
+                manualAttribute = { ink: 0, paper: 7, bright: false };
+                adjustedAttribute = { ink: 0, paper: 7, bright: false };
+            }
 
             if (
                 // no pixel
@@ -212,13 +212,21 @@ export const Screen = () => {
                     });
                 }
             } else {
-                let pixel = manualPixel || adjustedPixel;
+                let pixel = manualPixel !== null
+                    ? manualPixel
+                    : adjustedPixel;
 
-                let attribute = manualAttribute || adjustedAttribute || {
-                    ink: 0,
-                    paper: bg === -1 ? 7 : bg,
-                    bright: false
-                };
+                let attribute = tools.hideAllAttributes
+                    ? {
+                        ink: 0,
+                        paper: 7,
+                        bright: false
+                    }
+                    : manualAttribute || adjustedAttribute || {
+                        ink: 0,
+                        paper: bg === -1 ? 7 : bg,
+                        bright: false
+                    };
 
                 const normalOrBrightColors = attribute.bright
                     ? spectrumColor.bright

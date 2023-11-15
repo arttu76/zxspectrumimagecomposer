@@ -85,17 +85,15 @@ const toolsSlice = createSlice({
         },
         setExportCharX: (state, action: PayloadAction<number>) => {
             state.exportCharX = action.payload;
-            state.exportCharWidth = Math.min(
-                state.exportCharWidth,
-                256 / 8 - state.exportCharX
-            );
+            if (state.exportCharX + state.exportCharWidth > 32) {
+                state.exportCharWidth = 32 - state.exportCharX;
+            }
         },
         setExportCharY: (state, action: PayloadAction<number>) => {
             state.exportCharY = action.payload;
-            state.exportCharHeight = Math.min(
-                state.exportCharHeight,
-                192 / 8 - state.exportCharHeight
-            );
+            if (state.exportCharY + state.exportCharHeight > 24) {
+                state.exportCharHeight = 24 - state.exportCharY;
+            }
         },
         setExportCharWidth: (state, action: PayloadAction<number>) => {
             state.exportCharWidth = action.payload;
