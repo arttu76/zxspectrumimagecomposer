@@ -1,3 +1,4 @@
+import { useAppSelector } from '../store/store';
 import '../styles/Splash.scss';
 
 
@@ -7,7 +8,9 @@ export const Splash = () => {
 
     const [showSplash, setShowSplash] = useState(true);
 
-    return showSplash && <div className="Splash" onClick={() => setShowSplash(false)}>
+    const numberOfLayers = useAppSelector(state => state.layers.layers).length;
+
+    return showSplash && numberOfLayers === 0 && <div className="Splash" onClick={() => setShowSplash(false)}>
         <div className="SplashContent">
             <img src="/title.png" />
             <div className="SplashTextContent">

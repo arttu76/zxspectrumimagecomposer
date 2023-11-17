@@ -78,6 +78,7 @@ export const Demo = () => {
                 width={255}
                 height={192}
                 ref={canvasRef}
+                style={{ imageRendering: "pixelated" }}
             ></canvas>
         </div>
         <textarea rows={10} cols={50} value={code} onChange={(e) => runCode(e.target.value)}></textarea>

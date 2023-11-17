@@ -48,6 +48,7 @@ export function unpackBoolean(str: string): boolean[] {
     return result;
 }
 
+
 export const persistStateImageMaskPixelAttributeData = (state: State) => {
     const win = getWindow();
     localStorage.setItem(Keys.state, JSON.stringify(state));
@@ -76,7 +77,6 @@ export const restoreStateImageMaskPixelAttributeData = (): State | undefined => 
     const win = getWindow();
 
     try {
-
         win[Keys.imageData] = {};
         win[Keys.maskData] = {};
         const packedImageDataJSON = localStorage.getItem(Keys.imageData);
@@ -116,6 +116,34 @@ export const restoreStateImageMaskPixelAttributeData = (): State | undefined => 
 
     return JSON.parse('' + localStorage.getItem(Keys.state)) as Undefinable<State> || undefined;
 }
+
+export const saveEverything = (state: State): string => {
+    persistStateImageMaskPixelAttributeData(state);
+
+    return JSON.stringify({
+        [Keys.state]: localStorage.getItem(Keys.state),
+        [Keys.imageData]: localStorage.getItem(Keys.imageData),
+        [Keys.maskData]: localStorage.getItem(Keys.maskData),
+        [Keys.manualPixels]: localStorage.getItem(Keys.manualPixels),
+        [Keys.manualAttributes]: localStorage.getItem(Keys.manualAttributes),
+    });
+}
+
+export const loadEverything = (everything: string): void => {
+    try {
+        const dump = JSON.parse(everything);
+        localStorage.setItem(Keys.state, dump[Keys.state]);
+        localStorage.setItem(Keys.imageData, dump[Keys.imageData]);
+        localStorage.setItem(Keys.maskData, dump[Keys.maskData]);
+        localStorage.setItem(Keys.manualPixels, dump[Keys.manualPixels]);
+        localStorage.setItem(Keys.manualAttributes, dump[Keys.manualAttributes]);
+        location.reload();
+    } catch (err) {
+        console.error(err);
+        alert('Unable to load your project. Sorry about that!');
+    }
+}
+
 
 export const getSourceRgb = (
     layer: Layer,

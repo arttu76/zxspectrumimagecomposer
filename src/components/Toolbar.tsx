@@ -2,7 +2,7 @@ import '../styles/Toolbar.scss';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { setLayerPixelate, setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
 import { repaint } from '../store/repaintSlice';
 import {
@@ -30,10 +30,12 @@ import {
 import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
-import { applyRange2DExclusive, getWindow, rangeExclusive } from '../utils/utils';
+import { applyRange2DExclusive, getWindow, loadEverything, rangeExclusive, saveEverything } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
+
+import store from "../store/store";
 
 export const Toolbar = () => {
 
@@ -56,6 +58,30 @@ export const Toolbar = () => {
 
     const invertActiveLayerMaskData = () => applyActiveLayer(oldValue => !oldValue);
     const clearActiveLayerMaskData = () => applyActiveLayer(_ => false);
+
+    const save = async () => {
+        const everything = saveEverything(store.getState());
+        const blob = new Blob([everything], { type: "text/plain" });
+        const objectUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = 'project.zxc';
+        document.body.appendChild(a);
+        a.click();
+
+        document.body.removeChild(a);
+        URL.revokeObjectURL(objectUrl);
+    }
+
+    const load = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e: ProgressEvent<FileReader>) => loadEverything(e.target?.result as string);
+            reader.readAsText(file);
+        }
+    }
 
     const reset = () => {
         localStorage.clear();
@@ -542,7 +568,24 @@ export const Toolbar = () => {
                 </>
             }
 
-            <Group title="Reset" disableClose={true}>
+            <Group title="Save & Reset" disableClose={true}>
+                <Button
+                    icon='output_circle'
+                    tooltip={"Save your work for later use"}
+                    onClick={save}
+                />
+                <Button
+                    icon='input_circle'
+                    tooltip={"Load previously saved work"}
+                    onClick={() => document.getElementById('fileInput')!.click()}
+                />
+                <input
+                    type="file"
+                    id="fileInput"
+                    style={{ display: 'none' }}
+                    onChange={load}
+                    accept=".zxc"
+                />
                 <Button
                     icon='warning'
                     tooltip={"Reset everything, lose all your work"}
