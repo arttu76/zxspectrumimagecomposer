@@ -9,7 +9,7 @@ import tools from "./toolsSlice";
 import { repaint as repaintAction } from '../store/repaintSlice';
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
-import { restoreStateImageMaskPixelAttributeData } from "../utils/utils";
+import { restoreStateImageMaskPixelAttributeData } from "../utils/exportImport";
 import repaintScreenMiddleware from "./repaintScreenMiddleware";
 
 const preloadedState = restoreStateImageMaskPixelAttributeData();

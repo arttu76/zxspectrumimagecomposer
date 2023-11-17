@@ -30,12 +30,13 @@ import {
 import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
-import { applyRange2DExclusive, getWindow, loadEverything, rangeExclusive, saveEverything } from '../utils/utils';
+import { applyRange2DExclusive, getWindow, rangeExclusive } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
 
 import store from "../store/store";
+import { loadEverything, saveEverything } from '../utils/exportImport';
 
 export const Toolbar = () => {
 
