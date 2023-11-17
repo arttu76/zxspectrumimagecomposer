@@ -569,7 +569,7 @@ export const Toolbar = () => {
                 </>
             }
 
-            <Group title="Save & Reset" disableClose={true}>
+            <Group title="Save, Load & Reset" disableClose={true}>
                 <Button
                     icon='output_circle'
                     tooltip={"Save your work for later use"}
