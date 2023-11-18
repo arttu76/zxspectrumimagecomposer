@@ -41,8 +41,8 @@ export enum Keys {
     maskData = '_maskData',
 
     adjustedPixels = '_adjustedPixels',
-    attributes = '_attributes',
-    pixels = '_pixels',
+    adjustedSpectrumPixels = '_adjustedSpectrumPixels',
+    adjustedSpectrumAttributes = '_adjustedSpectrumAttributes',
 
     manualPixels = '_manualPixels',
     manualAttributes = '_manualAttributes',
@@ -66,9 +66,9 @@ export interface ExtendedWindow extends Window {
     [Keys.adjustedPixels]: { [key: Id]: PartialRgbImage }
 
     // source image pixels computed from adjustedPixels and layer settings - spectrum screen sized
-    [Keys.pixels]: { [key: Id]: PartialBitImage }
+    [Keys.adjustedSpectrumPixels]: { [key: Id]: PartialBitImage }
     // source image attributes computed from adjustedPixels and layer settings - spectrum screen sized
-    [Keys.attributes]: { [key: Id]: PartialAttributeImage }
+    [Keys.adjustedSpectrumAttributes]: { [key: Id]: PartialAttributeImage }
 
     // manually set pixels and attributes - spectrum screen sized
     [Keys.manualPixels]: { [key: Id]: GrowableGrid<boolean> }

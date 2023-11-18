@@ -105,102 +105,74 @@ export const Screen = () => {
 
         applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
 
-            let manualPixel: Nullable<boolean> = null;
-            let manualPixelDepth = 9999; // index of layer, the higher the deeper
-            let manualAttribute: Nullable<Color> = null;
-
-            let adjustedPixel: Nullable<boolean> = null;
-            let adjustedPixelDepth = 9999; // index of layer, the higher the deeper
-            let adjustedAttribute: Nullable<Color> = null;
-
+            let pixel: Nullable<boolean> = null;
+            let attribute: Nullable<Color> = null;
             let topmostAdjustedPixel: Nullable<Rgb> = null;
-            let topmostAdjustedPixelDepth = 9999; // index of layer, the higher the deeper
-
             let renderedPixel: Nullable<Rgb> = null;
 
             // loop visible layers from top to bottom
             for (const layer of shownLayers) {
 
-                const depth = shownLayers.indexOf(layer);
+                const pixelIsUnmasked = tools.tool === ToolType.mask || !isMaskSet(layer, x, y, true);
 
-                if (manualAttribute === null) {
-                    manualAttribute = !tools.hideManualAttributes
-                        ? getGrowableGridData<Color>(win[Keys.manualAttributes]?.[layer.id], Math.floor(x / 8), Math.floor(y / 8))
-                        : null;
+                if (
+                    pixelIsUnmasked
+                    && pixel === null
+                    && layer.pixelate === PixelationType.none
+                    && topmostAdjustedPixel === null
+                    && win[Keys.adjustedPixels][layer.id]
+                    && win[Keys.adjustedPixels][layer.id]?.[y]
+                ) {
+                    topmostAdjustedPixel = win[Keys.adjustedPixels][layer.id]?.[y][x] || null;
+                    pixel = null;
+                    attribute = null;
                 }
 
-                if (manualPixel === null) {
-                    manualPixel = !tools.hideManualPixels
-                        ? getGrowableGridData<boolean>(win[Keys.manualPixels]?.[layer.id], x, y)
-                        : null;
-                    if (manualPixel !== null) {
-                        manualPixelDepth = depth;
-                    }
+                if (
+                    pixelIsUnmasked
+                    && topmostAdjustedPixel === null
+                    && pixel === null
+                    && layer.pixelate !== PixelationType.none
+                    && !tools.hideManualPixels
+                ) {
+                    pixel = getGrowableGridData<boolean>(win[Keys.manualPixels]?.[layer.id], x, y);
                 }
 
-                // we already know what to render, no need for source/adjusted image
-                if (manualPixel) {
-                    continue;
+                if (
+                    pixelIsUnmasked
+                    && topmostAdjustedPixel === null
+                    && attribute === null
+                    && layer.pixelate !== PixelationType.none
+                    && !tools.hideManualAttributes
+                    && !tools.hideAllAttributes
+                ) {
+                    attribute = getGrowableGridData<Color>(win[Keys.manualAttributes]?.[layer.id], Math.floor(x / 8), Math.floor(y / 8));
                 }
 
-                // code below deals with source/adjusted/dithered image, ignore it if user so wishes
-                if (tools.hideSourceImage) {
-                    continue;
+                if (
+                    pixelIsUnmasked
+                    && topmostAdjustedPixel === null
+                    && attribute === null
+                    && !tools.hideAllAttributes
+                    && win[Keys.adjustedSpectrumAttributes]
+                    && win[Keys.adjustedSpectrumAttributes]?.[layer.id]
+                    && win[Keys.adjustedSpectrumAttributes]?.[layer.id]?.[Math.floor(y / 8)]
+                ) {
+                    attribute = win[Keys.adjustedSpectrumAttributes]?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)];
                 }
 
-                if (layer.pixelate === PixelationType.none) {
-                    // source/adjusted image
-                    if (
-                        topmostAdjustedPixel === null
-                        && win[Keys.adjustedPixels][layer.id]
-                        && win[Keys.adjustedPixels][layer.id]?.[y]
-                        && (tools.tool === ToolType.mask || !isMaskSet(layer, x, y, true))
-                    ) {
-                        topmostAdjustedPixel = win[Keys.adjustedPixels][layer.id]?.[y][x] || null;
-                        if (topmostAdjustedPixel !== null) {
-                            topmostAdjustedPixelDepth = depth;
-                        }
-                    }
-                } else {
-                    if (isMaskSet(layer, x, y, true) && tools.tool !== ToolType.mask) continue;
-                    // dithered image
-                    if (adjustedPixel === null) {
-                        adjustedPixel = booleanOrNull(win[Keys.pixels]?.[layer.id]?.[y][x]);
-                        if (adjustedPixel !== null) {
-                            adjustedPixelDepth = depth;
-                        }
-                    }
-                    if (adjustedAttribute === null) {
-                        adjustedAttribute = (
-                            win[Keys.attributes]
-                            && win[Keys.attributes]?.[layer.id]
-                            && win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)]
-                        )
-                            ? win[Keys.attributes]?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)]
-                            : null;
-                    }
+                if (
+                    layer.pixelate !== PixelationType.none
+                    && pixelIsUnmasked
+                    && pixel === null
+                ) {
+                    pixel = booleanOrNull(win[Keys.adjustedSpectrumPixels]?.[layer.id]?.[y][x]);
                 }
 
             } // ...all layers
 
-            if (tools.hideAllAttributes) {
-                manualAttribute = { ink: 0, paper: 7, bright: false };
-                adjustedAttribute = { ink: 0, paper: 7, bright: false };
-            }
-
             if (
-                // no pixel
-                (
-                    manualPixel === null
-                    && manualAttribute === null
-                    && adjustedAttribute === null
-                    && adjustedPixel === null
-                )
-                ||
-                (
-                    topmostAdjustedPixelDepth < adjustedPixelDepth
-                    && topmostAdjustedPixelDepth < manualPixelDepth
-                )
+                pixel === null
             ) {
                 renderedPixel = replaceEmptyWithBackground(topmostAdjustedPixel, x, y, bg);
                 setSpectrumMemoryPixel(win[Keys.spectrumMemoryBitmap], x, y, false);
@@ -212,21 +184,11 @@ export const Screen = () => {
                     });
                 }
             } else {
-                let pixel = manualPixel !== null
-                    ? manualPixel
-                    : adjustedPixel;
-
-                let attribute = tools.hideAllAttributes
-                    ? {
-                        ink: 0,
-                        paper: 7,
-                        bright: false
-                    }
-                    : manualAttribute || adjustedAttribute || {
-                        ink: 0,
-                        paper: bg === -1 ? 7 : bg,
-                        bright: false
-                    };
+                attribute = attribute || {
+                    ink: 0,
+                    paper: bg === -1 ? 0 : bg,
+                    bright: false
+                };
 
                 const normalOrBrightColors = attribute.bright
                     ? spectrumColor.bright

@@ -99,8 +99,6 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             const imageId = getUuid();
             win[Keys.imageData][imageId] = Array.from(data).filter((_, idx) => idx % 4 < 3);
 
-            console.log("read the pixels ", imageId);
-
             if (!win[Keys.maskData]) {
                 win[Keys.maskData] = {};
             }

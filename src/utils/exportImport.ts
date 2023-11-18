@@ -47,7 +47,7 @@ export function unpackBoolean(str: string): boolean[] {
 }
 
 
-export const persistStateImageMaskPixelAttributeData = (state: State) => {
+export const saveStateImageMaskPixelAttributeDataToLocalStorage = (state: State) => {
     const win = getWindow();
     localStorage.setItem(Keys.state, JSON.stringify(state));
 
@@ -71,7 +71,7 @@ export const persistStateImageMaskPixelAttributeData = (state: State) => {
     localStorage.setItem(Keys.manualAttributes, JSON.stringify(win[Keys.manualAttributes]));
 }
 
-export const restoreStateImageMaskPixelAttributeData = (): State | undefined => {
+export const restoreStateImageMaskPixelAttributeDataFromLocalStorage = (): State | undefined => {
     const win = getWindow();
 
     try {
@@ -109,14 +109,14 @@ export const restoreStateImageMaskPixelAttributeData = (): State | undefined => 
 
     win[Keys.patternCache] = {};
     win[Keys.adjustedPixels] = {};
-    win[Keys.pixels] = {};
-    win[Keys.attributes] = {};
+    win[Keys.adjustedPixels] = {};
+    win[Keys.adjustedSpectrumAttributes] = {};
 
     return JSON.parse('' + localStorage.getItem(Keys.state)) as Undefinable<State> || undefined;
 }
 
 export const saveEverything = (state: State): string => {
-    persistStateImageMaskPixelAttributeData(state);
+    saveStateImageMaskPixelAttributeDataToLocalStorage(state);
     return JSON.stringify({
         [Keys.state]: localStorage.getItem(Keys.state),
         [Keys.imageData]: localStorage.getItem(Keys.imageData),

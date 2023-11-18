@@ -1,10 +1,10 @@
-import { persistStateImageMaskPixelAttributeData } from "../utils/exportImport";
+import { saveStateImageMaskPixelAttributeDataToLocalStorage } from "../utils/exportImport";
 import { debounce } from "../utils/utils";
 import store from "./store";
 
 
 const updateLocalStorage = () => {
-    persistStateImageMaskPixelAttributeData(store.getState());
+    saveStateImageMaskPixelAttributeDataToLocalStorage(store.getState());
 }
 
 const updateLocalStorageDebounced = debounce(() => updateLocalStorage(), 100);

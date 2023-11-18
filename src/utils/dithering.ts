@@ -86,7 +86,7 @@ export const isDitheredPixelSet = (ctx: LayerContext, x: SpectrumPixelCoordinate
 
     const win = getWindow();
     const sourceRgb = win[Keys.adjustedPixels][ctx.layer.id][y][x];
-    const targetAttribute = win[Keys.attributes][ctx.layer.id][Math.floor(y / 8)][Math.floor(x / 8)]
+    const targetAttribute = win[Keys.adjustedSpectrumAttributes][ctx.layer.id][Math.floor(y / 8)][Math.floor(x / 8)]
     if (sourceRgb === null || targetAttribute! === null) {
         return null;
     }
@@ -140,7 +140,7 @@ export const computeAttributeBlockColor = (layer: Layer, x: SpectrumPixelCoordin
                     (acc, val) => acc + val[0] + val[1] + val[2],
                     0
                 ) / (contributingAdjustedPixels.length * 3)
-            ) > (layer.brightnessThreshold * 2.55) // bright if treshold exceeded 
+            ) > (layer.brightnessThreshold * 2.55) // bright if treshold exceeded
 
     // transform contributing pixels to spectrum colors
     const normalOrBrightColors = bright ? spectrumColor.bright : spectrumColor.normal;

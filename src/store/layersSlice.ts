@@ -333,8 +333,8 @@ const layersSlice = createSlice({
             }
             win[Keys.maskData] && delete win[Keys.maskData][layerId];
             win[Keys.adjustedPixels] && delete win[Keys.adjustedPixels][layerId];
-            win[Keys.pixels] && delete win[Keys.pixels][layerId];
-            win[Keys.attributes] && delete win[Keys.attributes][layerId];
+            win[Keys.adjustedPixels] && delete win[Keys.adjustedPixels][layerId];
+            win[Keys.adjustedSpectrumAttributes] && delete win[Keys.adjustedSpectrumAttributes][layerId];
             win[Keys.patternCache] && delete win[Keys.patternCache][layerId];
             win[Keys.manualPixels] && delete win[Keys.manualPixels][layerId];
             win[Keys.manualAttributes] && delete win[Keys.manualAttributes][layerId];

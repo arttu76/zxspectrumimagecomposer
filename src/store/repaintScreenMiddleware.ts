@@ -89,8 +89,7 @@ const updateAdjustedPixelsIfRequired = () => {
                 adjustedPixels = edgeEnhance(adjustedPixels, layer.edgeEnhance / 100);
             }
 
-            getWindow()[Keys.adjustedPixels][layer.id] = adjustedPixels;
-
+            win[Keys.adjustedPixels][layer.id] = adjustedPixels;
             store.dispatch(setLayerRequireAdjustedPixelsRefresh({ layer, required: false }))
         });
 }
@@ -130,11 +129,11 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
     const win = getWindow();
     updateAdjustedPixelsIfRequired(); // make sure source adjusted pixels are up to date
 
-    if (!win[Keys.attributes]) {
-        win[Keys.attributes] = {};
+    if (!win[Keys.adjustedSpectrumAttributes]) {
+        win[Keys.adjustedSpectrumAttributes] = {};
     }
-    if (!win[Keys.pixels]) {
-        win[Keys.pixels] = {};
+    if (!win[Keys.adjustedSpectrumPixels]) {
+        win[Keys.adjustedSpectrumPixels] = {};
     }
 
     const state = store.getState();
@@ -143,12 +142,12 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
         .filter((layer: Layer) => layer.requireSpectrumPixelsRefresh)
         .forEach((layer: Layer) => {
 
-            if (!win[Keys.attributes][layer.id]) {
-                win[Keys.attributes][layer.id] = getInitialized2DArray<Nullable<Color>>(24, 32, null);
+            if (!win[Keys.adjustedSpectrumAttributes][layer.id]) {
+                win[Keys.adjustedSpectrumAttributes][layer.id] = getInitialized2DArray<Nullable<Color>>(24, 32, null);
             }
 
-            if (!win[Keys.pixels][layer.id]) {
-                win[Keys.pixels][layer.id] = getInitialized2DArray<Nullable<boolean>>(192, 256, null);
+            if (!win[Keys.adjustedSpectrumPixels][layer.id]) {
+                win[Keys.adjustedSpectrumPixels][layer.id] = getInitialized2DArray<Nullable<boolean>>(192, 256, null);
             }
 
             const ditheringContext = initializeLayerContext(
@@ -167,17 +166,17 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
                     );
 
                     if (allPixelsInCharEmpty) {
-                        win[Keys.attributes][layer.id][attrY][attrX] = null;
+                        win[Keys.adjustedSpectrumAttributes][layer.id][attrY][attrX] = null;
                     } else {
-                        win[Keys.attributes][layer.id][attrY][attrX] = layer.pixelateSource === PixelationSource.targetColor
+                        win[Keys.adjustedSpectrumAttributes][layer.id][attrY][attrX] = layer.pixelateSource === PixelationSource.targetColor
                             ? layer.pixelateTargetColor
                             : computeAttributeBlockColor(layer, x, y);
                     }
                 }
 
-                const attribute = win[Keys.attributes][layer.id][attrY][attrX];
+                const attribute = win[Keys.adjustedSpectrumAttributes][layer.id][attrY][attrX];
 
-                win[Keys.pixels][layer.id][y][x] = (
+                win[Keys.adjustedSpectrumPixels][layer.id][y][x] = (
                     attribute // if there is no attribute, no use checking if pixel is to be dithered or not
                         ? isDitheredPixelSet(ditheringContext, x, y)
                         : null
