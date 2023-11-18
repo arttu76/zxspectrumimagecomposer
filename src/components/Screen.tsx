@@ -185,11 +185,17 @@ export const Screen = () => {
                     });
                 }
             } else {
-                attribute = attribute || {
-                    ink: 0,
-                    paper: bg === -1 ? 0 : bg,
-                    bright: false
-                };
+                attribute = tools.hideAllAttributes ?
+                    {
+                        ink: 0,
+                        paper: 7,
+                        bright: false
+                    }
+                    : attribute || {
+                        ink: 0,
+                        paper: bg === -1 ? 0 : bg,
+                        bright: false
+                    };
 
                 const normalOrBrightColors = attribute.bright
                     ? spectrumColor.bright
