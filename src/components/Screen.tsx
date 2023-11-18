@@ -46,10 +46,10 @@ export const Screen = () => {
 
         }
 
-        window.addEventListener('resize', resize);
+        win.addEventListener('resize', resize);
         resize();
 
-        return () => window.removeEventListener('resize', resize);
+        return () => win.removeEventListener('resize', resize);
     }, []);
 
     const bg = useAppSelector((state) => state.layers.background);
