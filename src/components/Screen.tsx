@@ -162,7 +162,8 @@ export const Screen = () => {
                 }
 
                 if (
-                    layer.pixelate !== PixelationType.none
+                    topmostAdjustedPixel === null
+                    && layer.pixelate !== PixelationType.none
                     && pixelIsUnmasked
                     && pixel === null
                 ) {
