@@ -56,6 +56,22 @@
         }
     }
 
+    .Group .GroupContent .help.glow {
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1.175);
+            }
+
+            50% {
+                transform: scale(1);
+            }
+        }
+
+        animation: pulse 1s infinite;
+    }
+
     .Group .GroupContent .reset {
         background-color: #900;
         border: none;

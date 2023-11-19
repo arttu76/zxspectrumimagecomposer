@@ -592,6 +592,7 @@ export const Toolbar = () => {
                 <Button
                     icon='help'
                     tooltip="Help"
+                    className={"CustomElements help" + (layers.length === 0 ? " glow" : "")}
                     onClick={() => dispatch(showHelp(true))} />
                 &nbsp;
                 <Button
