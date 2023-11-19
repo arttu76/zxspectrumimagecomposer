@@ -25,7 +25,8 @@ import {
     setMaskBrushType,
     setPixelBrushType,
     setTool,
-    setZoom
+    setZoom,
+    showHelp
 } from "../store/toolsSlice";
 import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
@@ -37,6 +38,7 @@ import { Group } from './Group';
 
 import store from "../store/store";
 import { loadEverything, saveEverything } from '../utils/exportImport';
+import { Help } from './Help';
 
 export const Toolbar = () => {
 
@@ -550,7 +552,7 @@ export const Toolbar = () => {
                     <Group title="Display" disableClose={true}>
                         <Input
                             tooltip="Attribute grid visibility (v)"
-                            style={{ width: "50px" }}
+                            style={{ width: "50px", position: 'relative', top: '-2px', color: 'white' }}
                             type="range"
                             min={0}
                             max={100}
@@ -569,12 +571,12 @@ export const Toolbar = () => {
             <Group title="Save, Load & Reset" disableClose={true}>
                 <Button
                     icon='output_circle'
-                    tooltip={"Save your work for later use"}
+                    tooltip="Save your work for later use"
                     onClick={save}
                 />
                 <Button
                     icon='input_circle'
-                    tooltip={"Load previously saved work"}
+                    tooltip="Load previously saved work"
                     onClick={() => document.getElementById('fileInput')!.click()}
                 />
                 <input
@@ -584,13 +586,19 @@ export const Toolbar = () => {
                     onChange={load}
                     accept=".zxc"
                 />
+                &nbsp;
+                <Button
+                    icon='help'
+                    tooltip="Help"
+                    onClick={() => dispatch(showHelp(true))} />
+                &nbsp;
                 <Button
                     icon='warning'
-                    tooltip={"Reset everything, lose all your work"}
+                    tooltip="Reset everything, lose all your work!"
                     className="reset"
                     onClick={reset} />
             </Group>
-
+            <Help />
         </div>
     );
 };

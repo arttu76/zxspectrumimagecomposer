@@ -1,0 +1,26 @@
+@import "./variables";
+
+.Help {
+    position: fixed;
+    display: block;
+    z-index: 1000;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    width: 50vw;
+    margin: 10vh 25vw;
+    background: $background;
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 200px 50px black;
+
+    .HelpButtonContainer {
+        padding: 20px;
+        text-align: center;
+    }
+
+}

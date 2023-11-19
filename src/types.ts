@@ -217,6 +217,7 @@ export interface ToolsSliceState {
     hideManualAttributes: boolean;
     hideAllAttributes: boolean;
     attributeGridOpacity: number;
+    showHelp: boolean;
 }
 
 export interface State {

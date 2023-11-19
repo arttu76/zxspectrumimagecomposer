@@ -28,7 +28,8 @@ const initialState: ToolsSliceState = {
     hideManualPixels: false,
     hideManualAttributes: false,
     hideAllAttributes: false,
-    attributeGridOpacity: 0
+    attributeGridOpacity: 0,
+    showHelp: false
 }
 
 const toolsSlice = createSlice({
@@ -100,6 +101,9 @@ const toolsSlice = createSlice({
         },
         setExportCharHeight: (state, action: PayloadAction<number>) => {
             state.exportCharHeight = action.payload;
+        },
+        showHelp: (state, action: PayloadAction<boolean>) => {
+            state.showHelp = action.payload;
         }
     }
 })
@@ -124,7 +128,8 @@ export const {
     setExportCharX,
     setExportCharY,
     setExportCharWidth,
-    setExportCharHeight
+    setExportCharHeight,
+    showHelp
 
 } = toolsSlice.actions;
 

@@ -14,6 +14,7 @@ import { isMaskSet, setMask } from '../utils/maskManager';
 import { getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, getSpectrumMemoryPixelOffsetAndBit, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
 import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getBackgroundValue, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
 import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getInitialized2DArray, getWindow } from "../utils/utils";
+import { Icon } from './Icon';
 
 const win = getWindow();
 
@@ -450,6 +451,7 @@ export const Screen = () => {
             <div className="addLayerToBegin">
                 Add layer to start
                 <div>Click "Add layer" from the top right</div>
+                <div>Click Question-icon <Icon icon='help' /> on the top toolbar for help</div>
             </div>
         </div>
     }
