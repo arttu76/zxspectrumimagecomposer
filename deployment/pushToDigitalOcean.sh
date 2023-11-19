@@ -1,4 +1,5 @@
-tag=`date +"%d%b%Y"`
+version=$(grep '"version":' package.json | cut -d '"' -f 4)
+tag=$(date +"%d%b%Y")_$version
 
 doctl registry login
 docker tag zximage:latest registry.digitalocean.com/solvalou-docker/zximage:latest

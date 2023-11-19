@@ -5,6 +5,6 @@ import { version } from './package.json';
 export default defineConfig({
   plugins: [react()],
   define: {
-    '__APP_VERSION__': JSON.stringify(version)
+    '__APP_VERSION__': JSON.stringify(version) // also see vite-env.d.ts
   }
 })
