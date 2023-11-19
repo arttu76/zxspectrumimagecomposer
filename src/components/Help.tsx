@@ -91,6 +91,10 @@ export const Help = () => {
         They're not masterpieces, but demonstrate how quickly you can create something with this tool: each image took only one or two minutes!
         What can you create? Let me know and I'll add your project to the list!
 
+        <br /><br />
+        Don't hesitate to contact me!<br />
+        Find "Arttu Ylärakkola" in Facebook or email arttu@solvalou.com
+
 
         <div className="HelpButtonContainer">
             <Button icon='image'
