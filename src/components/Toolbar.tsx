@@ -87,8 +87,10 @@ export const Toolbar = () => {
     }
 
     const reset = () => {
-        localStorage.clear();
-        window.location.reload();
+        if (confirm("Are you sure you want to reset? You will loose all your unsaved work!")) {
+            localStorage.clear();
+            window.location.reload();
+        }
     }
 
     const keysToBrushSize = [
