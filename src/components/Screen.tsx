@@ -13,7 +13,7 @@ import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridM
 import { isMaskSet, setMask } from '../utils/maskManager';
 import { getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, getSpectrumMemoryPixelOffsetAndBit, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
 import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getBackgroundValue, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
-import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getWindow } from "../utils/utils";
+import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getInitialized2DArray, getWindow } from "../utils/utils";
 
 const win = getWindow();
 
@@ -34,6 +34,7 @@ export const Screen = () => {
 
     // change zoom when window is resized
     useEffect(() => {
+
         const resize = () => {
             if (screenRef?.current) {
                 dispatch(setZoom(
@@ -43,7 +44,6 @@ export const Screen = () => {
                     )
                 ));
             }
-
         }
 
         win.addEventListener('resize', resize);
@@ -103,6 +103,8 @@ export const Screen = () => {
 
         const shownLayers = layers.filter(layer => layer.shown);
 
+        const alreadySelectedAttribute = getInitialized2DArray<Nullable<Color>>(256 / 8, 192 / 8, null);
+
         applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
 
             let pixel: Nullable<boolean> = null;
@@ -116,7 +118,8 @@ export const Screen = () => {
                 const pixelIsUnmasked = tools.tool === ToolType.mask || !isMaskSet(layer, x, y, true);
 
                 if (
-                    pixelIsUnmasked
+                    !tools.hideSourceImage
+                    && pixelIsUnmasked
                     && pixel === null
                     && layer.pixelate === PixelationType.none
                     && topmostAdjustedPixel === null
@@ -125,7 +128,6 @@ export const Screen = () => {
                 ) {
                     topmostAdjustedPixel = win[Keys.adjustedPixels][layer.id]?.[y][x] || null;
                     pixel = null;
-                    attribute = null;
                 }
 
                 if (
@@ -142,27 +144,37 @@ export const Screen = () => {
                     pixelIsUnmasked
                     && topmostAdjustedPixel === null
                     && attribute === null
-                    && layer.pixelate !== PixelationType.none
                     && !tools.hideManualAttributes
                     && !tools.hideAllAttributes
+                    && !alreadySelectedAttribute[Math.floor(x / 8)][Math.floor(y / 8)]
                 ) {
                     attribute = getGrowableGridData<Color>(win[Keys.manualAttributes]?.[layer.id], Math.floor(x / 8), Math.floor(y / 8));
+                    alreadySelectedAttribute[Math.floor(x / 8)][Math.floor(y / 8)] = attribute;
                 }
 
                 if (
-                    pixelIsUnmasked
+                    !tools.hideSourceImage
+                    && pixelIsUnmasked
                     && topmostAdjustedPixel === null
                     && attribute === null
+                    && layer.pixelate !== PixelationType.none
                     && !tools.hideAllAttributes
+                    && !alreadySelectedAttribute[Math.floor(x / 8)][Math.floor(y / 8)]
                     && win[Keys.adjustedSpectrumAttributes]
                     && win[Keys.adjustedSpectrumAttributes]?.[layer.id]
                     && win[Keys.adjustedSpectrumAttributes]?.[layer.id]?.[Math.floor(y / 8)]
                 ) {
                     attribute = win[Keys.adjustedSpectrumAttributes]?.[layer.id]?.[Math.floor(y / 8)][Math.floor(x / 8)];
+                    alreadySelectedAttribute[Math.floor(x / 8)][Math.floor(y / 8)] = attribute;
+                }
+
+                if (!attribute) {
+                    attribute = alreadySelectedAttribute[Math.floor(x / 8)][Math.floor(y / 8)];
                 }
 
                 if (
-                    topmostAdjustedPixel === null
+                    !tools.hideSourceImage
+                    && topmostAdjustedPixel === null
                     && layer.pixelate !== PixelationType.none
                     && pixelIsUnmasked
                     && pixel === null

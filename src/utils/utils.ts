@@ -4,6 +4,15 @@ import { isMaskSet } from './maskManager';
 
 export const getWindow = () => window as unknown as ExtendedWindow;
 
+export const resize = () => window.dispatchEvent(new Event('resize'));
+
+export const showAlert = (...message: string[]) => {
+    setTimeout(
+        () => alert(message.join('\n\n')),
+        1
+    );
+}
+
 export const getSourceRgb = (
     layer: Layer,
     x: SpectrumPixelCoordinate,

@@ -30,7 +30,7 @@ import {
 import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
-import { applyRange2DExclusive, getWindow, rangeExclusive } from '../utils/utils';
+import { applyRange2DExclusive, getWindow, rangeExclusive, showAlert } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
@@ -242,7 +242,7 @@ export const Toolbar = () => {
 
         await navigator.clipboard.writeText(exportedCode);
 
-        alert('Code copied to clipboard\n\n' + exportedCode);
+        showAlert('Code copied to clipboard', exportedCode);
     }
 
     const [playerInitializing, setPlayerInitializing] = useState<boolean>(false);
@@ -275,12 +275,9 @@ export const Toolbar = () => {
                     );
                     setPlayer(tapeSound);
 
-                    alert(
-                        'Connect your ZX Spectrum to your computer\'s audio output - set the volume to relatively high level.'
-                        + '\n\n'
-                        + 'On the Spectrum, write LOAD""SCREEN$ and press ENTER. Then click OK on this computer to start playback.'
-                        + '\n\n'
-                        + 'Surely you know how all this works.'
+                    showAlert(
+                        'Connect your ZX Spectrum to your computer\'s audio output - set the volume to relatively high level.',
+                        'On the Spectrum, write LOAD""SCREEN$ and press ENTER. Then click OK on this computer to start playback.'
                     );
 
                     tapeSound.start();

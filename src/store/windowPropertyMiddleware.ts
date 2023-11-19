@@ -3,6 +3,7 @@ import { Color, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb } 
 import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from "../utils/colors";
 import { computeAttributeBlockColor, isDitheredPixelSet } from "../utils/dithering";
 import { initializeLayerContext } from "../utils/layerContextManager";
+import { isMaskSet } from "../utils/maskManager";
 import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb, getWindow, rangeExclusive } from "../utils/utils";
 import {
     addLayerPattern,
@@ -162,7 +163,13 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
                 if (x % 8 === 0 && y % 8 === 0) {
                     let allPixelsInCharEmpty = rangeExclusive(8).every(
                         yOffset => rangeExclusive(8).every(
-                            xOffset => win[Keys.adjustedPixels][layer.id][y + yOffset][x + xOffset] === null)
+                            xOffset => (
+                                // pixel is considered empty if it is masked ...
+                                isMaskSet(layer, x + xOffset, y + yOffset, true)
+                                // ... or if it has no pixels
+                                || win[Keys.adjustedPixels][layer.id][y + yOffset][x + xOffset] === null
+                            )
+                        )
                     );
 
                     if (allPixelsInCharEmpty) {

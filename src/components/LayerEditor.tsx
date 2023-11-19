@@ -47,7 +47,7 @@ import {
 } from "../store/layersSlice";
 import { repaint } from '../store/repaintSlice';
 import { makeSureMaskExists } from '../utils/maskManager';
-import { getUuid, getWindow, safeDivide, safeZero } from '../utils/utils';
+import { getUuid, getWindow, resize, safeDivide, safeZero, showAlert } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
 import { Button, Input } from './CustomElements';
 import { Group } from './Group';
@@ -109,6 +109,19 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
             dispatch(setLayerSrcImage({ layer, imageId, width: canvas.width, height: canvas.height }));
             dispatch(repaint());
+
+            // set image scale after upload
+            resize();
+
+            if (canvas.width > 256 * 2 || canvas.height > 192 * 2) {
+                showAlert(
+                    'The image you uploaded is ' + canvas.width + 'x' + canvas.height + ' pixels.',
+                    'Uploading large images may cause the editor to become unresponsive, '
+                    + 'especially if you have multiple layers with large images.',
+                    'Considering the Spectrum screen resolution is 256x192, the source images '
+                    + 'do not have to be very large, unless you want to use a specific detail from the source image.'
+                );
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 import { Keys, Nullable, State, Undefinable } from "../types";
-import { getWindow } from "./utils";
+import { getWindow, showAlert } from "./utils";
 
 
 export const pack8bit = (values: number[]): string => {
@@ -102,7 +102,7 @@ export const restoreStateImageMaskPixelAttributeDataFromLocalStorage = (): State
 
     } catch (err) {
         console.log(err);
-        alert('Unable to restore previous session. Sorry about that!');
+        showAlert('Unable to restore previous session. Sorry about that!');
         localStorage.clear();
         location.reload();
     }
@@ -137,6 +137,6 @@ export const loadEverything = (everything: string): void => {
         location.reload();
     } catch (err) {
         console.error(err);
-        alert('Unable to load your project. Sorry about that!');
+        showAlert('Unable to load your project. Sorry about that!');
     }
 }
