@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
 import '../styles/App.scss';
 
+import { useAppSelector } from '../store/store';
 import { Layers } from "./Layers";
 import { Screen } from "./Screen";
 import { Splash } from './Splash';
 import { Toolbar } from "./Toolbar";
 
 export const App = () => {
+
+  const currentTool = useAppSelector((state) => state.tools.tool);
 
   useEffect(() => {
     const resize = () => {
@@ -26,7 +29,7 @@ export const App = () => {
     resize();
 
     return () => window.removeEventListener('resize', resize);
-  }, []);
+  }, [currentTool]);
 
   return (
     <>
