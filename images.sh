@@ -22,4 +22,3 @@ doctl registry repository list-tags zximage
 echo ""
 echo "Staring garbage collection"
 doctl registry garbage-collection start
-echo "Garbage collection complete"
