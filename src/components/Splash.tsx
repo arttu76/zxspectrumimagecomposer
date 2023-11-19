@@ -26,7 +26,7 @@ export const Splash = () => {
                 appreciate if could you let me (arttu@solvalou.com) know if you have used this application.
                 Thanks!
                 <br />
-                <span style={{ float: 'right', opacity: 0.25, margin: '0 0 10px 0' }}>v0.1</span>
+                <span style={{ float: 'right', opacity: 0.25, margin: '0 0 10px 0' }}>{__APP_VERSION__}</span>
             </div>
         </div>
     </div>
