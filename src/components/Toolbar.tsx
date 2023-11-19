@@ -568,7 +568,7 @@ export const Toolbar = () => {
                 </>
             }
 
-            <Group title="Save, Load & Reset" disableClose={true}>
+            <Group title="Project & Help" disableClose={true}>
                 <Button
                     icon='output_circle'
                     tooltip="Save your work for later use"

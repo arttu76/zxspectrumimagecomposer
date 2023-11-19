@@ -1,6 +1,7 @@
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { showHelp } from '../store/toolsSlice';
 import '../styles/Help.scss';
+import { loadEverything } from '../utils/exportImport';
 import { Button } from './CustomElements';
 
 export const Help = () => {
@@ -10,6 +11,14 @@ export const Help = () => {
     const dispatch = useAppDispatch();
     const hideHelp = () => {
         dispatch(showHelp(false));
+    }
+
+    const loadExample = async (url: string) => {
+        if (confirm("Loading this example will replace your current project. Are you sure?")) {
+            const response = await fetch(url);
+            const data = await response.text();
+            loadEverything(data);
+        }
     }
 
     return helpSHown && <div className="Help">
@@ -76,8 +85,23 @@ export const Help = () => {
         The idea behind the user interface is that your left hand rests on q-a-z keys and your right hand operates the mouse/touchpad.
         All keyboard shortcuts (shown in icon tooltips, enclosed in parentheses) are defined so that you can access them without having to move your left hand.
 
+        <br /><br />
+        Below you will find some example projects.
+        You can load them by clicking the "Load example" button.
+        They're not masterpieces, but demonstrate how quickly you can create something with this tool: each image took only one or two minutes!
+        What can you create? Let me know and I'll add your project to the list!
+
+
         <div className="HelpButtonContainer">
-            <Button tooltip='Close this help' onClick={hideHelp}>Close</Button>
+            <Button icon='image'
+                tooltip='Load example project'
+                onClick={() => loadExample('/ferrari.zxc')}>Load example "ferrari"</Button>
+            <Button icon='image'
+                tooltip='Load example project'
+                onClick={() => loadExample('/cat.zxc')}>Load example "cat"</Button>
+            <Button icon='close'
+                tooltip='Close this help'
+                onClick={hideHelp}>Close</Button>
         </div>
     </div>
 
