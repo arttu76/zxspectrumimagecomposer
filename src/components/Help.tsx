@@ -114,9 +114,9 @@ export const Help = () => {
             Find "Arttu Ylärakkola" in Facebook or email arttu@solvalou.com
             <br /><br />
             Source code is available in <a
-                href="https://github.com/arttu76/scr"
+                href="https://github.com/arttu76/zxspectrumimagecomposer"
                 target="_blank"
-                style={{ color: "#888" }}>https://github.com/arttu76/scr</a>
+                style={{ color: "#888" }}>https://github.com/arttu76/zxspectrumimagecomposer</a>
         </Group>
 
         <div className="HelpButtonContainer">
