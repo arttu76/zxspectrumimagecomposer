@@ -112,6 +112,11 @@ export const Help = () => {
         <Group title="Feel free to ask for help!" disableClose={true}>
             Don't hesitate to contact me: all kinds of feedback is very welcome!
             Find "Arttu Ylärakkola" in Facebook or email arttu@solvalou.com
+            <br /><br />
+            Source code is available in <a
+                href="https://github.com/arttu76/scr"
+                target="_blank"
+                style={{ color: "#888" }}>https://github.com/arttu76/scr</a>
         </Group>
 
         <div className="HelpButtonContainer">

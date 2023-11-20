@@ -1,27 +1,27 @@
-# React + TypeScript + Vite
+# ZX Spectrum Image Composer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## What is it?
+ZX Spectrum Image Composer is a one page web application that allows the user to:
+1. Upload image and convert it to ZX Spectrum format
+2. Mask parts of the image, so only specific area is visible
+3. Manually edit ZX Spectrum pixels
+4. Manually edit ZX Spectrum attributes
+5. Export full or part of the image in various formats
 
-Currently, two official plugins are available:
+The application can be used in https://zxspectrumimagecomposer.solvalou.com/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Technical info
 
-## Expanding the ESLint configuration
+### Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+The app is a react/redux app using only a few dependencies (react, redux, tooltip, material symbols). There is no backend at all, the whole app is just a bunch of static files and couple of decorative images.
 
-- Configure the top-level `parserOptions` property like this:
+The app stores its state in couple of redux slices, but due to large amount of data (=multiple large images with related metadata in various image layers), some of the data is stored as window attributes (by `windowProperyMiddleware`) for performance reasons. The data is also presisted to window.localStorage (by `localStorageMiddleware`) so reloading the page does not destroy the state.
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
-```
+### Building the app
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+Clone the repo, install dependencies with `npm install` and start a development server with `npm run dev`. Now when you edit the files, the app in your browser updates automatically.
+
+To make a production build, do `npm run build`.
+
+Deployment scripts (for my personal use, you probably don't have any use for them) are in deployment. You can ignore them as well as the `npm run redeploy` script.
