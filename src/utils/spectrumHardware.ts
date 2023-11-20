@@ -1,6 +1,6 @@
 import { Color, SpectrumMemoryFragment, SpectrumPixelCoordinate } from "../types";
 
-export const getSpectrumMemoryAttributeByte = (color: Color) => {
+export const getSpectrumMemoryAttributeByte = (color: Color): number => {
     return color.ink + (color.paper << 3) + (color.bright ? 64 : 0);
 }
 
@@ -8,7 +8,7 @@ export const getColorFromAttributeByte = (value: number): Color => {
     return {
         ink: value & 0b111,
         paper: (value >> 3) & 0b111,
-        bright: value & 0b1000000 ? true : false
+        bright: !!(value & 0b1000000)
     }
 }
 
@@ -42,7 +42,7 @@ export const getSpectrumMemoryPixelOffsetAndBit = (x: number, y: number): [numbe
     const third = Math.floor(y / 64);
     const thirdOffset = third * 32 * 8 * 8;
     const yMod = y % 8;
-    const previousLines = yMod === 0 ? 0 : 32 * 8 * yMod;
+    const previousLines = 32 * 8 * yMod;
     const fromTop = Math.floor(y % 64 / 8) * 32
 
     return [

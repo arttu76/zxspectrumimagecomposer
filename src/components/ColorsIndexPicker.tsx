@@ -4,14 +4,14 @@ import { Button } from "./CustomElements";
 export const ColorsIndexPicker: React.FC<{
     colors: number[];
     chooseColors: (colors: number[]) => void;
-}> = ({ colors, chooseColors }) => {
+}> = ({ colors = [], chooseColors }) => {
 
-    const isColorSelected = (colorIndex: number) => (colors || []).includes(colorIndex);
+    const isColorSelected = (colorIndex: number) => colors.includes(colorIndex);
 
     const toggleColor = (colorIndex: number) => {
         const newColors = isColorSelected(colorIndex)
-            ? (colors || []).filter(c => c !== colorIndex)
-            : [...(colors || []), colorIndex];
+            ? colors.filter(c => c !== colorIndex)
+            : [...colors, colorIndex];
 
         if (newColors.length > 1) {
             chooseColors(newColors);
@@ -31,11 +31,11 @@ export const ColorsIndexPicker: React.FC<{
             >{c}</div>
             )}
         </div>
-        {(colors || []).length < 3 && <div className="ColorsPicker ColorsPickerWarning">
+        {colors.length < 3 && <div className="ColorsPicker ColorsPickerWarning">
             <br />
             <div>At least 2 colors must be selected</div>
         </div>}
-        {(colors || []).length < 7 && <div className="ColorsPicker ColorsPickerAll">
+        {colors.length < 7 && <div className="ColorsPicker ColorsPickerAll">
             <br />
             <Button tooltip="Allow dithering to use all Spectrumcolors"
                 onClick={setAllOn}>Choose all colors</Button>

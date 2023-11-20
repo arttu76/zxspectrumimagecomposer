@@ -15,7 +15,7 @@ export const Button: React.FC<
     }
     & React.ButtonHTMLAttributes<HTMLButtonElement>
 > = (props) => {
-    const { dimmed, tooltip, hotkey, icon, ...buttonProps } = props;
+    const { dimmed = false, tooltip, hotkey, icon, ...buttonProps } = props;
     const tooltipContent = tooltip + (hotkey ? ` (${hotkey})` : '');
     return <button
         className="CustomElements"

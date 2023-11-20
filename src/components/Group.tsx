@@ -20,7 +20,7 @@ export const Group: React.FC<React.PropsWithChildren<{
     className = ''
 }) => {
         const [expanded, setExpanded] = React.useState(true);
-        return <div className={"Group " + className}>
+        return <div className={`Group ${className}`}>
             {cornerIcon && <Button
                 className="removePropertyGroupButton"
                 tooltip={cornerIconTooltip}
