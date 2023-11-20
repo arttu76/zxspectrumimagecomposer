@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "redeploy": "npm version patch && git push && npm run build && docker build -t zximage:latest . && deployment/pushToDigitalOcean.sh && deployment/k8s-redeploy.sh && ./images.sh"
+    "redeploy": "npm version patch && git push && npm run build && docker build -t zximage:latest -f deployment/Dockerfile . && deployment/pushToDigitalOcean.sh && deployment/k8s-redeploy.sh && deployment/images.sh"
   },
   "jest": {
     "preset": "ts-jest",
