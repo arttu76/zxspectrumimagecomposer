@@ -8,6 +8,7 @@ import { PatternEditor } from "./PatternEditor";
 import { Keys, Layer, PixelationSource, PixelationType } from "../types";
 
 import React, { useRef, useState } from 'react';
+import { repaint } from '../store/housekeepingSlice';
 import {
     addLayerPattern,
     duplicateLayer,
@@ -45,7 +46,6 @@ import {
     showHideLayer,
     swapLayerPositions
 } from "../store/layersSlice";
-import { repaint } from '../store/repaintSlice';
 import { makeSureMaskExists } from '../utils/maskManager';
 import { getUuid, getWindow, resize, safeDivide, safeZero, showAlert } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';

@@ -3,8 +3,8 @@ import '../styles/Toolbar.scss';
 import { useAppDispatch, useAppSelector } from '../store/store';
 
 import { ChangeEvent, useEffect, useState } from 'react';
+import { repaint } from '../store/housekeepingSlice';
 import { setLayerPixelate, setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
-import { repaint } from '../store/repaintSlice';
 import {
     setAttributeBrushType,
     setAttributeGridOpacity,

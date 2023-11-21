@@ -5,6 +5,7 @@ import { computeAttributeBlockColor, isDitheredPixelSet } from "../utils/ditheri
 import { initializeLayerContext } from "../utils/layerContextManager";
 import { isMaskSet } from "../utils/maskManager";
 import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb, getWindow, rangeExclusive } from "../utils/utils";
+import { repaint } from "./housekeepingSlice";
 import {
     addLayerPattern,
     duplicateLayer,
@@ -42,7 +43,6 @@ import {
     showHideLayer,
     updateLayerPattern
 } from "./layersSlice";
-import { repaint } from "./repaintSlice";
 import store from "./store";
 
 const updateAdjustedPixelsIfRequired = () => {

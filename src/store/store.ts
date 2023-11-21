@@ -2,22 +2,22 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import localStorageMiddleware from "./localStorageMiddleware";
 
+import housekeeping from "./housekeepingSlice";
 import layers from "./layersSlice";
-import repaint from "./repaintSlice";
 import tools from "./toolsSlice";
 
-import { repaint as repaintAction } from '../store/repaintSlice';
+import { repaint as repaintAction } from './housekeepingSlice';
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import { restoreStateImageMaskPixelAttributeDataFromLocalStorage } from "../utils/exportImport";
-import repaintScreenMiddleware from "./windowPropertyMiddleware";
+import windowPropertyMiddleware from "./windowPropertyMiddleware";
 
 const preloadedState = restoreStateImageMaskPixelAttributeDataFromLocalStorage();
 
 const store = configureStore({
     preloadedState,
     reducer: {
-        repaint,
+        housekeeping,
         tools,
         layers
     },
@@ -26,7 +26,7 @@ const store = configureStore({
         immutableCheck: false,
     })
         .concat(localStorageMiddleware)
-        .concat(repaintScreenMiddleware)
+        .concat(windowPropertyMiddleware)
 });
 
 export type RootState = ReturnType<typeof store.getState>

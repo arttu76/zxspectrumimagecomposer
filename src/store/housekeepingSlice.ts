@@ -10,8 +10,8 @@ const initialState = {
     error: null as string | null
 }
 
-const repaintSlice = createSlice({
-    name: 'repaint',
+const housekeepingSlice = createSlice({
+    name: 'housekeeping',
     initialState,
     reducers: {
         repaint: (state, _: Action) => {
@@ -26,6 +26,6 @@ const repaintSlice = createSlice({
 export const {
     repaint,
     setError
-} = repaintSlice.actions;
+} = housekeepingSlice.actions;
 
-export default repaintSlice.reducer;
+export default housekeepingSlice.reducer;

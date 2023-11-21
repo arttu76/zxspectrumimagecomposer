@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from '../store/store';
 
 import React from 'react';
+import { repaint } from '../store/housekeepingSlice';
 import { setLayerX, setLayerY } from "../store/layersSlice";
-import { repaint } from '../store/repaintSlice';
 import { setZoom } from '../store/toolsSlice';
 import { AttributeBrushType, Color, DragState, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
 import { getSpectrumRgb, spectrumColor } from '../utils/colors';
@@ -31,7 +31,7 @@ export const Screen = () => {
         bright: false
     };
 
-    useAppSelector((state) => state.repaint.repaint); // just trigger component redraw
+    useAppSelector((state) => state.housekeeping.repaint); // just trigger component redraw
 
     // change zoom when window is resized
     useEffect(() => {
