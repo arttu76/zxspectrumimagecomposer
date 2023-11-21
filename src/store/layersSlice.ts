@@ -2,9 +2,10 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 
 import * as R from "ramda";
 
-import { Color, Id, Keys, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType } from "../types";
-import { scrollGrowableGrid } from "../utils/growableGridManager";
-import { getHeightForAspectRatio, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
+import { Color, Id, Keys, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType, Undefinable } from "../types";
+import { getGrowableGrid, scrollGrowableGrid } from "../utils/growableGridManager";
+import { getColorFromAttributeByte, getSpectrumMemoryPixelOffsetAndBit } from "../utils/spectrumHardware";
+import { applyRange2DExclusive, getHeightForAspectRatio, getInitialized2DArray, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
 
 export type ActionWithLayer = {
     meta?: { arg?: Layer },
@@ -33,7 +34,7 @@ const layersSlice = createSlice({
     name: "layers",
     initialState,
     reducers: {
-        addLayer: (state) => {
+        addLayer: (state, action: PayloadAction<Undefinable<Uint8Array>>) => {
             state.layers = [
                 {
                     id: getUuid(),
@@ -96,6 +97,29 @@ const layersSlice = createSlice({
                 },
                 ...state.layers.map((layer) => { layer.active = false; return layer })
             ];
+
+            if (action.payload !== undefined) {
+                const layerId = state.layers[0].id;
+
+                const win = getWindow();
+
+                const pixelData = getInitialized2DArray(256, 192, false);
+                applyRange2DExclusive(192, 256, (y, x) => {
+                    const offsetAndBit = getSpectrumMemoryPixelOffsetAndBit(x, y);
+                    pixelData[y][x] = !!(action.payload![offsetAndBit[0]] & (1 << offsetAndBit[1]));
+                });
+                win[Keys.manualPixels][layerId] = getGrowableGrid(pixelData);
+
+                const attrsData = getInitialized2DArray(256, 192, {
+                    ink: 0,
+                    paper: 7,
+                    bright: false
+                } as Color);
+                applyRange2DExclusive(24, 32, (y, x) => {
+                    attrsData[y][x] = getColorFromAttributeByte(action.payload![6144 + y * 32 + x]);
+                });
+                win[Keys.manualAttributes][layerId] = getGrowableGrid(attrsData);
+            }
         },
         setActive: (state, action: LayerAction) => {
             state.layers.forEach(layer => layer.active = layer.id === action.payload.layer.id);

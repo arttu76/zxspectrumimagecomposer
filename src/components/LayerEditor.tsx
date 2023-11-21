@@ -10,6 +10,7 @@ import { Keys, Layer, PixelationSource, PixelationType } from "../types";
 import React, { useRef, useState } from 'react';
 import { repaint } from '../store/housekeepingSlice';
 import {
+    addLayer,
     addLayerPattern,
     duplicateLayer,
     expandLayer,
@@ -75,12 +76,22 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             fileReader.onload = (e: any) => {
                 const arrayBuffer = e.target.result;
                 const byteArray = new Uint8Array(arrayBuffer);
-                const blob = new Blob([byteArray], { type: file.type });
-                const blobReader = new FileReader();
-                blobReader.onload = (event) => {
-                    setImageUrl((event.target as FileReader).result as string);
+                const isScr = file.size === 6912 && file.name.toLowerCase().endsWith('.scr');
+
+                if (isScr) {
+                    showAlert(
+                        "The file you uploaded seems to be a ZX Spectrum screen file.",
+                        "A new layer has been created created with with the files' contents as manual pixels and attributes."
+                    );
+                    dispatch(addLayer(byteArray));
+                } else {
+                    const blob = new Blob([byteArray], { type: file.type });
+                    const blobReader = new FileReader();
+                    blobReader.onload = (event) => {
+                        setImageUrl((event.target as FileReader).result as string);
+                    }
+                    blobReader.readAsDataURL(blob);
                 }
-                blobReader.readAsDataURL(blob);
             };
             fileReader.readAsArrayBuffer(file);
         }
@@ -223,7 +234,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             </div>
 
             {layer.expanded && <div>
-                <Group title="Upload source image">
+                <Group title="Paste or upload image">
                     <div className="ImageUploaderIcon">
                         Paste (right-click) or click to upload image
                         <div className="IconPasteArea"

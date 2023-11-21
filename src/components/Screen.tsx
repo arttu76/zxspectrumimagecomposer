@@ -116,6 +116,8 @@ export const Screen = () => {
             // loop visible layers from top to bottom
             for (const layer of shownLayers) {
 
+                let topmostAdjustedPixelFromThisLayer = false
+
                 const pixelIsUnmasked = tools.tool === ToolType.mask || !isMaskSet(layer, x, y, true);
 
                 if (
@@ -128,22 +130,25 @@ export const Screen = () => {
                     && win[Keys.adjustedPixels][layer.id]?.[y]
                 ) {
                     topmostAdjustedPixel = win[Keys.adjustedPixels][layer.id]?.[y][x] || null;
+                    topmostAdjustedPixelFromThisLayer = true;
                     pixel = null;
                 }
 
                 if (
                     pixelIsUnmasked
-                    && topmostAdjustedPixel === null
+                    && (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
                     && pixel === null
-                    && layer.pixelate !== PixelationType.none
                     && !tools.hideManualPixels
                 ) {
                     pixel = getGrowableGridData<boolean>(win[Keys.manualPixels]?.[layer.id], x, y);
+                    if (pixel !== null && topmostAdjustedPixelFromThisLayer) {
+                        topmostAdjustedPixel = null;
+                    }
                 }
 
                 if (
                     pixelIsUnmasked
-                    && topmostAdjustedPixel === null
+                    && (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
                     && attribute === null
                     && !tools.hideManualAttributes
                     && !tools.hideAllAttributes
@@ -156,7 +161,7 @@ export const Screen = () => {
                 if (
                     !tools.hideSourceImage
                     && pixelIsUnmasked
-                    && topmostAdjustedPixel === null
+                    && (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
                     && attribute === null
                     && layer.pixelate !== PixelationType.none
                     && !tools.hideAllAttributes
@@ -175,12 +180,15 @@ export const Screen = () => {
 
                 if (
                     !tools.hideSourceImage
-                    && topmostAdjustedPixel === null
+                    && (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
                     && layer.pixelate !== PixelationType.none
                     && pixelIsUnmasked
                     && pixel === null
                 ) {
                     pixel = booleanOrNull(win[Keys.adjustedSpectrumPixels]?.[layer.id]?.[y][x]);
+                    if (pixel !== null && topmostAdjustedPixelFromThisLayer) {
+                        topmostAdjustedPixel = null;
+                    }
                 }
 
             } // ...all layers

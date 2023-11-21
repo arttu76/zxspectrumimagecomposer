@@ -82,11 +82,11 @@ const shrinkGridIfPossible = <T>(grid: GrowableGrid<T>): GrowableGrid<T> => {
 
 
 
-export const getEmptyGrowableGrid = <T>(data?: Grid<Nullable<T>>): GrowableGrid<T> => {
+export const getGrowableGrid = <T>(withInitialData?: Grid<Nullable<T>>): GrowableGrid<T> => {
     return {
         offsetX: 0,
         offsetY: 0,
-        data: data || []
+        data: withInitialData || []
     };
 }
 
