@@ -35,7 +35,7 @@ export const ColorPicker: React.FC<{
                 {color && allowInvert && <Button
                     className="ColorPickerSwapButton"
                     icon="swap_horiz"
-                    tooltip="Swap paper and ink"
+                    tooltip="Swap paper and ink (z)"
                     onClick={swapColors} />}
                 <div className="ColorItem">
                     <div>Paper:</div>

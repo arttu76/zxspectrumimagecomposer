@@ -1,7 +1,7 @@
 import { BrushShape, Layer, Nullable, Rgb, SourceImageCoordinate, SpectrumPixelCoordinate, ToolType, XY } from "../types";
 import { spectrumColor } from "./colors";
 import { isMaskSet } from "./maskManager";
-import { applyRange2DExclusive, bias, dotProduct, getLayerXYFromScreenCoordinates, getWindow, safeDivide, toFromVector } from "./utils";
+import { applyRange2DExclusive, dotProduct, getLayerXYFromScreenCoordinates, getWindow, safeDivide, toFromVector } from "./utils";
 
 export const getBackgroundValue = (x: number, y: number): number => {
     return 128
@@ -36,7 +36,7 @@ export const addMaskUiToLayer = (source: Rgb, layer: Nullable<Layer>, toolType: 
     return isMaskSet(layer, x, y, true)
         ? [
             Math.round(255 * 0.8 + source[0] * 0.2),
-            Math.round(0 * 0.8 + source[1] * 0.2),
+            Math.round(75 * 0.8 + source[1] * 0.2),
             Math.round(0 * 0.8 + source[2] * 0.2),
         ]
         : source;
@@ -86,7 +86,13 @@ export const getCoordinatesCoveredByCursor = (
         .sort((a, b) => a.y !== b.y ? b.y - a.y : b.x - a.x);
 
     // attribute block cursor
-    if (tool === ToolType.attributes) {
+    if (
+        tool === ToolType.attributes
+        || (
+            tool === ToolType.mask
+            && brushShape === BrushShape.attributeSquare
+        )
+    ) {
         applyRange2DExclusive(192, 256, (yAttempt, xAttempt) => {
             if (
                 Math.floor(xAttempt / 8) === Math.floor(x / 8)
@@ -149,7 +155,6 @@ export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (
         return [];
     }
 
-
     if (brushShape === BrushShape.circle) {
         const cursorInSourceImage = getLayerXYFromScreenCoordinates(layer, x, y);
         const scaledBrushSize = safeDivide(brushSize * layer.originalWidth, layer.width);
@@ -178,44 +183,69 @@ export const getCoordinatesCoveredByCursorInSourceImageCoordinates = (
         return result;
     }
 
-    if (brushShape === BrushShape.block) {
-
-        const halfBrushSize = brushSize / 2;
-
-        const maxBrush = Math.max(
-            safeDivide(brushSize * layer.originalWidth, layer.width),
-            safeDivide(brushSize * layer.originalHeight, layer.height)
-        ) * 2;
-        const maxBrushHalf = maxBrush / 2;
-
-        const a: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x - halfBrushSize, y - halfBrushSize);
-        const b: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x + halfBrushSize, y - halfBrushSize);
-        const c: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x + halfBrushSize, y + halfBrushSize);
-        const d: XY<SourceImageCoordinate> = getLayerXYFromScreenCoordinates(layer, x - halfBrushSize, y + halfBrushSize);
-
-        const ab = toFromVector(b, a);
-        const bc = toFromVector(c, b);
-        const cd = toFromVector(d, c);
-        const da = toFromVector(a, d);
+    const getSourceImageCoordinatesByBoxCorners = (
+        maxBrush: number, // don't process whole image unneccessarily
+        northWestCorner: XY<SourceImageCoordinate>,
+        northEastCorner: XY<SourceImageCoordinate>,
+        southEastCorner: XY<SourceImageCoordinate>,
+        southWestCorner: XY<SourceImageCoordinate>
+    ): XY<SourceImageCoordinate>[] => {
+        const ab = toFromVector(northEastCorner, northWestCorner);
+        const bc = toFromVector(southEastCorner, northEastCorner);
+        const cd = toFromVector(southWestCorner, southEastCorner);
+        const da = toFromVector(northWestCorner, southWestCorner);
 
         const result: XY<SourceImageCoordinate>[] = [];
         const cursorInSourceImage = getLayerXYFromScreenCoordinates(layer, x, y);
         applyRange2DExclusive(maxBrush, maxBrush, (yOffset, xOffset) => {
             const p: XY<number> = {
-                x: Math.round(cursorInSourceImage.x - maxBrushHalf + xOffset),
-                y: Math.round(cursorInSourceImage.y - maxBrushHalf + yOffset)
+                x: Math.round(cursorInSourceImage.x - maxBrush / 2 + xOffset),
+                y: Math.round(cursorInSourceImage.y - maxBrush / 2 + yOffset)
             };
             if (
-                dotProduct(ab, toFromVector(p, a)) > 0
-                && dotProduct(bc, toFromVector(p, b)) > 0
-                && dotProduct(cd, toFromVector(p, c)) > 0
-                && dotProduct(da, toFromVector(p, d)) > 0
+                dotProduct(ab, toFromVector(p, northWestCorner)) > 0
+                && dotProduct(bc, toFromVector(p, northEastCorner)) > 0
+                && dotProduct(cd, toFromVector(p, southEastCorner)) > 0
+                && dotProduct(da, toFromVector(p, southWestCorner)) > 0
             ) {
                 result.push(p);
             }
         });
-
         return result;
+    }
+
+    if (brushShape === BrushShape.block) {
+        const halfBrushSize = brushSize / 2;
+        return getSourceImageCoordinatesByBoxCorners(
+            Math.max(
+                safeDivide(brushSize * layer.originalWidth, layer.width),
+                safeDivide(brushSize * layer.originalHeight, layer.height)
+            ),
+            getLayerXYFromScreenCoordinates(layer, x - halfBrushSize, y - halfBrushSize),
+            getLayerXYFromScreenCoordinates(layer, x + halfBrushSize, y - halfBrushSize),
+            getLayerXYFromScreenCoordinates(layer, x + halfBrushSize, y + halfBrushSize),
+            getLayerXYFromScreenCoordinates(layer, x - halfBrushSize, y + halfBrushSize)
+        );
+    }
+
+    if (brushShape === BrushShape.attributeSquare) {
+        const attrXStart = Math.floor(x / 8) * 8 - 1;
+        const attrXEnd = attrXStart + 8 + 1;
+        const attrYStart = Math.floor(y / 8) * 8 - 1;
+        const attrYEnd = attrYStart + 8 + 1;
+
+        return getSourceImageCoordinatesByBoxCorners(
+            // brush size is 8 because brush is attribute-block sized
+            Math.max(
+                safeDivide(16 * layer.originalWidth, layer.width),
+                safeDivide(16 * layer.originalHeight, layer.height)
+            ),
+            getLayerXYFromScreenCoordinates(layer, attrXStart, attrYStart),
+            getLayerXYFromScreenCoordinates(layer, attrXEnd, attrYStart),
+            getLayerXYFromScreenCoordinates(layer, attrXEnd, attrYEnd),
+            getLayerXYFromScreenCoordinates(layer, attrXStart, attrYEnd)
+        );
+
     }
 
     return [];
@@ -236,9 +266,9 @@ export const addMouseCursor = (
     if (xy.x === x && xy.y === y) {
         coordinatesCoveredByCursor.pop();
         return [
-            bias(255 - rgb[0], rgb[0], 0.75),
-            bias(255 - rgb[1], rgb[1], 0.75),
-            bias(255 - rgb[2], rgb[2], 0.75)
+            Math.pow(255 / rgb[0], 10),
+            Math.pow(255 / rgb[1], 10),
+            Math.pow(255 / rgb[2], 10)
         ];
     }
 

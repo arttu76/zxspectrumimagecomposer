@@ -153,6 +153,14 @@ export const Toolbar = () => {
             dispatch(setBrushSize(brushSizeByKey[1]));
         }
 
+        if (event.key === 'z') {
+            dispatch(setManualAttribute({
+                ink: tools.manualAttribute.paper,
+                paper: tools.manualAttribute.ink,
+                bright: tools.manualAttribute.bright
+            }));
+        }
+
         if (event.key === 'x') {
             dispatch(setHideAllAttributes(!tools.hideAllAttributes));
         }
@@ -304,6 +312,7 @@ export const Toolbar = () => {
         tools.tool,
         tools.maskBrushType,
         tools.pixelBrushType,
+        tools.manualAttribute,
         tools.attributeBrushType,
         tools.hideAllAttributes,
         tools.attributeGridOpacity,
@@ -418,20 +427,35 @@ export const Toolbar = () => {
                         chooseColor={(color) => dispatch(setManualAttribute(color))} />
                 </Group>
             </>}
-            {(tools.tool === ToolType.mask || tools.tool === ToolType.pixels) && <>
-                <Group title="Brush size" disableClose={true}>
-                    <Button
-                        icon={tools.brushShape === BrushShape.block ? "square" : "brightness_1"}
-                        tooltip="Click to change tool shape"
-                        onClick={() => dispatch(setBrushShape(tools.brushShape === BrushShape.block ? BrushShape.circle : BrushShape.block))} />
 
+            {(tools.tool === ToolType.mask || tools.tool === ToolType.pixels) && <Group title="Brush shape and size" disableClose={true}>
+
+                <Button
+                    dimmed={tools.brushShape !== BrushShape.block}
+                    icon={"square"}
+                    tooltip="Draw with a square brush"
+                    onClick={() => dispatch(setBrushShape(BrushShape.block))} />
+                <Button
+                    dimmed={tools.brushShape !== BrushShape.circle}
+                    icon={"brightness_1"}
+                    tooltip="Draw with a circualr brush"
+                    onClick={() => dispatch(setBrushShape(BrushShape.circle))} />
+                <Button
+                    dimmed={tools.brushShape !== BrushShape.attributeSquare}
+                    icon={"palette"}
+                    tooltip="Draw with a 8x8 pixel block aligned to attribute grid"
+                    onClick={() => dispatch(setBrushShape(BrushShape.attributeSquare))} />
+
+                &nbsp;
+
+                {tools.brushShape !== BrushShape.attributeSquare && <>
                     {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
                         key={newBrushSize}
                         dimmed={tools.brushSize !== newBrushSize}
                         tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
                         onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
-                </Group>
-            </>}
+                </>}
+            </Group>}
 
             {tools.tool === ToolType.mask && <>
                 <Group title="Mask" disableClose={true}>
@@ -445,78 +469,81 @@ export const Toolbar = () => {
                         icon="delete"
                     />
                 </Group>
-            </>}
+            </>
+            }
 
-            {tools.tool === ToolType.export && <>
-                <Group title="Export settings" disableClose={true}>
-                    <span style={{ position: 'relative', top: '-4px' }}>
-                        &nbsp;Invert:&nbsp;
-                        <Input
-                            tooltip="Invert paper & ink in exported code/image"
-                            type="checkbox"
-                            checked={tools.invertExportedImage}
-                            onClick={() => dispatch(setInvertExportedImage(!tools.invertExportedImage))}
-                        />
-                        &nbsp;Full screen:&nbsp;
-                        <Input
-                            tooltip={tools.exportFullScreen ? "Export full screen memory dump (Spectrum memory layout)" : "Export part of screen (linear memory layout)"}
-                            type="checkbox"
-                            checked={tools.exportFullScreen}
-                            onClick={() => dispatch(setExportFullScreen(!tools.exportFullScreen))}
-                        />
-                        {!tools.exportFullScreen && <>
-                            &nbsp;X:<select
-                                value={tools.exportCharX}
-                                onChange={(e) => dispatch(setExportCharX(parseInt(e.currentTarget.value, 10)))}>
-                                {rangeExclusive(32).map(x => <option key={x} value={x}>{x}</option>)}
-                            </select>
-                            &nbsp;Y:<select
-                                value={tools.exportCharY}
-                                onChange={(e) => dispatch(setExportCharY(parseInt(e.currentTarget.value, 10)))}>
-                                {rangeExclusive(24).map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
-                            &nbsp;Width:<select
-                                value={tools.exportCharWidth}
-                                onChange={(e) => dispatch(setExportCharWidth(parseInt(e.currentTarget.value, 10)))}>
-                                {rangeExclusive(33 - tools.exportCharX).map(width => width && <option key={width} value={width}>{width}</option>)}
-                            </select>
-                            &nbsp;Height:<select
-                                value={tools.exportCharHeight}
-                                onChange={(e) => dispatch(setExportCharHeight(parseInt(e.currentTarget.value, 10)))}>
-                                {rangeExclusive(25 - tools.exportCharY).map(height => height && <option key={height} value={height}>{height}</option>)}
-                            </select>
-                        </>}
-                    </span>
-                </Group>
-                <Group title="Download" disableClose={true}>
-                    <Button
-                        icon="image"
-                        tooltip="Download bitmap and attributes as combined binary file"
-                        onClick={() => download("image.bin", true, true)} />
+            {
+                tools.tool === ToolType.export && <>
+                    <Group title="Export settings" disableClose={true}>
+                        <span style={{ position: 'relative', top: '-4px' }}>
+                            &nbsp;Invert:&nbsp;
+                            <Input
+                                tooltip="Invert paper & ink in exported code/image"
+                                type="checkbox"
+                                checked={tools.invertExportedImage}
+                                onClick={() => dispatch(setInvertExportedImage(!tools.invertExportedImage))}
+                            />
+                            &nbsp;Full screen:&nbsp;
+                            <Input
+                                tooltip={tools.exportFullScreen ? "Export full screen memory dump (Spectrum memory layout)" : "Export part of screen (linear memory layout)"}
+                                type="checkbox"
+                                checked={tools.exportFullScreen}
+                                onClick={() => dispatch(setExportFullScreen(!tools.exportFullScreen))}
+                            />
+                            {!tools.exportFullScreen && <>
+                                &nbsp;X:<select
+                                    value={tools.exportCharX}
+                                    onChange={(e) => dispatch(setExportCharX(parseInt(e.currentTarget.value, 10)))}>
+                                    {rangeExclusive(32).map(x => <option key={x} value={x}>{x}</option>)}
+                                </select>
+                                &nbsp;Y:<select
+                                    value={tools.exportCharY}
+                                    onChange={(e) => dispatch(setExportCharY(parseInt(e.currentTarget.value, 10)))}>
+                                    {rangeExclusive(24).map(y => <option key={y} value={y}>{y}</option>)}
+                                </select>
+                                &nbsp;Width:<select
+                                    value={tools.exportCharWidth}
+                                    onChange={(e) => dispatch(setExportCharWidth(parseInt(e.currentTarget.value, 10)))}>
+                                    {rangeExclusive(33 - tools.exportCharX).map(width => width && <option key={width} value={width}>{width}</option>)}
+                                </select>
+                                &nbsp;Height:<select
+                                    value={tools.exportCharHeight}
+                                    onChange={(e) => dispatch(setExportCharHeight(parseInt(e.currentTarget.value, 10)))}>
+                                    {rangeExclusive(25 - tools.exportCharY).map(height => height && <option key={height} value={height}>{height}</option>)}
+                                </select>
+                            </>}
+                        </span>
+                    </Group>
+                    <Group title="Download" disableClose={true}>
+                        <Button
+                            icon="image"
+                            tooltip="Download bitmap and attributes as combined binary file"
+                            onClick={() => download("image.bin", true, true)} />
 
-                    <Button
-                        icon="gradient"
-                        tooltip="Download bitmap only as binary file"
-                        onClick={() => download("bitmap.bin", true, false)} />
-                    <Button
-                        icon="palette"
-                        tooltip="Download attributes only as binary file"
-                        onClick={() => download("attributes.bin", false, true)} />
-                </Group>
-                <Group title="Code" disableClose={true}>
-                    <Button
-                        icon="code"
-                        tooltip="Copy image data as code"
-                        onClick={copyCode} />
-                </Group>
-                {tools.exportFullScreen && <Group title="Play" disableClose={true}>
-                    <Button
-                        icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
-                        tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
-                        onClick={play} />
-                </Group>}
+                        <Button
+                            icon="gradient"
+                            tooltip="Download bitmap only as binary file"
+                            onClick={() => download("bitmap.bin", true, false)} />
+                        <Button
+                            icon="palette"
+                            tooltip="Download attributes only as binary file"
+                            onClick={() => download("attributes.bin", false, true)} />
+                    </Group>
+                    <Group title="Code" disableClose={true}>
+                        <Button
+                            icon="code"
+                            tooltip="Copy image data as code"
+                            onClick={copyCode} />
+                    </Group>
+                    {tools.exportFullScreen && <Group title="Play" disableClose={true}>
+                        <Button
+                            icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
+                            tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
+                            onClick={play} />
+                    </Group>}
 
-            </>}
+                </>
+            }
 
             <Group title="Zoom" disableClose={true}>
                 {[1, 2, 3, 4, 5, 10, 20].map((zoomLevel) => <Button
@@ -603,6 +630,6 @@ export const Toolbar = () => {
                     onClick={reset} />
             </Group>
             <Help />
-        </div>
+        </div >
     );
 };

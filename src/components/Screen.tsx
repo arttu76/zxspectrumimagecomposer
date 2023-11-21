@@ -350,7 +350,10 @@ export const Screen = () => {
         // use layer cordinates if drawing mask (as mask is same size as source image), otherwise use screen coordinates
         if (mouseDown || (!mouseDown && mouseDownState)) {
 
-            if (tools.tool === ToolType.mask || tools.tool === ToolType.pixels) {
+            if (
+                tools.tool === ToolType.mask
+                || tools.tool === ToolType.pixels
+            ) {
 
                 const coordinatesCoveredByCursor = getCoordinatesCoveredByCursor(
                     tools.tool,

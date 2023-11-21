@@ -176,7 +176,8 @@ export enum ToolType {
 }
 export enum BrushShape {
     block = 'block',
-    circle = 'circle'
+    circle = 'circle',
+    attributeSquare = 'attributeSquare'
 }
 export enum MaskBrushType {
     brush = 'brush',
