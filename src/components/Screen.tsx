@@ -488,7 +488,7 @@ export const Screen = () => {
                     onMouseDown={handleMouseDown}
                     onMouseUp={handleMouseNotDown}
                     onMouseEnter={() => setMouseOnScreen(true)}
-                    onMouseLeave={() => setMouseOnScreen(false)}
+                    onMouseLeave={() => { setMouseDownState(false); setMouseOnScreen(false) }}
                     onMouseMove={handleMouse}
                 ></canvas>
             </div>

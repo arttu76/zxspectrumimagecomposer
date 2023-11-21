@@ -66,6 +66,9 @@ export const Help = () => {
             <i>"When editing attributes the brush does not seem to do anything."</i><br />
             Make sure you have selected the correct attribute brush type (all, ink, paper, bright or eraser).
             You are probaly altering, for example, just brightness, when you expect to alter all the attributes (ink+paper+brightness).
+            Another alternative is that you have no pixels: you must have INK or PAPER pixels in order to see any changes in the image
+            when changing attributes - if you have no pixels (=pixel layer is transparent), changing attributes does not do anything visible
+            until you do draw some actual pixels using, for example, the brush in with Pixels-tool.
             <br /><br />
             <i>"UI feels sluggish."</i><br />
             Make sure:
