@@ -47,28 +47,40 @@ export function unpackBoolean(str: string): boolean[] {
 }
 
 
-export const saveStateImageMaskPixelAttributeDataToLocalStorage = (state: State) => {
-    const win = getWindow();
-    localStorage.setItem(Keys.state, JSON.stringify(state));
+export const saveStateImageMaskPixelAttributeDataToLocalStorage = (state: State): Nullable<string> => {
+    try {
 
-    const packedImageData = Object.keys(win[Keys.imageData]).reduce(
-        (acc, val) => ({ ...acc, [val]: pack8bit(win[Keys.imageData][val]) }),
-        {}
-    );
-    localStorage.setItem(Keys.imageData, JSON.stringify(packedImageData));
+        const win = getWindow();
+        localStorage.setItem(Keys.state, JSON.stringify(state));
 
-    const packedMaskData = Object.keys(win[Keys.maskData]).reduce(
-        (acc, val) => ({
-            ...acc, [val]: Array.from(win[Keys.maskData][val]) // Uint16Array to Array thanks to stupid typescript
-                .map(item => String.fromCharCode(item))
-                .join('')
-        }),
-        {}
-    );
-    localStorage.setItem(Keys.maskData, JSON.stringify(packedMaskData));
+        const packedMaskData = Object.keys(win[Keys.maskData]).reduce(
+            (acc, val) => ({
+                ...acc, [val]: Array.from(win[Keys.maskData][val]) // Uint16Array to Array thanks to stupid typescript
+                    .map(item => String.fromCharCode(item))
+                    .join('')
+            }),
+            {}
+        );
+        localStorage.setItem(Keys.maskData, JSON.stringify(packedMaskData));
 
-    localStorage.setItem(Keys.manualPixels, JSON.stringify(win[Keys.manualPixels]));
-    localStorage.setItem(Keys.manualAttributes, JSON.stringify(win[Keys.manualAttributes]));
+        localStorage.setItem(Keys.manualPixels, JSON.stringify(win[Keys.manualPixels]));
+        localStorage.setItem(Keys.manualAttributes, JSON.stringify(win[Keys.manualAttributes]));
+
+        const packedImageData = Object.keys(win[Keys.imageData]).reduce(
+            (acc, val) => ({ ...acc, [val]: pack8bit(win[Keys.imageData][val]) }),
+            {}
+        );
+        localStorage.setItem(Keys.imageData, JSON.stringify(packedImageData));
+
+        return null;
+
+    } catch (err) {
+        console.log(err);
+        return "Unable to save your project - you will not be able to restore your session in case you exit this page."
+            + " This usual occurs if your source images are so large that they exceed the maximum size of local storage."
+            + " If you have your source images in a safe place, don't worry: just upload the source files - most likely all other"
+            + " data (your layers, manually edited pixels etc) are saved."
+    }
 }
 
 export const restoreStateImageMaskPixelAttributeDataFromLocalStorage = (): State | undefined => {

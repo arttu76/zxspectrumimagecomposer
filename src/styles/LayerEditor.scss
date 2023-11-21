@@ -56,29 +56,36 @@
     }
 
     .ImageUploaderIcon {
+        margin: 12px 55px;
         position: relative;
-        width: 240px;
+        width: 125px;
+        height: 125px;
+        display: flex;
         text-align: center;
-        margin: 2px 0 10px;
+        align-items: center;
+        font-size: 15px;
+        line-height: 20px;
 
         background-color: rgba(0, 0, 0, 0.1);
         color: rgba(255, 255, 255, 0.25);
         box-shadow: 1px 1px 4px 0 black inset;
-        font-size: 20px;
         padding: 0px 10px;
         border-radius: 15px;
+        border: 3px dashed rgba(255, 255, 255, 0.25);
     }
 
     .IconPasteArea {
+        cursor: pointer;
         overflow: hidden;
         position: absolute;
-        color: rgba(0, 0, 0, 0);
+        background: rgba(0, 0, 255, 0);
         display: inline-block;
-        top: 8px;
-        left: 1px;
-        height: 25px;
-        width: 270px;
+        top: -5px;
+        left: -5px;
+        height: 140px;
+        width: 155px;
         outline: none;
+        line-height: 235px;
     }
 
     .range {

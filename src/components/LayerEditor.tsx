@@ -57,9 +57,34 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
     // for uploads
     const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const imageUploadInputRef = useRef<HTMLInputElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
 
     const layers = useAppSelector(state => state.layers.layers);
+
+    const handlePasteFieldClick = () => {
+        if (imageUploadInputRef.current) {
+            imageUploadInputRef.current.click();
+        }
+    }
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const fileReader = new FileReader();
+            fileReader.onload = (e: any) => {
+                const arrayBuffer = e.target.result;
+                const byteArray = new Uint8Array(arrayBuffer);
+                const blob = new Blob([byteArray], { type: file.type });
+                const blobReader = new FileReader();
+                blobReader.onload = (event) => {
+                    setImageUrl((event.target as FileReader).result as string);
+                }
+                blobReader.readAsDataURL(blob);
+            };
+            fileReader.readAsArrayBuffer(file);
+        }
+    };
 
     const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
         const items = event.nativeEvent.clipboardData?.items || [];
@@ -199,14 +224,26 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
             {layer.expanded && <div>
                 <Group title="Upload source image">
-                    <Icon icon="image"
-                        className="ImageUploaderIcon"
-                        onPaste={handlePaste} />
-                    {imageUrl && <img src={imageUrl}
+                    <div className="ImageUploaderIcon">
+                        Paste (right-click) or click to upload image
+                        <div className="IconPasteArea"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-content="Copy image from somewhere, then right-click and select 'Paste' or click to upload a file"
+                            contentEditable={true}
+                            onClick={handlePasteFieldClick}
+                            onPaste={handlePaste}></div>
+                    </div>
+                    <input
+                        style={{ "display": "none" }}
+                        type="file"
+                        ref={imageUploadInputRef}
+                        onChange={handleFileChange} />
+                    <img
+                        src={imageUrl || ''}
                         style={{ "display": "none" }}
                         alt="Pasted content"
                         ref={imageRef}
-                        onLoad={readPixelValues} />}
+                        onLoad={readPixelValues} />
                 </Group>
                 <Group title="Size & position">
                     <LayerPropertyEditor

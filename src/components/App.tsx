@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import '../styles/App.scss';
 
 import { useAppSelector } from '../store/store';
+import { Error } from './Error';
 import { Layers } from "./Layers";
 import { Screen } from "./Screen";
 import { Splash } from './Splash';
@@ -41,6 +42,7 @@ export const App = () => {
         </div>
       </div>
       <Splash />
+      <Error />
     </>
   )
 }

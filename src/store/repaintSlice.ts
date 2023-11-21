@@ -1,10 +1,13 @@
 import {
     Action,
+    PayloadAction,
     createSlice
 } from "@reduxjs/toolkit";
+import { Nullable } from "../types";
 
 const initialState = {
-    repaint: 0
+    repaint: 0,
+    error: null as string | null
 }
 
 const repaintSlice = createSlice({
@@ -13,12 +16,16 @@ const repaintSlice = createSlice({
     reducers: {
         repaint: (state, _: Action) => {
             state.repaint = Date.now();
+        },
+        setError: (state, action: PayloadAction<Nullable<string>>) => {
+            state.error = action.payload;
         }
     }
 })
 
 export const {
-    repaint
+    repaint,
+    setError
 } = repaintSlice.actions;
 
 export default repaintSlice.reducer;
