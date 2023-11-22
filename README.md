@@ -1,5 +1,7 @@
 # ZX Spectrum Image Composer
 
+![Screenshot](deployment/screenshot.png)
+
 ## What is it?
 ZX Spectrum Image Composer is a one page web application that allows the user to:
 1. Upload image and convert it to ZX Spectrum format
