@@ -28,7 +28,7 @@ import {
     setZoom,
     showHelp
 } from "../store/toolsSlice";
-import { AttributeBrushType, BrushShape, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
+import { AttributeBrushType, BrushShape, Color, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
 import { mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
 import { applyRange2DExclusive, getWindow, rangeExclusive, showAlert } from '../utils/utils';
@@ -38,6 +38,7 @@ import { Group } from './Group';
 
 import store from "../store/store";
 import { loadEverything, saveEverything } from '../utils/exportImport';
+import { getGrowableGrid, setGrowableGridData } from '../utils/growableGridManager';
 import { Help } from './Help';
 
 export const Toolbar = () => {
@@ -45,11 +46,13 @@ export const Toolbar = () => {
     const tools = useAppSelector((state) => state.tools);
 
     const layers = useAppSelector((state) => state.layers.layers);
+    const activeLayer = layers.find(layer => layer.active);
+
+    const win = getWindow();
 
     const dispatch = useAppDispatch();
 
     const applyActiveLayer = (applyFunc: (oldValue: boolean) => boolean): void => {
-        const activeLayer = layers.find(layer => layer.active);
         if (!activeLayer) {
             return;
         }
@@ -61,6 +64,48 @@ export const Toolbar = () => {
 
     const invertActiveLayerMaskData = () => applyActiveLayer(oldValue => !oldValue);
     const clearActiveLayerMaskData = () => applyActiveLayer(_ => false);
+
+    const setActiveLayerPixels = (pixel: Nullable<boolean>) => {
+        if (!activeLayer) {
+            return;
+        }
+
+        if (!confirm("Are you sure you want to set ALL manual pixels on this layer?")) {
+            return;
+        }
+
+        if (pixel === null) {
+            win[Keys.manualPixels][activeLayer.id] = getGrowableGrid<boolean>();
+        } else {
+            let fullGrid = getGrowableGrid<boolean>();
+            applyRange2DExclusive(192, 256, (y, x) => {
+                fullGrid = setGrowableGridData(fullGrid, x, y, pixel);
+            });
+            win[Keys.manualPixels][activeLayer.id] = fullGrid;
+        }
+        dispatch(repaint());
+    }
+
+    const setActiveLayerAttributes = (color: Nullable<Color>) => {
+        if (!activeLayer) {
+            return;
+        }
+
+        if (!confirm("Are you sure you want to set ALL manual attributes on this layer?")) {
+            return;
+        }
+
+        if (color === null) {
+            win[Keys.manualAttributes][activeLayer.id] = getGrowableGrid<Color>();
+        } else {
+            let fullGrid = getGrowableGrid<Color>();
+            applyRange2DExclusive(192, 256, (y, x) => {
+                fullGrid = setGrowableGridData(fullGrid, x, y, color);
+            });
+            win[Keys.manualAttributes][activeLayer.id] = fullGrid;
+        }
+        dispatch(repaint());
+    }
 
     const save = async () => {
         const everything = saveEverything(store.getState());
@@ -187,8 +232,6 @@ export const Toolbar = () => {
     };
 
     const getExportedBitmapAndAttributes = (downloadBitmap: boolean, downloadAttributes: boolean): { bitmap: Uint8Array, attributes: Uint8Array } => {
-        const win = getWindow();
-
         const fullBitmap = getInvertedBitmap(win[Keys.spectrumMemoryBitmap], tools.invertExportedImage);
         const fullAttributes = getInvertedAttributes(win[Keys.spectrumMemoryAttribute], tools.invertExportedImage);
 
@@ -391,6 +434,20 @@ export const Toolbar = () => {
                         tooltip="Set pixels as paper (d)"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.paper))} />
                 </Group>
+                <Group title="Reset" disableClose={true}>
+                    <Button onClick={() => setActiveLayerPixels(true)}
+                        tooltip="Set all manual pixels as ink"
+                        icon="border_color"
+                    />
+                    <Button onClick={() => setActiveLayerPixels(false)}
+                        tooltip="Set all manual pixels as paper"
+                        icon="check_box_outline_blank"
+                    />
+                    <Button onClick={() => setActiveLayerPixels(null)}
+                        tooltip="Clear all manual attributes"
+                        icon="delete"
+                    />
+                </Group>
             </>}
             {tools.tool === ToolType.attributes && <>
                 <Group title="Attribute brush" disableClose={true}>
@@ -426,6 +483,16 @@ export const Toolbar = () => {
                         allowInvert={true}
                         chooseColor={(color) => dispatch(setManualAttribute(color))} />
                 </Group>
+                <Group title="Reset" disableClose={true}>
+                    <Button onClick={() => setActiveLayerAttributes(tools.manualAttribute)}
+                        tooltip="Set all manual attributes to selected color"
+                        icon="filter_3"
+                    />
+                    <Button onClick={() => setActiveLayerAttributes(null)}
+                        tooltip="Clear all manual attributes"
+                        icon="delete"
+                    />
+                </Group>
             </>}
 
             {(tools.tool === ToolType.mask || tools.tool === ToolType.pixels) && <Group title="Brush shape and size" disableClose={true}>
@@ -458,7 +525,7 @@ export const Toolbar = () => {
             </Group>}
 
             {tools.tool === ToolType.mask && <>
-                <Group title="Mask" disableClose={true}>
+                <Group title="Reset" disableClose={true}>
 
                     <Button onClick={() => invertActiveLayerMaskData()}
                         tooltip="Invert mask"

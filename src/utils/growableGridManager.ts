@@ -142,3 +142,7 @@ export const scrollGrowableGrid = <T>(grid: GrowableGrid<T>, x: number, y: numbe
     grid.offsetY += y;
     return grid;
 }
+
+export const isGrowableGridEmpty = <T>(grid: GrowableGrid<T>): boolean => {
+    return !grid?.data || !grid.data.find(row => row.find(cell => cell !== null));
+}
