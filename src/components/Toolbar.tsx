@@ -445,7 +445,7 @@ export const Toolbar = () => {
                         icon="check_box_outline_blank"
                     />
                     <Button onClick={() => setActiveLayerPixels(null)}
-                        tooltip="Clear all manual attributes"
+                        tooltip="Clear all manual pixels"
                         icon="delete"
                     />
                 </Group>
