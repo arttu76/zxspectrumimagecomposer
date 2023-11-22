@@ -90,13 +90,15 @@ export const Screen = () => {
             ? miniMapCtx.createImageData(255, 192)
             : null;
 
-        const coordinatesCoveredByCursor = getCoordinatesCoveredByCursor(
-            tools.tool,
-            tools.brushShape,
-            tools.brushSize,
-            mouseX,
-            mouseY
-        );
+        const coordinatesCoveredByCursor = activeLayer?.shown
+            ? getCoordinatesCoveredByCursor(
+                tools.tool,
+                tools.brushShape,
+                tools.brushSize,
+                mouseX,
+                mouseY
+            )
+            : [];
 
         win[Keys.spectrumMemoryAttribute] = new Uint8Array(192 / 8 * 256 / 8)
             .fill(getSpectrumMemoryAttributeByte({ ink: 7, paper: bg === -1 ? 7 : bg, bright: false }));
@@ -302,7 +304,11 @@ export const Screen = () => {
     };
 
     const handleMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>, mouseDown: Undefinable<boolean> = undefined) => {
-        if (!activeLayer || tools.tool === ToolType.export) {
+        if (
+            !activeLayer
+            || tools.tool === ToolType.export
+            || activeLayer.shown === false
+        ) {
             return;
         }
 
@@ -467,6 +473,13 @@ export const Screen = () => {
         </div>
     }
 
+    const cursor = (
+        tools.tool === ToolType.export
+        || (activeLayer && !activeLayer.shown)
+    ) ? "not-allowed"
+        : tools.tool === ToolType.nudge ? "move" : "none";
+
+
     return (
         <div className="Screen"
             ref={screenRef}>
@@ -477,7 +490,7 @@ export const Screen = () => {
                 }}>
                 <canvas
                     style={{
-                        cursor: tools.tool === ToolType.nudge ? "move" : tools.tool === ToolType.export ? "not-allowed" : "none",
+                        cursor,
                         transformOrigin: "top left",
                         transform: "scale(" + tools.zoom + ")",
                         imageRendering: tools.crisp ? "pixelated" : "inherit"

@@ -40,6 +40,7 @@ import store from "../store/store";
 import { loadEverything, saveEverything } from '../utils/exportImport';
 import { getGrowableGrid, setGrowableGridData } from '../utils/growableGridManager';
 import { Help } from './Help';
+import { ToolbarErrors } from './ToolbarErrors';
 
 export const Toolbar = () => {
 
@@ -696,7 +697,10 @@ export const Toolbar = () => {
                     className="reset"
                     onClick={reset} />
             </Group>
+
+            <ToolbarErrors />
             <Help />
+
         </div >
     );
 };
