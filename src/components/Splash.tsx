@@ -12,7 +12,7 @@ export const Splash = () => {
 
     return showSplash && numberOfLayers === 0 && <div className="Splash" onClick={() => setShowSplash(false)}>
         <div className="SplashContent">
-            <img src="/title.png" />
+            <div className="SplashImageContent">&nbsp;</div>
             <div className="SplashTextContent">
                 <h1>
                     ZX Spectrum Image Composer
@@ -26,7 +26,8 @@ export const Splash = () => {
                 appreciate if could you let me (arttu@solvalou.com) know if you have used this application.
                 Thanks!
                 <br />
-                <span style={{ float: 'right', opacity: 0.25, margin: '0 0 10px 0' }}>{__APP_VERSION__}</span>
+                <br />
+                <span style={{ float: 'right', opacity: 0.25, margin: '0 0 10px 0' }}>version {__APP_VERSION__}</span>
             </div>
         </div>
     </div>

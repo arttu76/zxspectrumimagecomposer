@@ -7,15 +7,17 @@ import { getWindow, safeZero } from '../utils/utils';
 export const ToolbarErrors = () => {
 
     const win = getWindow();
-    const shownLayers = useAppSelector(state => state.layers.layers.filter(l => l.shown));
-    const activeLayer = useAppSelector(state => state.layers.layers.find(l => l.active && l.shown));
+
+    const layers = useAppSelector(state => state.layers.layers);
+    const shownLayers = layers.filter(l => l.shown);
+    const activeShownLayer = shownLayers.find(l => l.shown);
     const tool = useAppSelector(state => state.tools.tool);
 
     const noPixels = (
         tool === ToolType.attributes
-        && activeLayer
-        && (!activeLayer.originalHeight || !activeLayer.originalWidth)
-        && isGrowableGridEmpty(win[Keys.manualPixels][activeLayer.id])
+        && activeShownLayer
+        && (!activeShownLayer.originalHeight || !activeShownLayer.originalWidth)
+        && isGrowableGridEmpty(win[Keys.manualPixels][activeShownLayer.id])
     );
 
     const nonDitheredExport = (
@@ -30,7 +32,6 @@ export const ToolbarErrors = () => {
             && safeZero(l.width) > 0
         ))
     );
-
 
     return <>
         {shownLayers.length === 0 && <div className="ToolbarErrors">You do not have shown layers: this tool does nothing at the moment.</div>}

@@ -18,21 +18,35 @@
     cursor: pointer;
 
     .SplashContent {
-        cursor: pointer;
 
-        margin: 0 auto;
-        width: 400px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        cursor: pointer;
+        max-height: 80vh;
+        max-width: 60vw;
+        margin: auto;
+
         background: $background;
         border-radius: 5px;
         overflow: hidden;
         box-shadow: 3px 3px 25px 0 rgba(0, 0, 0, 1);
 
-        img {
-            width: 100%;
+        &>* {
+            flex: 0 0 50%;
+        }
+
+        .SplashImageContent {
+            align-self: stretch;
+            background-image: url('/title.png');
+            background-size: cover;
         }
 
         .SplashTextContent {
-            padding: 10px;
+            box-sizing: border-box;
+            padding: 50px;
+            overflow: auto;
 
             h1 {
                 padding: 0 0 10px 0;
