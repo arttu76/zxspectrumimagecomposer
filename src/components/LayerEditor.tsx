@@ -264,7 +264,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         change={changeLayerAttribute(setLayerX)}
                         reset={0}
                         min={-safeZero(layer.width)}
-                        max={255}
+                        max={256}
                         allowOutOfBounds={true}
                     />
                     <LayerPropertyEditor

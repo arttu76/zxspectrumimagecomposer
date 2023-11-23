@@ -49,7 +49,7 @@ const simple = (source: Rgb, target: Color): boolean => {
 }
 
 const noise = (source: Rgb, x: number, y: number, target: Color): boolean => {
-    const deterministicRandom = Math.sin(x + y * 255) * 10000;
+    const deterministicRandom = Math.sin(x + y * 256) * 10000;
     const normalizedDeterministicRandom = (deterministicRandom - Math.floor(deterministicRandom));
     return normalizedDeterministicRandom < getInkSimilarityPercentage(source, target);
 }

@@ -40,7 +40,7 @@ export const Screen = () => {
             if (screenRef?.current) {
                 dispatch(setZoom(
                     Math.min(
-                        Math.floor(screenRef.current.offsetWidth / 255),
+                        Math.floor(screenRef.current.offsetWidth / 256),
                         Math.floor(screenRef.current.offsetHeight / 192)
                     )
                 ));
@@ -80,14 +80,14 @@ export const Screen = () => {
         }
 
         const screenCtx = canvas.getContext("2d")!;
-        const imageData = screenCtx.createImageData(255, 192);
+        const imageData = screenCtx.createImageData(256, 192);
 
         const miniMapAvailable = (miniMapCanvasRef !== null && miniMapCanvasRef.current !== null);
         const miniMapCtx = miniMapAvailable
             ? (miniMapCanvasRef.current as any).getContext('2d')
             : null;
         const miniMapImageData = miniMapAvailable
-            ? miniMapCtx.createImageData(255, 192)
+            ? miniMapCtx.createImageData(256, 192)
             : null;
 
         const coordinatesCoveredByCursor = activeLayer?.shown
@@ -239,7 +239,7 @@ export const Screen = () => {
                 renderedPixel = [bg, bg, bg];
             }
 
-            const offset = (y * 255 + x) * 4;
+            const offset = (y * 256 + x) * 4;
             if (miniMapCtx && miniMapImageData) {
                 miniMapImageData.data[offset] = renderedPixel[0];
                 miniMapImageData.data[offset + 1] = renderedPixel[1];
@@ -283,7 +283,7 @@ export const Screen = () => {
                     rgb = getSpectrumRgb(attr, bitmapPixel);
                 }
 
-                const offset = (y * 255 + x) * 4;
+                const offset = (y * 256 + x) * 4;
                 if (miniMapCtx && miniMapImageData) {
                     miniMapImageData.data[offset] = rgb[0];
                     miniMapImageData.data[offset + 1] = rgb[1];
@@ -485,7 +485,7 @@ export const Screen = () => {
             ref={screenRef}>
             <div className="ScreenCanvasContainer"
                 style={{
-                    width: 255 * tools.zoom,
+                    width: 256 * tools.zoom,
                     height: 192 * tools.zoom
                 }}>
                 <canvas
@@ -495,7 +495,7 @@ export const Screen = () => {
                         transform: "scale(" + tools.zoom + ")",
                         imageRendering: tools.crisp ? "pixelated" : "inherit"
                     }}
-                    width={255}
+                    width={256}
                     height={192}
                     ref={canvasRef}
                     onMouseDown={handleMouseDown}
@@ -509,7 +509,7 @@ export const Screen = () => {
                 style={{ display: tools.zoom > 1 ? 'block' : 'none' }}
                 className={`miniMap${showMiniMap ? ' show' : ' hide'}`}
                 onClick={() => setShowMiniMap(!showMiniMap)}
-                width={255}
+                width={256}
                 height={192}
                 ref={miniMapCanvasRef}
             ></canvas>
