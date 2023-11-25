@@ -1,8 +1,0 @@
-{
-    "jest.enable": true,
-    "jest.jestCommandLine": "npx jest",
-    "jest.rootPath": "ui",
-    "jest.autoRun": {},
-    "jest.autoClearTerminal": true,
-    "testing.openTesting": "neverOpen"
-}

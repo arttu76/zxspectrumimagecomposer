@@ -127,6 +127,9 @@ export const Help = () => {
             <div className="HelpButtonContainer">
                 <Button icon='image'
                     tooltip='Load example project'
+                    onClick={() => loadExample('/antattack.zxc')}>Load example "ant attack"</Button>
+                <Button icon='image'
+                    tooltip='Load example project'
                     onClick={() => loadExample('/ferrari.zxc')}>Load example "ferrari"</Button>
                 <Button icon='image'
                     tooltip='Load example project'

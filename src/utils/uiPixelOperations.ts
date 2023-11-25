@@ -1,7 +1,9 @@
 import { BrushShape, Layer, Nullable, Rgb, SourceImageCoordinate, SpectrumPixelCoordinate, ToolType, XY } from "../types";
 import { spectrumColor } from "./colors";
 import { isMaskSet } from "./maskManager";
-import { applyRange2DExclusive, dotProduct, getLayerXYFromScreenCoordinates, getWindow, safeDivide, toFromVector } from "./utils";
+import { applyRange2DExclusive, bias, dotProduct, getLayerXYFromScreenCoordinates, getWindow, safeDivide, toFromVector } from "./utils";
+
+const maskColor: Rgb = [255, 75, 0];
 
 export const getBackgroundValue = (x: number, y: number): number => {
     return 128
@@ -35,9 +37,9 @@ export const addMaskUiToLayer = (source: Rgb, layer: Nullable<Layer>, toolType: 
 
     return isMaskSet(layer, x, y, true)
         ? [
-            Math.round(255 * 0.8 + source[0] * 0.2),
-            Math.round(75 * 0.8 + source[1] * 0.2),
-            Math.round(0 * 0.8 + source[2] * 0.2),
+            Math.round(maskColor[0] * 0.8 + source[0] * 0.2),
+            Math.round(maskColor[1] * 0.8 + source[1] * 0.2),
+            Math.round(maskColor[2] * 0.8 + source[2] * 0.2),
         ]
         : source;
 }
@@ -266,9 +268,9 @@ export const addMouseCursor = (
     if (xy.x === x && xy.y === y) {
         coordinatesCoveredByCursor.pop();
         return [
-            Math.pow(255 / rgb[0], 10),
-            Math.pow(255 / rgb[1], 10),
-            Math.pow(255 / rgb[2], 10)
+            bias(maskColor[0], rgb[0], 0.66),
+            bias(maskColor[1], rgb[1], 0.66),
+            bias(maskColor[2], rgb[2], 0.66)
         ];
     }
 

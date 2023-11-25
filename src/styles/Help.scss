@@ -27,6 +27,11 @@
             padding: 20px;
             text-align: center;
             font-size: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            row-gap: 10px;
 
             button {
                 margin: 0 10px;
