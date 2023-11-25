@@ -8,10 +8,10 @@ import { repaint } from '../store/housekeepingSlice';
 import { setLayerX, setLayerY } from "../store/layersSlice";
 import { setZoom } from '../store/toolsSlice';
 import { AttributeBrushType, Color, DragState, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
-import { getSpectrumRgb, spectrumColor } from '../utils/colors';
+import { spectrumColor } from '../utils/colors';
 import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
 import { isMaskSet, setMask } from '../utils/maskManager';
-import { getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, getSpectrumMemoryPixelOffsetAndBit, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
+import { drawSpectrumMemoryToImageDatas, getDefaultColor, getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
 import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getBackgroundValue, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
 import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getInitialized2DArray, getWindow } from "../utils/utils";
 import { Icon } from './Icon';
@@ -25,11 +25,7 @@ export const Screen = () => {
     const [showMiniMap, setShowMiniMap] = useState(true);
 
     const tools = useAppSelector((state) => state.tools);
-    const currentManualAttribute = useAppSelector((state) => state.tools.manualAttribute) || {
-        ink: 7,
-        paper: 0,
-        bright: false
-    };
+    const currentManualAttribute = useAppSelector((state) => state.tools.manualAttribute) || getDefaultColor();
 
     useAppSelector((state) => state.housekeeping.repaint); // just trigger component redraw
 
@@ -72,7 +68,7 @@ export const Screen = () => {
         dragPreviousX: undefined,
         dragPreviousY: undefined
     })
-    const miniMapCanvasRef = React.useRef(null);
+    const miniMapCanvasRef = React.useRef<HTMLCanvasElement>(null);
 
     const canvasRef = (canvas: HTMLCanvasElement) => {
         if (canvas === null) {
@@ -84,10 +80,10 @@ export const Screen = () => {
 
         const miniMapAvailable = (miniMapCanvasRef !== null && miniMapCanvasRef.current !== null);
         const miniMapCtx = miniMapAvailable
-            ? (miniMapCanvasRef.current as any).getContext('2d')
+            ? miniMapCanvasRef.current.getContext('2d')
             : null;
         const miniMapImageData = miniMapAvailable
-            ? miniMapCtx.createImageData(256, 192)
+            ? miniMapCtx!.createImageData(256, 192)
             : null;
 
         const coordinatesCoveredByCursor = activeLayer?.shown
@@ -208,12 +204,8 @@ export const Screen = () => {
                     });
                 }
             } else {
-                attribute = tools.hideAllAttributes ?
-                    {
-                        ink: 0,
-                        paper: 7,
-                        bright: false
-                    }
+                attribute = tools.hideAllAttributes
+                    ? getDefaultColor()
                     : attribute || {
                         ink: 0,
                         paper: bg === -1 ? 0 : bg,
@@ -260,46 +252,67 @@ export const Screen = () => {
             imageData.data[offset + 3] = 255;
         });
 
-        if (tools.tool === ToolType.export) {
-            applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
+        if (tools.tool === ToolType.export
+            && imageData
+            && miniMapImageData
+        ) {
+            // clone the arrays so we use the quick .set without mixing up the source data
+            let bitmap = new Uint8Array(getInvertedBitmap(
+                win[Keys.spectrumMemoryBitmap],
+                tools.invertExportedImage
+            ));
+            let attributes = new Uint8Array(getInvertedAttributes(
+                win[Keys.spectrumMemoryAttribute],
+                tools.invertExportedImage
+            ));
 
-                let rgb: Rgb;
+            if (
+                tools.loadStartedAt !== null
+                && tools.loadCurrentAt !== null
+                && tools.pulseOffsetsForData
+            ) {
+                const timePassed = (tools.loadCurrentAt - tools.loadStartedAt) * 48.4 - 340000;
 
-                if (
-                    !tools.exportFullScreen
-                    && (
-                        x / 8 < tools.exportCharX
-                        || y / 8 < tools.exportCharY
-                        || x / 8 >= tools.exportCharX + tools.exportCharWidth
-                        || y / 8 >= tools.exportCharY + tools.exportCharHeight
-                    )
-                ) {
-                    const bg = getBackgroundValue(x, y);
-                    rgb = [bg, bg, bg];
+                let offset = -1;
+
+                if (timePassed > 0) {
+                    const nearestPulse = [...tools.pulseOffsetsForData].reverse().find(pulseOffset => pulseOffset <= timePassed)
+                        || tools.pulseOffsetsForData.length - 1;
+                    offset = tools.pulseOffsetsForData.indexOf(nearestPulse);
+                }
+
+                const bitmapOffset = Math.max(0, Math.min(offset!, 6144));
+                bitmap.set(
+                    new Uint8Array(6144).fill(0).slice(0, 6144 - bitmapOffset),
+                    bitmapOffset
+                );
+
+                const defaultAttribute = getSpectrumMemoryAttributeByte({ ink: 0, paper: 7, bright: false });
+                const emptyAttributes = new Uint8Array(768).fill(defaultAttribute)
+                if (offset! < 6144) {
+                    attributes = emptyAttributes;
                 } else {
-                    const pixelLocation = getSpectrumMemoryPixelOffsetAndBit(x, y);
-                    const bitmapPixel = !!(win[Keys.spectrumMemoryBitmap][pixelLocation[0]] >> (pixelLocation[1]) & 1);
-                    const attr = getSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y);
-                    rgb = getSpectrumRgb(attr, bitmapPixel);
+                    const attributesOffset = Math.max(0, Math.min(offset! - 6144, 768));
+                    attributes.set(
+                        new Uint8Array(768).fill(defaultAttribute).slice(0, 768 - attributesOffset),
+                        attributesOffset
+                    );
                 }
+            }
 
-                const offset = (y * 256 + x) * 4;
-                if (miniMapCtx && miniMapImageData) {
-                    miniMapImageData.data[offset] = rgb[0];
-                    miniMapImageData.data[offset + 1] = rgb[1];
-                    miniMapImageData.data[offset + 2] = rgb[2];
-                    miniMapImageData.data[offset + 3] = 255;
-                }
-
-                imageData.data[offset] = rgb[0];
-                imageData.data[offset + 1] = rgb[1];
-                imageData.data[offset + 2] = rgb[2];
-                imageData.data[offset + 3] = 255;
-            });
-
+            drawSpectrumMemoryToImageDatas(
+                bitmap,
+                attributes,
+                tools.exportFullScreen,
+                tools.exportCharX,
+                tools.exportCharY,
+                tools.exportCharWidth,
+                tools.exportCharHeight,
+                [imageData, miniMapImageData]
+            );
         }
 
-        miniMapCtx && miniMapCtx.putImageData(miniMapImageData, 0, 0);
+        miniMapCtx && miniMapImageData && miniMapCtx.putImageData(miniMapImageData, 0, 0);
         screenCtx.putImageData(imageData, 0, 0);
     };
 
@@ -423,11 +436,7 @@ export const Screen = () => {
 
                 const existingAttribute = getGrowableGridData<Color>(win[Keys.manualAttributes][layer.id], cursorX, cursorY)
                     || getSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], cursorX, cursorY)
-                    || {
-                    ink: 0,
-                    paper: 7,
-                    bright: false
-                };
+                    || getDefaultColor();
                 if (tools.attributeBrushType === AttributeBrushType.ink) {
                     win[Keys.manualAttributes][layer.id] = setGrowableGridData(win[Keys.manualAttributes][layer.id], cursorX, cursorY, {
                         ...existingAttribute,

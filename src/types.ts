@@ -219,6 +219,9 @@ export interface ToolsSliceState {
     hideAllAttributes: boolean;
     attributeGridOpacity: number;
     showHelp: boolean;
+    loadStartedAt: Nullable<number>; // timestamp when export playback was started
+    loadCurrentAt: Nullable<number>; // timestamp for current time
+    pulseOffsetsForData: number[]; // 3rd item of this array tells how many ticks have passed for previous bytes
 }
 
 export interface State {

@@ -6,6 +6,8 @@ import { ChangeEvent, useEffect, useState } from 'react';
 import { repaint } from '../store/housekeepingSlice';
 import { setLayerPixelate, setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
 import {
+    increaseLoadOffset,
+    resetLoadOffset,
     setAttributeBrushType,
     setAttributeGridOpacity,
     setBrushShape,
@@ -24,6 +26,7 @@ import {
     setManualAttribute,
     setMaskBrushType,
     setPixelBrushType,
+    setPulseOffsetsForData,
     setTool,
     setZoom,
     showHelp
@@ -304,6 +307,16 @@ export const Toolbar = () => {
     const [playerInitializing, setPlayerInitializing] = useState<boolean>(false);
     const [player, setPlayer] = useState<Nullable<AudioBufferSourceNode>>(null);
 
+    const [loadIntervalId, setLoadIntervalId] = useState<number | null>(null);
+
+    const resetLoading = () => {
+        if (loadIntervalId) {
+            window.clearInterval(loadIntervalId);
+        }
+        setLoadIntervalId(null);
+        dispatch(resetLoadOffset());
+    }
+
     const play = () => {
         if (playerInitializing) {
             return;
@@ -313,6 +326,9 @@ export const Toolbar = () => {
         if (player) {
             player.stop();
             setPlayer(null);
+            if (loadIntervalId) {
+                resetLoading();
+            }
             return;
         }
 
@@ -329,7 +345,8 @@ export const Toolbar = () => {
                         getInvertedBitmap(win[Keys.spectrumMemoryBitmap], tools.invertExportedImage),
                         getInvertedAttributes(win[Keys.spectrumMemoryAttribute], tools.invertExportedImage)
                     );
-                    setPlayer(tapeSound);
+                    setPlayer(tapeSound.audio);
+                    dispatch(setPulseOffsetsForData(tapeSound.pulseOffsetsForData));
 
                     alert(
                         'Connect your ZX Spectrum to your computer\'s audio output - set the volume to relatively high level.'
@@ -337,12 +354,18 @@ export const Toolbar = () => {
                         + 'On the Spectrum, write LOAD""SCREEN$ and press ENTER. Then click OK on this computer to start playback.'
                     );
 
-                    tapeSound.start();
+                    tapeSound.audio.start();
                     setPlayerInitializing(false);
-                    tapeSound.onended = () => {
+                    tapeSound.audio.onended = () => {
                         setPlayer(null);
                         setPlayerInitializing(false);
+                        resetLoading();
                     }
+                    const loadInterval = win.setInterval(() => {
+                        dispatch(increaseLoadOffset(Date.now()));
+                    }, 100);
+                    setLoadIntervalId(loadInterval);
+
                 }, 1);
         }
     }, [playerInitializing])
@@ -362,6 +385,14 @@ export const Toolbar = () => {
         tools.attributeGridOpacity,
         layers
     ]);
+
+    useEffect(() => {
+        return () => {
+            if (loadIntervalId !== null) {
+                window.clearInterval(loadIntervalId);
+            }
+        };
+    }, [loadIntervalId]);
 
     return (
         <div className="Toolbar">

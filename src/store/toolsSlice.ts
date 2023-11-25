@@ -29,7 +29,10 @@ const initialState: ToolsSliceState = {
     hideManualAttributes: false,
     hideAllAttributes: false,
     attributeGridOpacity: 0,
-    showHelp: false
+    showHelp: false,
+    loadStartedAt: null,
+    loadCurrentAt: null,
+    pulseOffsetsForData: []
 }
 
 const toolsSlice = createSlice({
@@ -104,6 +107,19 @@ const toolsSlice = createSlice({
         },
         showHelp: (state, action: PayloadAction<boolean>) => {
             state.showHelp = action.payload;
+        },
+        setPulseOffsetsForData: (state, action: PayloadAction<number[]>) => {
+            state.pulseOffsetsForData = action.payload;
+        },
+        increaseLoadOffset: (state, action: PayloadAction<number>) => {
+            if (state.loadStartedAt === null) {
+                state.loadStartedAt = action.payload;
+            }
+            state.loadCurrentAt = action.payload;
+        },
+        resetLoadOffset: (state) => {
+            state.loadStartedAt = null;
+            state.loadCurrentAt = null;
         }
     }
 })
@@ -129,7 +145,10 @@ export const {
     setExportCharY,
     setExportCharWidth,
     setExportCharHeight,
-    showHelp
+    showHelp,
+    setPulseOffsetsForData,
+    increaseLoadOffset,
+    resetLoadOffset,
 
 } = toolsSlice.actions;
 

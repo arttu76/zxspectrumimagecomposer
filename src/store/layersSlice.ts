@@ -4,7 +4,7 @@ import * as R from "ramda";
 
 import { Color, Id, Keys, Layer, LayersSliceState, PixelationPattern, PixelationSource, PixelationType, Undefinable } from "../types";
 import { getGrowableGrid, scrollGrowableGrid } from "../utils/growableGridManager";
-import { getColorFromAttributeByte, getSpectrumMemoryPixelOffsetAndBit } from "../utils/spectrumHardware";
+import { getColorFromAttributeByte, getDefaultColor, getSpectrumMemoryPixelOffsetAndBit } from "../utils/spectrumHardware";
 import { applyRange2DExclusive, getHeightForAspectRatio, getInitialized2DArray, getUuid, getWidthForAspectRatio, getWindow } from "../utils/utils";
 
 export type ActionWithLayer = {
@@ -110,11 +110,7 @@ const layersSlice = createSlice({
                 });
                 win[Keys.manualPixels][layerId] = getGrowableGrid(pixelData);
 
-                const attrsData = getInitialized2DArray(256, 192, {
-                    ink: 0,
-                    paper: 7,
-                    bright: false
-                } as Color);
+                const attrsData = getInitialized2DArray(256, 192, getDefaultColor());
                 applyRange2DExclusive(24, 32, (y, x) => {
                     attrsData[y][x] = getColorFromAttributeByte(action.payload![6144 + y * 32 + x]);
                 });
