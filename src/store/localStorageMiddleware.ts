@@ -1,3 +1,4 @@
+import { AnyAction, Dispatch } from '@reduxjs/toolkit';
 import { saveStateImageMaskPixelAttributeDataToLocalStorage } from "../utils/exportImport";
 import { debounce } from "../utils/utils";
 import { setError } from "./housekeepingSlice";
@@ -21,7 +22,7 @@ const updateLocalStorage = () => {
 
 const updateLocalStorageDebounced = debounce(() => updateLocalStorage(), 100);
 
-const localStorageMiddleware = () => (next: any) => (action: any) => {
+const localStorageMiddleware = () => (next: Dispatch<AnyAction>) => (action: AnyAction) => {
 
     if (!action.type.startsWith('housekeeping/')) {
         updateLocalStorageDebounced();

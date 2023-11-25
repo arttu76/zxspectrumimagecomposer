@@ -198,8 +198,8 @@ export const drawSpectrumMemoryToImageDatas = (
             const bg = getBackgroundValue(x, y);
             rgb = [bg, bg, bg];
         } else {
-            const pixelLocation = getSpectrumMemoryPixelOffsetAndBit(x, y);
-            const bitmapPixel = !!(pixels[pixelLocation[0]] >> (pixelLocation[1]) & 1);
+            const [pixelOffset, pixelBit] = getSpectrumMemoryPixelOffsetAndBit(x, y);
+            const bitmapPixel = !!(pixels[pixelOffset] >> (pixelBit) & 1);
             const attr = getSpectrumMemoryAttribute(attributes, x, y);
             rgb = getSpectrumRgb(attr, bitmapPixel);
         }

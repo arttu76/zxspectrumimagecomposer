@@ -1,15 +1,12 @@
-import '../styles/Layers.scss';
-
-import { useAppDispatch, useAppSelector } from '../store/store';
-
-import { LayerEditor } from "./LayerEditor";
-
 import {
     addLayer,
     changeBackground
 } from "../store/layersSlice";
+import { useAppDispatch, useAppSelector } from '../store/store';
+import '../styles/Layers.scss';
 import { Button } from './CustomElements';
 import { Icon } from './Icon';
+import { LayerEditor } from "./LayerEditor";
 
 export const Layers = () => {
 

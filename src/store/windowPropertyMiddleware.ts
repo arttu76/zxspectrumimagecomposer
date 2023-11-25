@@ -1,3 +1,4 @@
+import { AnyAction, Dispatch, MiddlewareAPI } from '@reduxjs/toolkit';
 import * as R from "ramda";
 import { Color, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb } from "../types";
 import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from "../utils/colors";
@@ -197,7 +198,7 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
     store.dispatch(repaint());
 }
 
-const repaintScreenMiddleware = (storeApi: any) => (next: any) => (action: any) => {
+const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) => (next: Dispatch<AnyAction>) => (action: AnyAction) => {
 
     const originalActionResult = next(action);
 

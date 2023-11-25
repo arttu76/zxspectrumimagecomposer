@@ -1,5 +1,6 @@
 import '../styles/LayerEditor.scss';
 
+
 import { useAppDispatch, useAppSelector } from "../store/store";
 
 import { LayerPropertyEditor } from "./LayerPropertyEditor";
@@ -7,6 +8,7 @@ import { PatternEditor } from "./PatternEditor";
 
 import { Keys, Layer, PixelationSource, PixelationType } from "../types";
 
+import { ActionCreatorWithPayload } from '@reduxjs/toolkit';
 import React, { useRef, useState } from 'react';
 import { repaint } from '../store/housekeepingSlice';
 import {
@@ -73,8 +75,8 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
         const file = event.target.files?.[0];
         if (file) {
             const fileReader = new FileReader();
-            fileReader.onload = (e: any) => {
-                const arrayBuffer = e.target.result;
+            fileReader.onload = (e: ProgressEvent<FileReader>) => {
+                const arrayBuffer = e.target!.result as ArrayBuffer;
                 const byteArray = new Uint8Array(arrayBuffer);
                 const isScr = file.size === 6912 && file.name.toLowerCase().endsWith('.scr');
 
@@ -163,9 +165,12 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
     const dispatch = useAppDispatch();
 
-    const changeLayerAttribute = (action: any) => (layer: Layer, fieldName: keyof Layer, value: number | boolean | string) => {
-        dispatch(action({ layer, [fieldName]: value }));
-    };
+    type LayerKey = keyof Layer;
+    // any below is { layer: Layer; } & Partial<Layer>
+    const changeLayerAttribute = (action: ActionCreatorWithPayload<any>) =>
+        (layer: Layer, fieldName: LayerKey, value: number | boolean | string) => {
+            dispatch(action({ layer, [fieldName]: value }));
+        };
 
     const remove = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         event.stopPropagation();
