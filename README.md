@@ -18,7 +18,7 @@ The application can be used in https://zxspectrumimagecomposer.solvalou.com/
 
 The app is a react/redux app using only a few dependencies (react, redux, tooltip, material symbols). There is no backend at all, the whole app is just a bunch of static files and couple of decorative images.
 
-The app stores its state in couple of redux slices, but due to large amount of data (=multiple large images with related metadata in various image layers), some of the data is stored as window attributes (by `windowProperyMiddleware`) for performance reasons. The data is also presisted to window.localStorage (by `localStorageMiddleware`) so reloading the page does not destroy the state.
+The app stores its state in couple of redux slices, but due to large amount of data (=multiple large images with related metadata in various image layers), some of the data is stored as window attributes (by `windowProperyMiddleware`) for performance reasons. The data is also persisted to window.localStorage (by `localStorageMiddleware`) so reloading the page does not destroy the state.
 
 ### Building the app
 
