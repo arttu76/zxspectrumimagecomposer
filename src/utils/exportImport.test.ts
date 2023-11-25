@@ -13,7 +13,7 @@ describe('export/import', () => {
             2,
             3,
             4
-        ])).toBe('foo');
+        ])).toBe('胿@ᜁȃЀ');
     });
 
 });

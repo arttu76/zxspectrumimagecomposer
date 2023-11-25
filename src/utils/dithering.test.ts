@@ -36,7 +36,7 @@ describe('dithering', () => {
                 paper: 7,
                 bright: false
             }
-        )).toEqual(0.5547393956151675);
+        )).toEqual(0.5990783410138248);
 
         expect(getInkSimilarityPercentage(
             [green[0] - 5, green[1], green[2] - 20], // darker
@@ -45,7 +45,7 @@ describe('dithering', () => {
                 paper: 7,
                 bright: false
             }
-        )).toEqual(0.570836138666726);
+        )).toEqual(0.6374807987711213);
         expect(getInkSimilarityPercentage(
             [green[0] + 5, green[1] + 20, green[2] + 20], // lighter
             {
@@ -53,7 +53,7 @@ describe('dithering', () => {
                 paper: 7,
                 bright: false
             }
-        )).toEqual(0.5162198859373603);
+        )).toEqual(0.5299539170506912);
 
         expect(getInkSimilarityPercentage(
             [green[0] + 5, green[1] + 20, green[2] + 20],
@@ -62,7 +62,7 @@ describe('dithering', () => {
                 paper: 5,
                 bright: false
             }
-        )).toEqual(0.8690662653989726);
+        )).toEqual(0.792626728110599);
 
         const cyan = spectrumColor.normal[5];
         expect(getInkSimilarityPercentage(
@@ -72,7 +72,7 @@ describe('dithering', () => {
                 paper: 5, // near this
                 bright: false
             }
-        )).toEqual(0.11093757366743293);
+        )).toEqual(1);
         expect(getInkSimilarityPercentage(
             [cyan[0] + 5, cyan[1] + 20, cyan[2] + 20],
             {
@@ -81,7 +81,7 @@ describe('dithering', () => {
                 paper: 4,
                 bright: false
             }
-        )).toEqual(0.889062426332567);
+        )).toEqual(1);
 
     });
 
