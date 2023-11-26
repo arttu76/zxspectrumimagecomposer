@@ -1,6 +1,6 @@
 import { AnyAction, Dispatch, MiddlewareAPI } from '@reduxjs/toolkit';
 import * as R from "ramda";
-import { Color, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb } from "../types";
+import { Color, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb, ToolType } from "../types";
 import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from "../utils/colors";
 import { computeAttributeBlockColor, isDitheredPixelSet } from "../utils/dithering";
 import { initializeLayerContext } from "../utils/layerContextManager";
@@ -45,6 +45,7 @@ import {
     updateLayerPattern
 } from "./layersSlice";
 import store from "./store";
+import { setTool } from './toolsSlice';
 
 const updateAdjustedPixelsIfRequired = () => {
 
@@ -165,8 +166,12 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
                     let allPixelsInCharEmpty = rangeExclusive(8).every(
                         yOffset => rangeExclusive(8).every(
                             xOffset => (
-                                // pixel is considered empty if it is masked ...
-                                isMaskSet(layer, x + xOffset, y + yOffset, true)
+                                // pixel is considered empty if it is masked
+                                // (it's never considered masked if we are using mask tool) ...
+                                (
+                                    isMaskSet(layer, x + xOffset, y + yOffset, true)
+                                    && state.tools.tool !== ToolType.mask
+                                )
                                 // ... or if it has no pixels
                                 || win[Keys.adjustedPixels][layer.id][y + yOffset][x + xOffset] === null
                             )
@@ -248,6 +253,7 @@ const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) =
 
     // do spectrum pixels have to be updated?
     if ([
+        setTool.type,
         setLayerPixelate.type,
         setLayerPixelateSource.type,
         setLayerPixelateAutoColors.type,
