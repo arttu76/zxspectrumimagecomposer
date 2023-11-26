@@ -1,6 +1,5 @@
 import '../styles/LayerEditor.scss';
 
-
 import { useAppDispatch, useAppSelector } from "../store/store";
 
 import { LayerPropertyEditor } from "./LayerPropertyEditor";
@@ -188,9 +187,13 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
 
     return (
         <div
-            className={"LayerEditor layerItem " + (layer.active ? "layerActive" : "layerInactive")}
+            className={
+                "LayerEditor layerItem "
+                + (layer.shown ? "layerShown " : "layerHidden ")
+                + (layer.expanded ? "layerExpanded " : "layerMinimized ")
+                + (layer.active ? "layerActive" : "layerInactive")
+            }
             key={layer.id}
-            style={{ opacity: layer.shown ? 1 : 0.75 }}
             onClick={() => dispatch(setActive({ layer }))}>
 
             <div className="LayerEditorHeaderControls">
@@ -238,7 +241,7 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                 </div>
             </div>
 
-            {layer.expanded && <div>
+            <div>
                 <Group title="Paste or upload image">
                     <div className="ImageUploaderIcon">
                         Paste (right-click) or click to upload image
@@ -544,8 +547,8 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         </Button>
                     </div>}
                 </Group>
+            </div>
 
-            </div>}
         </div>
     );
 }

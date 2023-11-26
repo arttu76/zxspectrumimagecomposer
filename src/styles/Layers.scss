@@ -21,13 +21,6 @@
 
     .layerItem {
 
-        opacity: 1;
-        transition: opacity 0.25s;
-
-        &.layerHidden {
-            opacity: 0.5;
-        }
-
         width: 100%;
         margin-bottom: 5px;
         background-color: $layerBg;
