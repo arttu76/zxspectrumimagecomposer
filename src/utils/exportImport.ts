@@ -54,11 +54,13 @@ export const saveStateImageMaskPixelAttributeDataToLocalStorage = (state: State)
         localStorage.setItem(Keys.state, JSON.stringify(state));
 
         const packedMaskData = Object.keys(win[Keys.maskData]).reduce(
-            (acc, val) => ({
-                ...acc, [val]: Array.from(win[Keys.maskData][val]) // Uint16Array to Array thanks to stupid typescript
-                    .map(item => String.fromCharCode(item))
-                    .join('')
-            }),
+            (acc, val) => win[Keys.maskData][val]
+                ? ({
+                    ...acc, [val]: Array.from(win[Keys.maskData][val]) // Uint16Array to Array thanks to stupid typescript
+                        .map(item => String.fromCharCode(item))
+                        .join('')
+                })
+                : acc,
             {}
         );
         localStorage.setItem(Keys.maskData, JSON.stringify(packedMaskData));
