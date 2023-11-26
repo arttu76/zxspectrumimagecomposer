@@ -203,6 +203,18 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
     store.dispatch(repaint());
 }
 
+const doForPayloadOrAllLayers = (
+    storeApi: MiddlewareAPI<Dispatch<AnyAction>>,
+    action: AnyAction,
+    operation: (layer: Layer) => {}
+) => {
+    if (action.payload.layer) {
+        operation(action.payload.layer);
+    } else {
+        storeApi.getState().layers.layers.forEach((layer: Layer) => operation(layer));
+    }
+}
+
 const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) => (next: Dispatch<AnyAction>) => (action: AnyAction) => {
 
     const originalActionResult = next(action);
@@ -233,10 +245,11 @@ const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) =
         setLayerMidtones.type,
         setLayerHighlights.type
     ].includes(action.type)) {
-        storeApi.dispatch(setLayerRequireAdjustedPixelsRefresh({
-            layer: action.payload.layer,
-            required: true
-        }));
+        doForPayloadOrAllLayers(
+            storeApi,
+            action,
+            (layer: Layer) => storeApi.dispatch(setLayerRequireAdjustedPixelsRefresh({ layer, required: true }))
+        );
     }
 
     if ([
@@ -245,10 +258,11 @@ const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) =
         updateLayerPattern.type,
         removeLayerPattern.type
     ].includes(action.type)) {
-        storeApi.dispatch(setLayerRequirePatternCacheRefresh({
-            layer: action.payload.layer,
-            required: true
-        }));
+        doForPayloadOrAllLayers(
+            storeApi,
+            action,
+            (layer: Layer) => storeApi.dispatch(setLayerRequirePatternCacheRefresh({ layer, required: true }))
+        );
     }
 
     // do spectrum pixels have to be updated?
@@ -263,10 +277,11 @@ const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) =
         updateLayerPattern.type,
         removeLayerPattern.type,
     ].includes(action.type)) {
-        storeApi.dispatch(setLayerRequireSpectrumPixelsRefresh({
-            layer: action.payload.layer,
-            required: true
-        }));
+        doForPayloadOrAllLayers(
+            storeApi,
+            action,
+            (layer: Layer) => storeApi.dispatch(setLayerRequireSpectrumPixelsRefresh({ layer, required: true }))
+        );
     }
 
     if (![
