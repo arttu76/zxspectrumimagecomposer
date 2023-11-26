@@ -2,15 +2,32 @@ import { useAppSelector } from '../store/store';
 import '../styles/Splash.scss';
 
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export const Splash = () => {
 
     const [showSplash, setShowSplash] = useState(true);
+    const suppressSmallScreenComplaint = useRef(false);
 
     const numberOfLayers = useAppSelector(state => state.layers.layers).length;
+    const splashIsVisible = showSplash && numberOfLayers === 0;
 
-    return showSplash && numberOfLayers === 0 && <div className="Splash" onClick={() => setShowSplash(false)}>
+    useEffect(() => {
+        if (
+            splashIsVisible
+            && !suppressSmallScreenComplaint.current
+            && window.innerWidth < 600
+        ) {
+            suppressSmallScreenComplaint.current = true;
+            alert(
+                'This application is not optimized for small screens.'
+                + ' Please use a larger screen for better experience.'
+                + ' If on phone, try rotating to landscape mode.'
+            );
+        }
+    }, [splashIsVisible]);
+
+    return splashIsVisible && <div className="Splash" onClick={() => setShowSplash(false)}>
         <div className="SplashContent">
             <div className="SplashImageContent">&nbsp;</div>
             <div className="SplashTextContent">
