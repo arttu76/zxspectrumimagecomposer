@@ -1,3 +1,5 @@
+[![Node.js CI](https://github.com/arttu76/zxspectrumimagecomposer/actions/workflows/node.js.yml/badge.svg?branch=master)](https://github.com/arttu76/zxspectrumimagecomposer/actions/workflows/node.js.yml)
+
 # ZX Spectrum Image Composer
 
 ![Screenshot](deployment/screenshot.png)
