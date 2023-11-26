@@ -9,7 +9,6 @@ RUN { \
     echo '}'; \
     } >> /etc/lighttpd/lighttpd.conf
 
-COPY dist/ /var/www/localhost/htdocs
-RUN chmod -R a+r /var/www/localhost/htdocs
+COPY --chmod=a+r dist/ /var/www/localhost/htdocs
 
 CMD ["start.sh"]
