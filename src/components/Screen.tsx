@@ -114,6 +114,13 @@ export const Screen = () => {
             // loop visible layers from top to bottom
             for (const layer of shownLayers) {
 
+                if (
+                    tools.tool === ToolType.mask
+                    && !layer.active
+                ) {
+                    continue;
+                }
+
                 let topmostAdjustedPixelFromThisLayer = false
 
                 const pixelIsUnmasked = tools.tool === ToolType.mask || !isMaskSet(layer, x, y, true);
