@@ -389,14 +389,6 @@ export const Screen = () => {
                 || tools.tool === ToolType.pixels
             ) {
 
-                const coordinatesCoveredByCursor = getCoordinatesCoveredByCursor(
-                    tools.tool,
-                    tools.brushShape,
-                    tools.brushSize,
-                    mouseX,
-                    mouseY
-                );
-
                 if (tools.tool === ToolType.mask) {
                     getCoordinatesCoveredByCursorInSourceImageCoordinates(
                         tools.brushShape,
@@ -410,7 +402,13 @@ export const Screen = () => {
                 }
 
                 if (tools.tool === ToolType.pixels) {
-                    coordinatesCoveredByCursor.forEach(xy => {
+                    getCoordinatesCoveredByCursor(
+                        tools.tool,
+                        tools.brushShape,
+                        tools.brushSize,
+                        mouseX,
+                        mouseY
+                    ).forEach(xy => {
                         if (!win[Keys.manualPixels]) {
                             win[Keys.manualPixels] = {};
                         }

@@ -537,7 +537,7 @@ export const Toolbar = () => {
                 <Button
                     dimmed={tools.brushShape !== BrushShape.circle}
                     icon={"brightness_1"}
-                    tooltip="Draw with a circualr brush"
+                    tooltip="Draw with a circular brush"
                     onClick={() => dispatch(setBrushShape(BrushShape.circle))} />
                 <Button
                     dimmed={tools.brushShape !== BrushShape.attributeSquare}

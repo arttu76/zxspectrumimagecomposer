@@ -90,10 +90,7 @@ export const getCoordinatesCoveredByCursor = (
     // attribute block cursor
     if (
         tool === ToolType.attributes
-        || (
-            tool === ToolType.mask
-            && brushShape === BrushShape.attributeSquare
-        )
+        || brushShape === BrushShape.attributeSquare
     ) {
         applyRange2DExclusive(192, 256, (yAttempt, xAttempt) => {
             if (
