@@ -11,7 +11,7 @@ const initialState: ToolsSliceState = {
     attributeBrushType: AttributeBrushType.all,
     brushSize: 10,
     brushShape: BrushShape.block,
-    zoom: 1,
+    zoom: Math.min(Math.floor(window.innerWidth / 256), Math.floor(window.innerHeight / 192)),
     invertExportedImage: false,
     exportFullScreen: true,
     exportCharX: 0,

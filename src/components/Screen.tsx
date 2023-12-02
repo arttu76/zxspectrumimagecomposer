@@ -1,13 +1,12 @@
 import '../styles/Screen.scss';
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from '../store/store';
 
 import React from 'react';
 import { repaint } from '../store/housekeepingSlice';
 import { setLayerX, setLayerY } from "../store/layersSlice";
-import { setZoom } from '../store/toolsSlice';
-import { AttributeBrushType, Color, DragState, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable } from "../types";
+import { AttributeBrushType, Color, DragState, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable, XY } from "../types";
 import { spectrumColor } from '../utils/colors';
 import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
 import { isMaskSet, setMask } from '../utils/maskManager';
@@ -29,26 +28,6 @@ export const Screen = () => {
 
     useAppSelector((state) => state.housekeeping.repaint); // just trigger component redraw
 
-    // change zoom when window is resized
-    useEffect(() => {
-
-        const resize = () => {
-            if (screenRef?.current) {
-                dispatch(setZoom(
-                    Math.min(
-                        Math.floor(screenRef.current.offsetWidth / 256),
-                        Math.floor(screenRef.current.offsetHeight / 192)
-                    )
-                ));
-            }
-        }
-
-        win.addEventListener('resize', resize);
-        resize();
-
-        return () => win.removeEventListener('resize', resize);
-    }, []);
-
     const bg = useAppSelector((state) => state.layers.background);
     const attributeGridOpacity = useAppSelector((state) => state.tools.attributeGridOpacity);
     const layers = useAppSelector((state) => state.layers.layers);
@@ -56,10 +35,12 @@ export const Screen = () => {
 
     const dispatch = useAppDispatch();
 
-    const [mouseDownState, setMouseDownState] = useState(false);
+    const mouseDownState = useRef(false);
     const [mouseOnScreen, setMouseOnScreen] = useState(false);
     const [mouseX, setMouseX] = useState<SpectrumPixelCoordinate>(0);
     const [mouseY, setMouseY] = useState<SpectrumPixelCoordinate>(0);
+
+    const previousTogglerCoordinates = useRef<XY<SpectrumPixelCoordinate> | null>(null);
 
     const drawCursor = mouseOnScreen && tools.tool !== ToolType.nudge;
 
@@ -89,6 +70,7 @@ export const Screen = () => {
         const coordinatesCoveredByCursor = activeLayer?.shown
             ? getCoordinatesCoveredByCursor(
                 tools.tool,
+                tools.pixelBrushType,
                 tools.brushShape,
                 tools.brushSize,
                 mouseX,
@@ -378,11 +360,12 @@ export const Screen = () => {
         const mouseY = clamp8Bit((event.clientY - event.currentTarget.getBoundingClientRect().top) / tools.zoom);
 
         if (mouseDown === true || mouseDown === false) {
-            setMouseDownState(mouseDown);
+            previousTogglerCoordinates.current = null;
+            mouseDownState.current = mouseDown;
         }
 
         // use layer cordinates if drawing mask (as mask is same size as source image), otherwise use screen coordinates
-        if (mouseDown || (!mouseDown && mouseDownState)) {
+        if (mouseDown || (!mouseDown && mouseDownState.current)) {
 
             if (
                 tools.tool === ToolType.mask
@@ -404,6 +387,7 @@ export const Screen = () => {
                 if (tools.tool === ToolType.pixels) {
                     getCoordinatesCoveredByCursor(
                         tools.tool,
+                        tools.pixelBrushType,
                         tools.brushShape,
                         tools.brushSize,
                         mouseX,
@@ -420,6 +404,24 @@ export const Screen = () => {
                         }
                         if (tools.pixelBrushType === PixelBrushType.paper) {
                             win[Keys.manualPixels][layer.id] = setGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y, false);
+                        }
+
+                        if (tools.pixelBrushType === PixelBrushType.toggler
+                            && mouseDownState.current === true
+                            && (
+                                // previous coordinate was not set or was different
+                                previousTogglerCoordinates.current === null
+                                || previousTogglerCoordinates.current.x !== xy.x
+                                || previousTogglerCoordinates.current.y !== xy.y
+                            )
+                        ) {
+                            win[Keys.manualPixels][layer.id] = setGrowableGridData(
+                                win[Keys.manualPixels]?.[layer.id],
+                                xy.x,
+                                xy.y,
+                                !getGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y)
+                            );
+                            previousTogglerCoordinates.current = xy;
                         }
                     });
                 }
@@ -515,7 +517,7 @@ export const Screen = () => {
                     onMouseDown={handleMouseDown}
                     onMouseUp={handleMouseNotDown}
                     onMouseEnter={() => setMouseOnScreen(true)}
-                    onMouseLeave={() => { setMouseDownState(false); setMouseOnScreen(false) }}
+                    onMouseLeave={() => { mouseDownState.current = false; setMouseOnScreen(false) }}
                     onMouseMove={handleMouse}
                 ></canvas>
             </div>

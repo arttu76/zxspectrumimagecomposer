@@ -186,7 +186,8 @@ export enum MaskBrushType {
 export enum PixelBrushType {
     ink = 'ink',
     paper = 'paper',
-    eraser = 'eraser'
+    eraser = 'eraser',
+    toggler = 'toggler'
 }
 
 export enum AttributeBrushType {

@@ -1,4 +1,4 @@
-import { BrushShape, Layer, Nullable, Rgb, SourceImageCoordinate, SpectrumPixelCoordinate, ToolType, XY } from "../types";
+import { BrushShape, Layer, Nullable, PixelBrushType, Rgb, SourceImageCoordinate, SpectrumPixelCoordinate, ToolType, XY } from "../types";
 import { spectrumColor } from "./colors";
 import { isMaskSet } from "./maskManager";
 import { applyRange2DExclusive, bias, dotProduct, getLayerXYFromScreenCoordinates, getWindow, safeDivide, toFromVector } from "./utils";
@@ -67,6 +67,7 @@ export const addAttributeGridUi = (attributeGridOpacity: number, rgb: Rgb, x: nu
 // return LAST (the most bottom-right) coordinate first for performance reasons
 export const getCoordinatesCoveredByCursor = (
     tool: ToolType,
+    pixelBrushType: PixelBrushType,
     brushShape: BrushShape,
     brushSize: number,
     x: SpectrumPixelCoordinate,
@@ -103,7 +104,10 @@ export const getCoordinatesCoveredByCursor = (
         return finalizeResults(result);
     }
 
-    if (brushSize === 1) {
+    if (
+        brushSize === 1
+        || (tool === ToolType.pixels && pixelBrushType === PixelBrushType.toggler)
+    ) {
         return [{ x, y }];
     }
     if (brushSize === 2) {

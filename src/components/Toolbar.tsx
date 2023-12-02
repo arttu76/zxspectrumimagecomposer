@@ -465,6 +465,11 @@ export const Toolbar = () => {
                         icon="check_box_outline_blank"
                         tooltip="Set pixels as paper (d)"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.paper))} />
+                    <Button
+                        dimmed={tools.pixelBrushType !== PixelBrushType.toggler}
+                        icon="autorenew"
+                        tooltip="Use 1x1 brush that toggles pixel between ink and paper"
+                        onClick={() => dispatch(setPixelBrushType(PixelBrushType.toggler))} />
                 </Group>
                 <Group title="Reset" disableClose={true}>
                     <Button onClick={() => setActiveLayerPixels(true)}
@@ -547,13 +552,15 @@ export const Toolbar = () => {
 
                 &nbsp;
 
-                {tools.brushShape !== BrushShape.attributeSquare && <>
-                    {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
-                        key={newBrushSize}
-                        dimmed={tools.brushSize !== newBrushSize}
-                        tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
-                        onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
-                </>}
+                {tools.brushShape !== BrushShape.attributeSquare
+                    && !(tools.tool === ToolType.pixels && tools.pixelBrushType === PixelBrushType.toggler)
+                    && <>
+                        {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
+                            key={newBrushSize}
+                            dimmed={tools.brushSize !== newBrushSize}
+                            tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
+                            onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
+                    </>}
             </Group>}
 
             {tools.tool === ToolType.mask && <>
