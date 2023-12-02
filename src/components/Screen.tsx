@@ -122,8 +122,7 @@ export const Screen = () => {
                 }
 
                 if (
-                    pixelIsUnmasked
-                    && (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
+                    (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
                     && pixel === null
                     && !tools.hideManualPixels
                 ) {
@@ -134,8 +133,7 @@ export const Screen = () => {
                 }
 
                 if (
-                    pixelIsUnmasked
-                    && (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
+                    (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
                     && attribute === null
                     && !tools.hideManualAttributes
                     && !tools.hideAllAttributes
@@ -166,11 +164,11 @@ export const Screen = () => {
                 }
 
                 if (
-                    !tools.hideSourceImage
+                    pixel === null
+                    && !tools.hideSourceImage
                     && (topmostAdjustedPixel === null || topmostAdjustedPixelFromThisLayer)
                     && layer.pixelate !== PixelationType.none
                     && pixelIsUnmasked
-                    && pixel === null
                 ) {
                     pixel = booleanOrNull(win[Keys.adjustedSpectrumPixels]?.[layer.id]?.[y][x]);
                     if (pixel !== null && topmostAdjustedPixelFromThisLayer) {
