@@ -532,36 +532,38 @@ export const Toolbar = () => {
                 </Group>
             </>}
 
-            {(tools.tool === ToolType.mask || tools.tool === ToolType.pixels) && <Group title="Brush shape and size" disableClose={true}>
+            {(
+                tools.tool === ToolType.mask
+                || (tools.tool === ToolType.pixels && tools.pixelBrushType !== PixelBrushType.toggler)
+            ) && <Group title="Brush shape and size" disableClose={true}>
+                    <Button
+                        dimmed={tools.brushShape !== BrushShape.block}
+                        icon={"square"}
+                        tooltip="Draw with a square brush"
+                        onClick={() => dispatch(setBrushShape(BrushShape.block))} />
+                    <Button
+                        dimmed={tools.brushShape !== BrushShape.circle}
+                        icon={"brightness_1"}
+                        tooltip="Draw with a circular brush"
+                        onClick={() => dispatch(setBrushShape(BrushShape.circle))} />
+                    <Button
+                        dimmed={tools.brushShape !== BrushShape.attributeSquare}
+                        icon={"palette"}
+                        tooltip="Draw with a 8x8 pixel block aligned to attribute grid"
+                        onClick={() => dispatch(setBrushShape(BrushShape.attributeSquare))} />
 
-                <Button
-                    dimmed={tools.brushShape !== BrushShape.block}
-                    icon={"square"}
-                    tooltip="Draw with a square brush"
-                    onClick={() => dispatch(setBrushShape(BrushShape.block))} />
-                <Button
-                    dimmed={tools.brushShape !== BrushShape.circle}
-                    icon={"brightness_1"}
-                    tooltip="Draw with a circular brush"
-                    onClick={() => dispatch(setBrushShape(BrushShape.circle))} />
-                <Button
-                    dimmed={tools.brushShape !== BrushShape.attributeSquare}
-                    icon={"palette"}
-                    tooltip="Draw with a 8x8 pixel block aligned to attribute grid"
-                    onClick={() => dispatch(setBrushShape(BrushShape.attributeSquare))} />
+                    &nbsp;
 
-                &nbsp;
-
-                {tools.brushShape !== BrushShape.attributeSquare
-                    && !(tools.tool === ToolType.pixels && tools.pixelBrushType === PixelBrushType.toggler)
-                    && <>
-                        {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
-                            key={newBrushSize}
-                            dimmed={tools.brushSize !== newBrushSize}
-                            tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
-                            onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
-                    </>}
-            </Group>}
+                    {tools.brushShape !== BrushShape.attributeSquare
+                        && !(tools.tool === ToolType.pixels && tools.pixelBrushType === PixelBrushType.toggler)
+                        && <>
+                            {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
+                                key={newBrushSize}
+                                dimmed={tools.brushSize !== newBrushSize}
+                                tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
+                                onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
+                        </>}
+                </Group>}
 
             {tools.tool === ToolType.mask && <>
                 <Group title="Reset" disableClose={true}>

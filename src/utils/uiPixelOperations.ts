@@ -88,10 +88,14 @@ export const getCoordinatesCoveredByCursor = (
         .filter(xy => xy.x > -1 && xy.x < 256 && xy.y > -1 && xy.y < 192)
         .sort((a, b) => a.y !== b.y ? b.y - a.y : b.x - a.x);
 
+    if (tool === ToolType.pixels && pixelBrushType === PixelBrushType.toggler) {
+        return [{ x, y }];
+    }
+
     // attribute block cursor
     if (
         tool === ToolType.attributes
-        || brushShape === BrushShape.attributeSquare
+        || (brushShape === BrushShape.attributeSquare)
     ) {
         applyRange2DExclusive(192, 256, (yAttempt, xAttempt) => {
             if (
@@ -104,10 +108,7 @@ export const getCoordinatesCoveredByCursor = (
         return finalizeResults(result);
     }
 
-    if (
-        brushSize === 1
-        || (tool === ToolType.pixels && pixelBrushType === PixelBrushType.toggler)
-    ) {
+    if (brushSize === 1) {
         return [{ x, y }];
     }
     if (brushSize === 2) {
