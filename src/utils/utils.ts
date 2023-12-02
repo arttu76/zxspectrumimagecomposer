@@ -146,5 +146,3 @@ export const getLayerXYFromScreenCoordinates = (layer: Layer, x: SpectrumPixelCo
         y: Math.round(safeZero(layer.height) / 2 + dy)
     }
 }
-
-export const booleanOrNull = (value: Nullable<boolean>): boolean | null => value === null ? null : value;

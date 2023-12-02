@@ -12,7 +12,7 @@ import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridM
 import { isMaskSet, setMask } from '../utils/maskManager';
 import { drawSpectrumMemoryToImageDatas, getDefaultColor, getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
 import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getBackgroundValue, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
-import { applyRange2DExclusive, booleanOrNull, clamp8Bit, getInitialized2DArray, getWindow } from "../utils/utils";
+import { applyRange2DExclusive, clamp8Bit, getInitialized2DArray, getWindow } from "../utils/utils";
 import { Icon } from './Icon';
 
 const win = getWindow();
@@ -170,7 +170,7 @@ export const Screen = () => {
                     && layer.pixelate !== PixelationType.none
                     && pixelIsUnmasked
                 ) {
-                    pixel = booleanOrNull(win[Keys.adjustedSpectrumPixels]?.[layer.id]?.[y][x]);
+                    pixel = win[Keys.adjustedSpectrumPixels]?.[layer.id]?.[y][x];
                     if (pixel !== null && topmostAdjustedPixelFromThisLayer) {
                         topmostAdjustedPixel = null;
                     }
@@ -413,11 +413,16 @@ export const Screen = () => {
                                 || previousTogglerCoordinates.current.y !== xy.y
                             )
                         ) {
+                            const oldManualPixelValue = getGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y);
+                            // if we have no manually set pixels, get the value from the adjusted spectrum pixels
+                            const sourceValue = oldManualPixelValue !== null
+                                ? oldManualPixelValue
+                                : !!win[Keys.adjustedSpectrumPixels]?.[layer.id]?.[xy.y][xy.x];
                             win[Keys.manualPixels][layer.id] = setGrowableGridData(
                                 win[Keys.manualPixels]?.[layer.id],
                                 xy.x,
                                 xy.y,
-                                !getGrowableGridData(win[Keys.manualPixels]?.[layer.id], xy.x, xy.y)
+                                !sourceValue
                             );
                             previousTogglerCoordinates.current = xy;
                         }

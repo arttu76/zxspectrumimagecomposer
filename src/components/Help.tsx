@@ -63,7 +63,8 @@ export const Help = () => {
                 <br /><br />
                 <i>"Editing ink/paper pixels is annoying!"</i><br />
                 Click "using attributes" icon (or press X) to toggle attributes on or off - if attributes are turned off, it is
-                easier to see is some pixel is ink or paper, so you know which brush to use.
+                easier to see is some pixel is ink or paper, so you know which brush to use. Another trip: You don't even have to know
+                if a pixel is ink or paper if you just want to toggle them: use the 1x1 brush that automatically toggles between ink/paper.
                 <br /><br />
                 <i>"When editing attributes the brush does not seem to do anything."</i><br />
                 Make sure you have selected the correct attribute brush type (all, ink, paper, bright or eraser).
