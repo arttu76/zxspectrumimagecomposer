@@ -23,7 +23,7 @@ export const App = () => {
               el => (el as HTMLElement).style.height = `calc(100vh - ${toolbarHeight}px)`
             );
           }
-        }, 500);
+        }, 50);
     }
 
     window.addEventListener('resize', resize);

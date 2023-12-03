@@ -31,8 +31,8 @@ import {
     setZoom,
     showHelp
 } from "../store/toolsSlice";
-import { AttributeBrushType, BrushShape, Color, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, ToolType } from "../types";
-import { mutateMask } from '../utils/maskManager';
+import { AttributeBrushType, BrushShape, Color, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, SpectrumPixelCoordinate, ToolType } from "../types";
+import { isMaskSet, mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
 import { applyRange2DExclusive, getWindow, rangeExclusive, showAlert } from '../utils/utils';
 import { ColorPicker } from './ColorPicker';
@@ -41,7 +41,7 @@ import { Group } from './Group';
 
 import store from "../store/store";
 import { loadEverything, saveEverything } from '../utils/exportImport';
-import { getGrowableGrid, setGrowableGridData } from '../utils/growableGridManager';
+import { getGrowableGrid, getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
 import { Help } from './Help';
 import { ToolbarErrors } from './ToolbarErrors';
 
@@ -336,6 +336,70 @@ export const Toolbar = () => {
         setPlayerInitializing(true);
     }
 
+    const freeze = (freezePixels: boolean, freezeAttributes: boolean) => {
+        if (!activeLayer) {
+            alert("Select a layer first.")
+            return;
+        }
+
+        const freezeWhatText = (freezePixels && freezeAttributes)
+            ? 'both pixels and attributes'
+            : freezePixels
+                ? 'pixels only, no attributes'
+                : 'attributes only, no pixels';
+
+        if (!confirm([
+            "Are you sure you want to copy dithered source image (" + freezeWhatText + ") to manual pixels and attributes thus freezing them?",
+            "",
+            "The following will NOT be copied:",
+            " - Masked parts of the source image",
+            " - Existing manually made tweaks will not be overwritten",
+            "",
+            "Copying the image to manual \"sub layers\" will \"freeze\" the image as brightness/contrast/etc adjustment will not affect the "
+            + "copied parts of the image. One effective workflow to optimally dither an image requiring different dithering settings "
+            + "for different areas of the image is to:",
+            "1. Mask all of the image",
+            "2. Unmask the part of it you're going to work on next",
+            "2. Adjust image controls so that unmasked part is optimally dithered",
+            "3. Freeze the unmasked part",
+            "4. Repeat steps 2-3 until done"
+        ].join("\n"))) {
+            return;
+        }
+
+        applyRange2DExclusive<SpectrumPixelCoordinate>(192, 256, (y, x) => {
+
+            if (isMaskSet(activeLayer, x, y, true)) {
+                return;
+            }
+
+            if (freezePixels) {
+                const pixel = win[Keys.adjustedSpectrumPixels][activeLayer.id][y][x];
+                if (
+                    pixel !== null
+                    && getGrowableGridData(win[Keys.manualPixels][activeLayer.id], x, y) === null
+                ) {
+                    win[Keys.manualPixels][activeLayer.id] = setGrowableGridData(win[Keys.manualPixels][activeLayer.id], x, y, !!pixel);
+                }
+            }
+
+            if (freezeAttributes) {
+                const attrY = Math.floor(y / 8);
+                const attrX = Math.floor(x / 8);
+                const attribute = win[Keys.adjustedSpectrumAttributes][activeLayer.id][attrY][attrX];
+                if (
+                    attribute !== null
+                    && getGrowableGridData(win[Keys.manualAttributes][activeLayer.id], attrX, attrY) === null
+                ) {
+                    win[Keys.manualAttributes][activeLayer.id] = setGrowableGridData(win[Keys.manualAttributes][activeLayer.id], attrX, attrY, attribute);
+                }
+            }
+
+        });
+
+        dispatch(repaint());
+    }
+
     useEffect(() => {
         if (playerInitializing) {
             setTimeout(
@@ -411,20 +475,22 @@ export const Toolbar = () => {
                     tooltip="Mask"
                     hotkey='W'
                 />
+                &nbsp;
                 <Button
                     dimmed={tools.tool !== ToolType.pixels}
                     onClick={() => dispatch(setTool(ToolType.pixels))}
                     icon="gradient"
-                    tooltip="Pixels"
+                    tooltip="Manual pixels"
                     hotkey='E'
                 />
                 <Button
                     dimmed={tools.tool !== ToolType.attributes}
                     onClick={() => dispatch(setTool(ToolType.attributes))}
                     icon="palette"
-                    tooltip="Attributes"
+                    tooltip="Manual attributes"
                     hotkey='R'
                 />
+                &nbsp;
                 <Button
                     dimmed={tools.tool !== ToolType.export}
                     onClick={() => dispatch(setTool(ToolType.export))}
@@ -580,77 +646,96 @@ export const Toolbar = () => {
             </>
             }
 
-            {
-                tools.tool === ToolType.export && <>
-                    <Group title="Export settings" disableClose={true}>
-                        <span style={{ position: 'relative', top: '-4px' }}>
-                            &nbsp;Invert:&nbsp;
-                            <Input
-                                tooltip="Invert paper & ink in exported code/image"
-                                type="checkbox"
-                                checked={tools.invertExportedImage}
-                                onClick={() => dispatch(setInvertExportedImage(!tools.invertExportedImage))}
-                            />
-                            &nbsp;Full screen:&nbsp;
-                            <Input
-                                tooltip={tools.exportFullScreen ? "Export full screen memory dump (Spectrum memory layout)" : "Export part of screen (linear memory layout)"}
-                                type="checkbox"
-                                checked={tools.exportFullScreen}
-                                onClick={() => dispatch(setExportFullScreen(!tools.exportFullScreen))}
-                            />
-                            {!tools.exportFullScreen && <>
-                                &nbsp;X:<select
-                                    value={tools.exportCharX}
-                                    onChange={(e) => dispatch(setExportCharX(parseInt(e.currentTarget.value, 10)))}>
-                                    {rangeExclusive(32).map(x => <option key={x} value={x}>{x}</option>)}
-                                </select>
-                                &nbsp;Y:<select
-                                    value={tools.exportCharY}
-                                    onChange={(e) => dispatch(setExportCharY(parseInt(e.currentTarget.value, 10)))}>
-                                    {rangeExclusive(24).map(y => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                                &nbsp;Width:<select
-                                    value={tools.exportCharWidth}
-                                    onChange={(e) => dispatch(setExportCharWidth(parseInt(e.currentTarget.value, 10)))}>
-                                    {rangeExclusive(33 - tools.exportCharX).map(width => width && <option key={width} value={width}>{width}</option>)}
-                                </select>
-                                &nbsp;Height:<select
-                                    value={tools.exportCharHeight}
-                                    onChange={(e) => dispatch(setExportCharHeight(parseInt(e.currentTarget.value, 10)))}>
-                                    {rangeExclusive(25 - tools.exportCharY).map(height => height && <option key={height} value={height}>{height}</option>)}
-                                </select>
-                            </>}
-                        </span>
-                    </Group>
-                    <Group title="Download" disableClose={true}>
-                        <Button
-                            icon="image"
-                            tooltip="Download bitmap and attributes as combined binary file"
-                            onClick={() => download("image.bin", true, true)} />
+            {(tools.tool === ToolType.nudge || tools.tool === ToolType.mask) && <>
+                <Group title="Freeze image" disableClose={true}>
+                    <Button
+                        icon="image"
+                        tooltip="Copy dithered source image pixels and attributes to manual pixels and attributes"
+                        onClick={() => freeze(true, true)}
+                    />
+                    <Button
+                        icon="gradient"
+                        tooltip="Copy dithered source image, pixels only"
+                        onClick={() => freeze(true, false)}
+                    />
+                    <Button
+                        icon="palette"
+                        tooltip="Copy dithered source image, attributes only"
+                        onClick={() => freeze(false, true)}
+                    />
+                </Group>
+            </>}
 
-                        <Button
-                            icon="gradient"
-                            tooltip="Download bitmap only as binary file"
-                            onClick={() => download("bitmap.bin", true, false)} />
-                        <Button
-                            icon="palette"
-                            tooltip="Download attributes only as binary file"
-                            onClick={() => download("attributes.bin", false, true)} />
-                    </Group>
-                    <Group title="Code" disableClose={true}>
-                        <Button
-                            icon="code"
-                            tooltip="Copy image data as code"
-                            onClick={copyCode} />
-                    </Group>
-                    {tools.exportFullScreen && <Group title="Play" disableClose={true}>
-                        <Button
-                            icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
-                            tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
-                            onClick={play} />
-                    </Group>}
+            {tools.tool === ToolType.export && <>
+                <Group title="Export settings" disableClose={true}>
+                    <span style={{ position: 'relative', top: '-4px' }}>
+                        &nbsp;Invert:&nbsp;
+                        <Input
+                            tooltip="Invert paper & ink in exported code/image"
+                            type="checkbox"
+                            checked={tools.invertExportedImage}
+                            onClick={() => dispatch(setInvertExportedImage(!tools.invertExportedImage))}
+                        />
+                        &nbsp;Full screen:&nbsp;
+                        <Input
+                            tooltip={tools.exportFullScreen ? "Export full screen memory dump (Spectrum memory layout)" : "Export part of screen (linear memory layout)"}
+                            type="checkbox"
+                            checked={tools.exportFullScreen}
+                            onClick={() => dispatch(setExportFullScreen(!tools.exportFullScreen))}
+                        />
+                        {!tools.exportFullScreen && <>
+                            &nbsp;X:<select
+                                value={tools.exportCharX}
+                                onChange={(e) => dispatch(setExportCharX(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(32).map(x => <option key={x} value={x}>{x}</option>)}
+                            </select>
+                            &nbsp;Y:<select
+                                value={tools.exportCharY}
+                                onChange={(e) => dispatch(setExportCharY(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(24).map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                            &nbsp;Width:<select
+                                value={tools.exportCharWidth}
+                                onChange={(e) => dispatch(setExportCharWidth(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(33 - tools.exportCharX).map(width => width && <option key={width} value={width}>{width}</option>)}
+                            </select>
+                            &nbsp;Height:<select
+                                value={tools.exportCharHeight}
+                                onChange={(e) => dispatch(setExportCharHeight(parseInt(e.currentTarget.value, 10)))}>
+                                {rangeExclusive(25 - tools.exportCharY).map(height => height && <option key={height} value={height}>{height}</option>)}
+                            </select>
+                        </>}
+                    </span>
+                </Group>
+                <Group title="Download" disableClose={true}>
+                    <Button
+                        icon="image"
+                        tooltip="Download bitmap and attributes as combined binary file"
+                        onClick={() => download("image.bin", true, true)} />
 
-                </>
+                    <Button
+                        icon="gradient"
+                        tooltip="Download bitmap only as binary file"
+                        onClick={() => download("bitmap.bin", true, false)} />
+                    <Button
+                        icon="palette"
+                        tooltip="Download attributes only as binary file"
+                        onClick={() => download("attributes.bin", false, true)} />
+                </Group>
+                <Group title="Code" disableClose={true}>
+                    <Button
+                        icon="code"
+                        tooltip="Copy image data as code"
+                        onClick={copyCode} />
+                </Group>
+                {tools.exportFullScreen && <Group title="Play" disableClose={true}>
+                    <Button
+                        icon={playerInitializing ? "hourglass_top" : player ? "stop_circle" : "play_circle"}
+                        tooltip={playerInitializing ? "Preparing audio, please wait..." : player ? "Stop playback" : "Play as ZX Spectrum tape audio"}
+                        onClick={play} />
+                </Group>}
+
+            </>
             }
 
             <Group title="Zoom" disableClose={true}>
@@ -662,49 +747,47 @@ export const Toolbar = () => {
                 )}
             </Group>
 
-            {
-                tools.tool !== ToolType.export && <>
-                    <Group title="Visibility" disableClose={true}>
-                        <Button
-                            dimmed={tools.hideSourceImage}
-                            icon="image"
-                            tooltip={tools.hideSourceImage ? 'Source image is hidden' : 'Source image is displayed'}
-                            onClick={() => dispatch(setHideSourceImage(!tools.hideSourceImage))} />
-                        <Button
-                            dimmed={tools.hideManualPixels}
-                            icon="gradient"
-                            tooltip={tools.hideManualPixels ? 'Manually drawn pixels are hidden' : 'Manually drawn pixels are displayed'}
-                            onClick={() => dispatch(setHideManualPixels(!tools.hideManualPixels))} />
-                        <Button
-                            dimmed={tools.hideManualAttributes}
-                            icon="palette"
-                            tooltip={tools.hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
-                            onClick={() => dispatch(setHideManualAttributes(!tools.hideManualAttributes))} />
-                        &nbsp;
-                        <Button
-                            dimmed={!tools.hideAllAttributes}
-                            icon="invert_colors_off"
-                            tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0 (x)' : 'Using attributes (x)'}
-                            onClick={() => dispatch(setHideAllAttributes(!tools.hideAllAttributes))} />
-                    </Group>
-                    <Group title="Display" disableClose={true}>
-                        <Input
-                            tooltip="Attribute grid visibility (v)"
-                            style={{ width: "50px", position: 'relative', top: '-2px', color: 'white' }}
-                            type="range"
-                            min={0}
-                            max={100}
-                            value={Math.round(tools.attributeGridOpacity * 200)}
-                            onChange={(e) => dispatch(setAttributeGridOpacity(parseFloat(e.target.value) / 200))}
-                        />
-                        &nbsp;
-                        <Button
-                            icon={tools.crisp ? 'blur_off' : 'blur_on'}
-                            tooltip={tools.crisp ? 'Crisp scaling' : 'Blurry scaling'}
-                            onClick={() => dispatch(setCrispScaling(!tools.crisp))} />
-                    </Group>
-                </>
-            }
+            {tools.tool !== ToolType.export && <>
+                <Group title="Visibility" disableClose={true}>
+                    <Button
+                        dimmed={tools.hideSourceImage}
+                        icon="image"
+                        tooltip={tools.hideSourceImage ? 'Source image is hidden' : 'Source image is displayed'}
+                        onClick={() => dispatch(setHideSourceImage(!tools.hideSourceImage))} />
+                    <Button
+                        dimmed={tools.hideManualPixels}
+                        icon="gradient"
+                        tooltip={tools.hideManualPixels ? 'Manually drawn pixels are hidden' : 'Manually drawn pixels are displayed'}
+                        onClick={() => dispatch(setHideManualPixels(!tools.hideManualPixels))} />
+                    <Button
+                        dimmed={tools.hideManualAttributes}
+                        icon="palette"
+                        tooltip={tools.hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
+                        onClick={() => dispatch(setHideManualAttributes(!tools.hideManualAttributes))} />
+                    &nbsp;
+                    <Button
+                        dimmed={!tools.hideAllAttributes}
+                        icon="invert_colors_off"
+                        tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0 (x)' : 'Using attributes (x)'}
+                        onClick={() => dispatch(setHideAllAttributes(!tools.hideAllAttributes))} />
+                </Group>
+                <Group title="Display" disableClose={true}>
+                    <Input
+                        tooltip="Attribute grid visibility (v)"
+                        style={{ width: "50px", position: 'relative', top: '-2px', color: 'white' }}
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={Math.round(tools.attributeGridOpacity * 200)}
+                        onChange={(e) => dispatch(setAttributeGridOpacity(parseFloat(e.target.value) / 200))}
+                    />
+                    &nbsp;
+                    <Button
+                        icon={tools.crisp ? 'blur_off' : 'blur_on'}
+                        tooltip={tools.crisp ? 'Crisp scaling' : 'Blurry scaling'}
+                        onClick={() => dispatch(setCrispScaling(!tools.crisp))} />
+                </Group>
+            </>}
 
             <Group title="Project & Help" disableClose={true}>
                 <Button
