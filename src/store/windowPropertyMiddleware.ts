@@ -1,9 +1,8 @@
 import { AnyAction, Dispatch, MiddlewareAPI } from '@reduxjs/toolkit';
 import * as R from "ramda";
-import { Color, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb, ToolType } from "../types";
+import { Color, DitheringErrorBuffer, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb, ToolType } from "../types";
 import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from "../utils/colors";
 import { computeAttributeBlockColor, isDitheredPixelSet } from "../utils/dithering";
-import { initializeLayerContext } from "../utils/layerContextManager";
 import { isMaskSet } from "../utils/maskManager";
 import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb, getWindow, rangeExclusive } from "../utils/utils";
 import { repaint } from "./housekeepingSlice";
@@ -153,10 +152,7 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
                 win[Keys.adjustedSpectrumPixels][layer.id] = getInitialized2DArray<Nullable<boolean>>(192, 256, null);
             }
 
-            const ditheringContext = initializeLayerContext(
-                layer,
-                state.tools.tool
-            );
+            const ditheringErrorBuffer: DitheringErrorBuffer = getInitialized2DArray(192 + 2, 256 + 2, 0);
 
             applyRange2DExclusive(192, 256, (y, x) => {
                 const attrX = Math.floor(x / 8);
@@ -191,7 +187,7 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
 
                 win[Keys.adjustedSpectrumPixels][layer.id][y][x] = (
                     attribute // if there is no attribute, no use checking if pixel is to be dithered or not
-                        ? isDitheredPixelSet(ditheringContext, x, y)
+                        ? isDitheredPixelSet(layer, ditheringErrorBuffer, x, y)
                         : null
                 );
 

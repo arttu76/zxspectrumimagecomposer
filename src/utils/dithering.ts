@@ -1,6 +1,5 @@
 import { Color, DitheringErrorBuffer, Keys, Layer, Nullable, PatternCache, Percentage, PixelationSource, PixelationType, Rgb, SpectrumPixelCoordinate } from '../types';
 import { getInkIntensity, getIntensity, getIntensityDifference, getPaperIntensity, spectrumColor } from './colors';
-import { LayerContext } from './layerContextManager';
 import { applyRange2DExclusive, getWindow } from './utils';
 
 export const getColorDistance = (a: Rgb, b: Rgb): number => {
@@ -82,28 +81,33 @@ const pattern = (source: Rgb, x: number, y: number, layerPatternCache: PatternCa
     }
 }
 
-export const isDitheredPixelSet = (ctx: LayerContext, x: SpectrumPixelCoordinate, y: SpectrumPixelCoordinate): Nullable<boolean> => {
+export const isDitheredPixelSet = (
+    layer: Layer,
+    ditheringErrorBuffer: DitheringErrorBuffer,
+    x: SpectrumPixelCoordinate,
+    y: SpectrumPixelCoordinate
+): Nullable<boolean> => {
 
     const win = getWindow();
-    const sourceRgb = win[Keys.adjustedPixels][ctx.layer.id][y][x];
-    const targetAttribute = win[Keys.adjustedSpectrumAttributes][ctx.layer.id][Math.floor(y / 8)][Math.floor(x / 8)]
+    const sourceRgb = win[Keys.adjustedPixels][layer.id][y][x];
+    const targetAttribute = win[Keys.adjustedSpectrumAttributes][layer.id][Math.floor(y / 8)][Math.floor(x / 8)]
     if (sourceRgb === null || targetAttribute! === null) {
         return null;
     }
 
-    if (ctx.layer.pixelate === PixelationType.simple) {
+    if (layer.pixelate === PixelationType.simple) {
         return simple(sourceRgb, targetAttribute);
     }
-    if (ctx.layer.pixelate === PixelationType.noise) {
+    if (layer.pixelate === PixelationType.noise) {
         return noise(sourceRgb, x, y, targetAttribute);
     }
 
-    if (ctx.layer.pixelate === PixelationType.floydsteinberg) {
-        return floydsteinberg(sourceRgb, x, y, ctx.ditheringErrorBuffer, targetAttribute);
+    if (layer.pixelate === PixelationType.floydsteinberg) {
+        return floydsteinberg(sourceRgb, x, y, ditheringErrorBuffer, targetAttribute);
     }
 
-    if (ctx.layer.pixelate === PixelationType.pattern) {
-        return pattern(sourceRgb, x, y, win[Keys.patternCache][ctx.layer.id], targetAttribute);
+    if (layer.pixelate === PixelationType.pattern) {
+        return pattern(sourceRgb, x, y, win[Keys.patternCache][layer.id], targetAttribute);
     }
 
     return null;
