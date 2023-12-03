@@ -6,12 +6,12 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 import React from 'react';
 import { repaint } from '../store/housekeepingSlice';
 import { setLayerX, setLayerY } from "../store/layersSlice";
-import { AttributeBrushType, Color, DragState, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable, XY } from "../types";
+import { AttributeBrushType, Color, DragState, HighlightType, Keys, Layer, MaskBrushType, Nullable, PixelBrushType, PixelationType, Rgb, SpectrumPixelCoordinate, ToolType, Undefinable, XY } from "../types";
 import { spectrumColor } from '../utils/colors';
 import { getGrowableGridData, setGrowableGridData } from '../utils/growableGridManager';
 import { isMaskSet, setMask } from '../utils/maskManager';
 import { drawSpectrumMemoryToImageDatas, getDefaultColor, getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryAttribute, getSpectrumMemoryAttributeByte, setSpectrumMemoryAttribute, setSpectrumMemoryPixel } from '../utils/spectrumHardware';
-import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getBackgroundValue, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
+import { addAttributeGridUi, addMaskUiToLayer, addMouseCursor, getBackgroundValue, getCoordinatesCoveredByCursor, getCoordinatesCoveredByCursorInSourceImageCoordinates, getMaskColor, replaceEmptyWithBackground } from '../utils/uiPixelOperations';
 import { applyRange2DExclusive, clamp8Bit, getInitialized2DArray, getWindow } from "../utils/utils";
 import { Icon } from './Icon';
 
@@ -93,6 +93,8 @@ export const Screen = () => {
             let topmostAdjustedPixel: Nullable<Rgb> = null;
             let renderedPixel: Nullable<Rgb> = null;
 
+            let highlightMatch = false;
+
             // loop visible layers from top to bottom
             for (const layer of shownLayers) {
 
@@ -101,6 +103,27 @@ export const Screen = () => {
                     && !layer.active
                 ) {
                     continue;
+                }
+
+                if (
+                    tools.highlight !== HighlightType.none
+                    && layer.id === activeLayer?.id
+                ) {
+                    const highlightCheckedPixel = getGrowableGridData<boolean>(win[Keys.manualPixels]?.[layer.id], x, y);
+                    if (highlightCheckedPixel !== null) {
+                        highlightMatch = highlightMatch || (
+                            tools.highlight === HighlightType.inkAndPaperPixels
+                            || (tools.highlight === HighlightType.inkPixels && highlightCheckedPixel === true)
+                            || (tools.highlight === HighlightType.paperPixels && highlightCheckedPixel === false)
+                        );
+                    }
+                    const highlightCheckedAttribute = getGrowableGridData<Color>(win[Keys.manualAttributes]?.[layer.id], Math.floor(x / 8), Math.floor(y / 8));
+                    if (highlightCheckedAttribute != null) {
+                        highlightMatch = highlightMatch || (
+                            tools.highlight === HighlightType.allAttributes
+                            || (tools.highlight === HighlightType.brightAttributes && highlightCheckedAttribute.bright)
+                        );
+                    }
                 }
 
                 let topmostAdjustedPixelFromThisLayer = false
@@ -203,14 +226,11 @@ export const Screen = () => {
                     ? spectrumColor.bright
                     : spectrumColor.normal;
 
-                renderedPixel = pixel
-                    ? normalOrBrightColors[attribute.ink]
-                    : normalOrBrightColors[attribute.paper]
-
-                setSpectrumMemoryPixel(win[Keys.spectrumMemoryBitmap], x, y, !!pixel);
-                if (x % 8 === 0 && y % 8 === 0) {
-                    setSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y, attribute);
-                }
+                renderedPixel = highlightMatch
+                    ? getMaskColor()
+                    : pixel
+                        ? normalOrBrightColors[attribute.ink]
+                        : normalOrBrightColors[attribute.paper]
             }
 
             if (!renderedPixel) {

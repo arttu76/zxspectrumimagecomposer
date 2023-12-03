@@ -22,6 +22,7 @@ import {
     setHideManualAttributes,
     setHideManualPixels,
     setHideSourceImage,
+    setHighlight,
     setInvertExportedImage,
     setManualAttribute,
     setMaskBrushType,
@@ -31,7 +32,7 @@ import {
     setZoom,
     showHelp
 } from "../store/toolsSlice";
-import { AttributeBrushType, BrushShape, Color, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, SpectrumPixelCoordinate, ToolType } from "../types";
+import { AttributeBrushType, BrushShape, Color, HighlightType, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, SpectrumPixelCoordinate, ToolType } from "../types";
 import { isMaskSet, mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
 import { applyRange2DExclusive, getWindow, rangeExclusive, showAlert } from '../utils/utils';
@@ -770,8 +771,7 @@ export const Toolbar = () => {
                         icon="invert_colors_off"
                         tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0 (x)' : 'Using attributes (x)'}
                         onClick={() => dispatch(setHideAllAttributes(!tools.hideAllAttributes))} />
-                </Group>
-                <Group title="Display" disableClose={true}>
+                    &nbsp;
                     <Input
                         tooltip="Attribute grid visibility (v)"
                         style={{ width: "50px", position: 'relative', top: '-2px', color: 'white' }}
@@ -786,6 +786,37 @@ export const Toolbar = () => {
                         icon={tools.crisp ? 'blur_off' : 'blur_on'}
                         tooltip={tools.crisp ? 'Crisp scaling' : 'Blurry scaling'}
                         onClick={() => dispatch(setCrispScaling(!tools.crisp))} />
+                    {tools.tool === ToolType.pixels && <>
+                        &nbsp;
+                        <Button
+                            icon="image"
+                            dimmed={tools.highlight !== HighlightType.inkAndPaperPixels}
+                            tooltip="Highlight all manually set pixels (ink or paper)"
+                            onClick={() => dispatch(setHighlight(HighlightType.inkAndPaperPixels))} />
+                        <Button
+                            icon="gradient"
+                            dimmed={tools.highlight !== HighlightType.inkPixels}
+                            tooltip="Highlight all manually set ink pixels"
+                            onClick={() => dispatch(setHighlight(HighlightType.inkPixels))} />
+                        <Button
+                            icon="palette"
+                            dimmed={tools.highlight !== HighlightType.paperPixels}
+                            tooltip="Highlight all manually set paper pixels"
+                            onClick={() => dispatch(setHighlight(HighlightType.paperPixels))} />
+                    </>}
+                    {tools.tool === ToolType.attributes && <>
+                        &nbsp;
+                        <Button
+                            icon="palette"
+                            dimmed={tools.highlight !== HighlightType.allAttributes}
+                            tooltip="Highlight all manually set attributes"
+                            onClick={() => dispatch(setHighlight(HighlightType.allAttributes))} />
+                        <Button
+                            icon="light_mode"
+                            dimmed={tools.highlight !== HighlightType.brightAttributes}
+                            tooltip="Highlight all manually set bright attributes"
+                            onClick={() => dispatch(setHighlight(HighlightType.brightAttributes))} />
+                    </>}
                 </Group>
             </>}
 

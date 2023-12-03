@@ -2,7 +2,7 @@ import {
     PayloadAction,
     createSlice,
 } from "@reduxjs/toolkit";
-import { AttributeBrushType, BrushShape, Color, MaskBrushType, PixelBrushType, ToolType, ToolsSliceState } from "../types";
+import { AttributeBrushType, BrushShape, Color, HighlightType, MaskBrushType, PixelBrushType, ToolType, ToolsSliceState } from "../types";
 
 const initialState: ToolsSliceState = {
     tool: ToolType.nudge,
@@ -32,7 +32,8 @@ const initialState: ToolsSliceState = {
     showHelp: false,
     loadStartedAt: null,
     loadCurrentAt: null,
-    pulseOffsetsForData: []
+    pulseOffsetsForData: [],
+    highlight: HighlightType.none
 }
 
 const toolsSlice = createSlice({
@@ -120,6 +121,9 @@ const toolsSlice = createSlice({
         resetLoadOffset: (state) => {
             state.loadStartedAt = null;
             state.loadCurrentAt = null;
+        },
+        setHighlight: (state, action: PayloadAction<HighlightType>) => {
+            state.highlight = action.payload;
         }
     }
 })
@@ -149,6 +153,7 @@ export const {
     setPulseOffsetsForData,
     increaseLoadOffset,
     resetLoadOffset,
+    setHighlight
 
 } = toolsSlice.actions;
 

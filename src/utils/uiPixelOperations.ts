@@ -5,6 +5,8 @@ import { applyRange2DExclusive, bias, dotProduct, getLayerXYFromScreenCoordinate
 
 const maskColor: Rgb = [255, 75, 0];
 
+export const getMaskColor = (): Rgb => maskColor;
+
 export const getBackgroundValue = (x: number, y: number): number => {
     return 128
         + Math.floor(((x / 8) + Math.floor((y / 8) % 2)) % 2) * 64

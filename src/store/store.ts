@@ -10,6 +10,7 @@ import { repaint as repaintAction } from './housekeepingSlice';
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import { restoreStateImageMaskPixelAttributeDataFromLocalStorage } from "../utils/exportImport";
+import highlightAutoDisablerMiddleware from "./highlightAutoDisablerMiddleware";
 import windowPropertyMiddleware from "./windowPropertyMiddleware";
 
 const preloadedState = restoreStateImageMaskPixelAttributeDataFromLocalStorage();
@@ -27,6 +28,7 @@ const store = configureStore({
     })
         .concat(localStorageMiddleware)
         .concat(windowPropertyMiddleware)
+        .concat(highlightAutoDisablerMiddleware)
 });
 
 export type RootState = ReturnType<typeof store.getState>

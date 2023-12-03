@@ -116,6 +116,15 @@ export enum PixelationSource {
     autoColor = 'autoColor'
 }
 
+export enum HighlightType {
+    none = 'none',
+    inkAndPaperPixels = 'inkAndPaperPixels',
+    inkPixels = 'inkPixels',
+    paperPixels = 'paperPixels',
+    allAttributes = 'allAttributes',
+    brightAttributes = 'brightAttributes'
+}
+
 export interface PixelationPattern extends withId {
     limit: number;
     pattern: BitImage;
@@ -223,6 +232,8 @@ export interface ToolsSliceState {
     loadStartedAt: Nullable<number>; // timestamp when export playback was started
     loadCurrentAt: Nullable<number>; // timestamp for current time
     pulseOffsetsForData: number[]; // 3rd item of this array tells how many ticks have passed for previous bytes
+
+    highlight: HighlightType;
 }
 
 export interface State {
