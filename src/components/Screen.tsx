@@ -186,7 +186,7 @@ export const Screen = () => {
                 if (x % 8 === 0 && y % 8 === 0) {
                     setSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y, {
                         ink: 0,
-                        paper: bg === -1 ? 7 : bg,
+                        paper: bg === -1 ? getBackgroundValue(x, y) : bg,
                         bright: false
                     });
                 }
@@ -195,7 +195,7 @@ export const Screen = () => {
                     ? getDefaultColor()
                     : attribute || {
                         ink: 0,
-                        paper: bg === -1 ? 0 : bg,
+                        paper: bg === -1 ? 7 : bg,
                         bright: false
                     };
 
