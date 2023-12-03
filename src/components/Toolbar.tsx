@@ -338,11 +338,6 @@ export const Toolbar = () => {
     }
 
     const freeze = (freezePixels: boolean, freezeAttributes: boolean) => {
-        if (!activeLayer) {
-            alert("Select a layer first.")
-            return;
-        }
-
         const freezeWhatText = (freezePixels && freezeAttributes)
             ? 'both pixels and attributes'
             : freezePixels
@@ -647,7 +642,7 @@ export const Toolbar = () => {
             </>
             }
 
-            {(tools.tool === ToolType.nudge || tools.tool === ToolType.mask) && <>
+            {activeLayer && <>
                 <Group title="Freeze image" disableClose={true}>
                     <Button
                         icon="image"
