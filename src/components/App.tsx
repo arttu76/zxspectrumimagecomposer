@@ -16,13 +16,30 @@ export const App = () => {
     const resize = () => {
       setTimeout(
         () => {
-
           const toolbarHeight = document.querySelector('.Toolbar')?.clientHeight;
           if (toolbarHeight) {
             document.querySelectorAll('.AppContainer > *').forEach(
               el => (el as HTMLElement).style.height = `calc(100vh - ${toolbarHeight}px)`
             );
           }
+
+          const screen: HTMLDivElement | null = document.querySelector('.Screen');
+          if (screen) {
+            const bestZoomLevel = Math.min(
+              Math.floor(screen.offsetWidth / 256),
+              Math.floor(screen.offsetHeight / 192)
+            );
+            const zoomButtons = Array.from(document.querySelectorAll('.ZoomButtonContainer button')) as HTMLElement[];
+            const resetZoomButtons = () => zoomButtons.forEach(zb => zb.style.fontStyle = 'inherit');
+            zoomButtons.forEach(zb => {
+              if (parseInt(zb.innerText, 10) <= bestZoomLevel) {
+                resetZoomButtons();
+                zb.style.fontStyle = 'italic';
+              }
+            });
+          }
+
+
         }, 50);
     }
 

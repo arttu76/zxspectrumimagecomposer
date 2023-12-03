@@ -739,7 +739,7 @@ export const Toolbar = () => {
             </>
             }
 
-            <Group title="Zoom" disableClose={true}>
+            <Group title="Zoom" disableClose={true} className="ZoomButtonContainer">
                 {[1, 2, 3, 4, 5, 10, 20].map((zoomLevel) => <Button
                     key={zoomLevel}
                     dimmed={tools.zoom !== zoomLevel}
