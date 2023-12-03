@@ -226,16 +226,23 @@ export const Screen = () => {
                     ? spectrumColor.bright
                     : spectrumColor.normal;
 
-                renderedPixel = highlightMatch
-                    ? getMaskColor()
-                    : pixel
-                        ? normalOrBrightColors[attribute.ink]
-                        : normalOrBrightColors[attribute.paper]
+                renderedPixel = pixel
+                    ? normalOrBrightColors[attribute.ink]
+                    : normalOrBrightColors[attribute.paper];
+
+                setSpectrumMemoryPixel(win[Keys.spectrumMemoryBitmap], x, y, !!pixel);
+                if (x % 8 === 0 && y % 8 === 0) {
+                    setSpectrumMemoryAttribute(win[Keys.spectrumMemoryAttribute], x, y, attribute);
+                }
             }
 
             if (!renderedPixel) {
                 const bg = getBackgroundValue(x, y);
                 renderedPixel = [bg, bg, bg];
+            }
+
+            if (highlightMatch) {
+                renderedPixel = getMaskColor();
             }
 
             const offset = (y * 256 + x) * 4;
