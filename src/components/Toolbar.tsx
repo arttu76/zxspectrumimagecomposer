@@ -338,6 +338,11 @@ export const Toolbar = () => {
     }
 
     const freeze = (freezePixels: boolean, freezeAttributes: boolean) => {
+        if (!activeLayer) {
+            alert("Select a layer first.")
+            return;
+        }
+
         const freezeWhatText = (freezePixels && freezeAttributes)
             ? 'both pixels and attributes'
             : freezePixels
