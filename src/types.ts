@@ -236,7 +236,13 @@ export interface ToolsSliceState {
     highlight: HighlightType;
 }
 
+export interface HousekeepingSliceState {
+    repaint: number;
+    error: string | null;
+}
+
 export interface State {
+    housekeeping: HousekeepingSliceState;
     tools: ToolsSliceState;
     layers: LayersSliceState;
 }

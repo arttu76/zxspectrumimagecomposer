@@ -3,11 +3,11 @@ import {
     PayloadAction,
     createSlice
 } from "@reduxjs/toolkit";
-import { Nullable } from "../types";
+import { HousekeepingSliceState, Nullable } from "../types";
 
-const initialState = {
+const initialState: HousekeepingSliceState = {
     repaint: 0,
-    error: null as string | null
+    error: null
 }
 
 const housekeepingSlice = createSlice({

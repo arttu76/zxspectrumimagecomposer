@@ -1,11 +1,17 @@
-import { AnyAction, Dispatch, MiddlewareAPI } from '@reduxjs/toolkit';
+import { Middleware, PayloadAction } from '@reduxjs/toolkit';
 import { HighlightType } from '../types';
+import { RootState } from './store';
 import { setHighlight } from './toolsSlice';
 
-const highlightAutoDisablerMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) => (next: Dispatch<AnyAction>) => (action: AnyAction) => {
+export const highlightAutoDisablerMiddleware: Middleware<
+    {},
+    RootState
+> = storeApi => next => action => {
+
+    const highlightAction = action as PayloadAction<HighlightType>;
     if (
-        action.type === setHighlight.type
-        && action.payload !== HighlightType.none
+        highlightAction.type === setHighlight.type
+        && highlightAction.payload !== HighlightType.none
     ) {
         setTimeout(
             () => storeApi.dispatch(setHighlight(HighlightType.none)),
@@ -14,5 +20,3 @@ const highlightAutoDisablerMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAct
     }
     return next(action);
 };
-
-export default highlightAutoDisablerMiddleware;

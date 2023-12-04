@@ -1,6 +1,4 @@
-import { configureStore } from "@reduxjs/toolkit";
-
-import localStorageMiddleware from "./localStorageMiddleware";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 
 import housekeeping from "./housekeepingSlice";
 import layers from "./layersSlice";
@@ -10,18 +8,21 @@ import { repaint as repaintAction } from './housekeepingSlice';
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import { restoreStateImageMaskPixelAttributeDataFromLocalStorage } from "../utils/exportImport";
-import highlightAutoDisablerMiddleware from "./highlightAutoDisablerMiddleware";
-import windowPropertyMiddleware from "./windowPropertyMiddleware";
+import { highlightAutoDisablerMiddleware } from "./highlightAutoDisablerMiddleware";
+import { localStorageMiddleware } from "./localStorageMiddleware";
+import { windowPropertyMiddleware } from "./windowPropertyMiddleware";
 
 const preloadedState = restoreStateImageMaskPixelAttributeDataFromLocalStorage();
 
+const rootReducer = combineReducers({
+    housekeeping,
+    tools,
+    layers
+});
+
 const store = configureStore({
     preloadedState,
-    reducer: {
-        housekeeping,
-        tools,
-        layers
-    },
+    reducer: rootReducer,
     middleware: (getDefaultMiddleware) => getDefaultMiddleware({
         serializableCheck: false,
         immutableCheck: false,
@@ -31,7 +32,7 @@ const store = configureStore({
         .concat(highlightAutoDisablerMiddleware)
 });
 
-export type RootState = ReturnType<typeof store.getState>
+export type RootState = ReturnType<typeof rootReducer>
 export type AppDispatch = typeof store.dispatch
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`

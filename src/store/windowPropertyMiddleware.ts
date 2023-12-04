@@ -1,4 +1,4 @@
-import { AnyAction, Dispatch, MiddlewareAPI } from '@reduxjs/toolkit';
+import { Dispatch, Middleware, MiddlewareAPI } from '@reduxjs/toolkit';
 import * as R from "ramda";
 import { Color, DitheringErrorBuffer, Keys, Layer, Nullable, PartialRgbImage, PixelationSource, Rgb, ToolType } from "../types";
 import { edgeEnhance, gaussianBlur, getColorAdjusted, getInverted, sharpen } from "../utils/colors";
@@ -7,6 +7,7 @@ import { isMaskSet } from "../utils/maskManager";
 import { applyRange2DExclusive, getInitialized2DArray, getSourceRgb, getWindow, rangeExclusive } from "../utils/utils";
 import { repaint } from "./housekeepingSlice";
 import {
+    LayerAction,
     addLayerPattern,
     duplicateLayer,
     preserveLayerAspectRatio,
@@ -43,7 +44,7 @@ import {
     showHideLayer,
     updateLayerPattern
 } from "./layersSlice";
-import store from "./store";
+import store, { RootState } from "./store";
 import { setTool } from './toolsSlice';
 
 const updateAdjustedPixelsIfRequired = () => {
@@ -200,8 +201,8 @@ const updateSpectrumPixelsAndAttributesIfRequired = () => {
 }
 
 const doForPayloadOrAllLayers = (
-    storeApi: MiddlewareAPI<Dispatch<AnyAction>>,
-    action: AnyAction,
+    storeApi: MiddlewareAPI<Dispatch<LayerAction>>,
+    action: LayerAction,
     operation: (layer: Layer) => {}
 ) => {
     if (action.payload.layer) {
@@ -211,12 +212,16 @@ const doForPayloadOrAllLayers = (
     }
 }
 
-const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) => (next: Dispatch<AnyAction>) => (action: AnyAction) => {
+export const windowPropertyMiddleware: Middleware<
+    {},
+    RootState
+> = storeApi => next => action => {
 
+    const layerAction = action as LayerAction;
     const originalActionResult = next(action);
 
     // do source pixels have to be updated?
-    if ([
+    if (([
         showHideLayer.type,
         setLayerSrcImage.type,
         setLayerX.type,
@@ -240,29 +245,29 @@ const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) =
         setLayerShadows.type,
         setLayerMidtones.type,
         setLayerHighlights.type
-    ].includes(action.type)) {
+    ] as string[]).includes(layerAction.type)) {
         doForPayloadOrAllLayers(
             storeApi,
-            action,
+            layerAction,
             (layer: Layer) => storeApi.dispatch(setLayerRequireAdjustedPixelsRefresh({ layer, required: true }))
         );
     }
 
-    if ([
+    if (([
         duplicateLayer.type,
         addLayerPattern.type,
         updateLayerPattern.type,
         removeLayerPattern.type
-    ].includes(action.type)) {
+    ] as string[]).includes(layerAction.type)) {
         doForPayloadOrAllLayers(
             storeApi,
-            action,
+            layerAction,
             (layer: Layer) => storeApi.dispatch(setLayerRequirePatternCacheRefresh({ layer, required: true }))
         );
     }
 
     // do spectrum pixels have to be updated?
-    if ([
+    if (([
         setTool.type,
         setLayerPixelate.type,
         setLayerPixelateSource.type,
@@ -272,20 +277,20 @@ const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) =
         addLayerPattern.type,
         updateLayerPattern.type,
         removeLayerPattern.type,
-    ].includes(action.type)) {
+    ] as string[]).includes(layerAction.type)) {
         doForPayloadOrAllLayers(
             storeApi,
-            action,
+            layerAction,
             (layer: Layer) => storeApi.dispatch(setLayerRequireSpectrumPixelsRefresh({ layer, required: true }))
         );
     }
 
-    if (![
+    if (!([
         repaint.type,
         setLayerRequirePatternCacheRefresh.type,
         setLayerRequireAdjustedPixelsRefresh.type,
         setLayerRequireSpectrumPixelsRefresh.type
-    ].includes(action.type)) {
+    ] as string[]).includes(layerAction.type)) {
         updateAdjustedPixelsIfRequired();
         updatePatternCacheIfRequired();
         updateSpectrumPixelsAndAttributesIfRequired();
@@ -293,5 +298,3 @@ const repaintScreenMiddleware = (storeApi: MiddlewareAPI<Dispatch<AnyAction>>) =
 
     return originalActionResult;
 };
-
-export default repaintScreenMiddleware;
