@@ -4,8 +4,9 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 
 import { ChangeEvent, useEffect, useState } from 'react';
 import { repaint } from '../store/housekeepingSlice';
-import { setLayerPixelate, setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
+import { setLayerRequireAdjustedPixelsRefresh } from '../store/layersSlice';
 import {
+    changeAttributeOpacity,
     increaseLoadOffset,
     resetLoadOffset,
     setAttributeBrushType,
@@ -32,7 +33,7 @@ import {
     setZoom,
     showHelp
 } from "../store/toolsSlice";
-import { AttributeBrushType, BrushShape, Color, HighlightType, Keys, MaskBrushType, Nullable, PixelBrushType, PixelationType, SpectrumPixelCoordinate, ToolType } from "../types";
+import { AttributeBrushType, BrushShape, Color, HighlightType, Keys, MaskBrushType, Nullable, PixelBrushType, SpectrumPixelCoordinate, ToolType } from "../types";
 import { isMaskSet, mutateMask } from '../utils/maskManager';
 import { getInvertedAttributes, getInvertedBitmap, getSpectrumMemoryPixelOffsetAndBit, getTapeSoundAudioBufferSourceNode } from '../utils/spectrumHardware';
 import { applyRange2DExclusive, getWindow, rangeExclusive, showAlert } from '../utils/utils';
@@ -150,91 +151,6 @@ export const Toolbar = () => {
         [4, 25],
         [5, 50]
     ];
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-
-        if (
-            (
-                event.target instanceof HTMLInputElement
-                || event.target instanceof HTMLTextAreaElement
-                || event.target instanceof HTMLSelectElement
-            ) && event.target.type !== 'range'
-        ) {
-            return;
-        }
-
-        if (event.key === 'q') {
-            dispatch(setTool(ToolType.nudge));
-        }
-        if (event.key === 'w') {
-            dispatch(setTool(ToolType.mask));
-        }
-        if (event.key === 'e') {
-            dispatch(setTool(ToolType.pixels));
-        }
-        if (event.key === 'r') {
-            dispatch(setTool(ToolType.attributes));
-        }
-        if (event.key === 't') {
-            dispatch(setTool(ToolType.attributes));
-        }
-
-        if (tools.tool === ToolType.mask) {
-            if (event.key === 'a') dispatch(setMaskBrushType(MaskBrushType.eraser));
-            if (event.key === 's') dispatch(setMaskBrushType(MaskBrushType.brush));
-        }
-
-        if (tools.tool === ToolType.pixels) {
-            if (event.key === 'a') dispatch(setPixelBrushType(PixelBrushType.eraser));
-            if (event.key === 's') dispatch(setPixelBrushType(PixelBrushType.ink));
-            if (event.key === 'd') dispatch(setPixelBrushType(PixelBrushType.paper));
-        }
-
-        if (tools.tool === ToolType.attributes) {
-            if (event.key === 'a') dispatch(setAttributeBrushType(AttributeBrushType.eraser));
-            if (event.key === 's') dispatch(setAttributeBrushType(AttributeBrushType.all));
-            if (event.key === 'd') dispatch(setAttributeBrushType(AttributeBrushType.ink));
-            if (event.key === 'f') dispatch(setAttributeBrushType(AttributeBrushType.paper));
-            if (event.key === 'g') dispatch(setAttributeBrushType(AttributeBrushType.bright));
-        }
-
-        const brushSizeByKey = keysToBrushSize.find(ktbs => '' + ktbs[0] === event.key);
-        if (brushSizeByKey) {
-            dispatch(setBrushSize(brushSizeByKey[1]));
-        }
-
-        if (event.key === 'z') {
-            dispatch(setManualAttribute({
-                ink: tools.manualAttribute.paper,
-                paper: tools.manualAttribute.ink,
-                bright: tools.manualAttribute.bright
-            }));
-        }
-
-        if (event.key === 'x') {
-            dispatch(setHideAllAttributes(!tools.hideAllAttributes));
-        }
-
-        if (event.key === 'c') {
-            const activeLayer = layers.find(layer => layer.active);
-            if (activeLayer) {
-                dispatch(setLayerPixelate({
-                    layer: activeLayer,
-                    pixelate: (activeLayer.pixelate === PixelationType.none)
-                        ? activeLayer.pixelateToggle
-                        : PixelationType.none
-                }));
-            }
-        }
-
-        if (event.key === 'v') {
-            dispatch(setAttributeGridOpacity(
-                tools.attributeGridOpacity > 0.1
-                    ? 0
-                    : tools.attributeGridOpacity + 0.05
-            ));
-        }
-    };
 
     const getExportedBitmapAndAttributes = (downloadBitmap: boolean, downloadAttributes: boolean): { bitmap: Uint8Array, attributes: Uint8Array } => {
         const fullBitmap = getInvertedBitmap(win[Keys.spectrumMemoryBitmap], tools.invertExportedImage);
@@ -436,22 +352,6 @@ export const Toolbar = () => {
     }, [playerInitializing])
 
     useEffect(() => {
-        document.addEventListener('keydown', handleKeyDown);
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [
-        tools.tool,
-        tools.maskBrushType,
-        tools.pixelBrushType,
-        tools.manualAttribute,
-        tools.attributeBrushType,
-        tools.hideAllAttributes,
-        tools.attributeGridOpacity,
-        layers
-    ]);
-
-    useEffect(() => {
         return () => {
             if (loadIntervalId !== null) {
                 window.clearInterval(loadIntervalId);
@@ -506,12 +406,14 @@ export const Toolbar = () => {
                     <Button
                         dimmed={tools.maskBrushType !== MaskBrushType.eraser}
                         icon="ink_eraser"
-                        tooltip="Mask eraser tool (a)"
+                        hotkey="A"
+                        tooltip="Mask eraser tool"
                         onClick={() => dispatch(setMaskBrushType(MaskBrushType.eraser))} />
                     <Button
                         dimmed={tools.maskBrushType !== MaskBrushType.brush}
                         icon="brush"
-                        tooltip="Mask draw tool (s)"
+                        hotkey="S"
+                        tooltip="Mask draw tool"
                         onClick={() => dispatch(setMaskBrushType(MaskBrushType.brush))} />
                 </Group>
             </>}
@@ -520,17 +422,20 @@ export const Toolbar = () => {
                     <Button
                         dimmed={tools.pixelBrushType !== PixelBrushType.eraser}
                         icon="ink_eraser"
-                        tooltip="Erase manually set ink, paper & brightness (a)"
+                        hotkey="A"
+                        tooltip="Erase manually set ink, paper & brightness"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.eraser))} />
                     <Button
                         dimmed={tools.pixelBrushType !== PixelBrushType.ink}
                         icon="border_color"
-                        tooltip="Set pixels as ink (s)"
+                        hotkey="S"
+                        tooltip="Set pixels as ink"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.ink))} />
                     <Button
                         dimmed={tools.pixelBrushType !== PixelBrushType.paper}
                         icon="check_box_outline_blank"
-                        tooltip="Set pixels as paper (d)"
+                        hotkey="D"
+                        tooltip="Set pixels as paper"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.paper))} />
                     <Button
                         dimmed={tools.pixelBrushType !== PixelBrushType.toggler}
@@ -558,27 +463,32 @@ export const Toolbar = () => {
                     <Button
                         dimmed={tools.attributeBrushType !== AttributeBrushType.eraser}
                         icon="ink_eraser"
-                        tooltip="Erase manually set attributes (a)"
+                        hotkey="A"
+                        tooltip="Erase manually set attributes"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.eraser))} />
                     <Button
                         dimmed={tools.attributeBrushType !== AttributeBrushType.all}
                         icon="filter_3"
-                        tooltip="Set ink, paper and brightness (s)"
+                        hotkey="S"
+                        tooltip="Set ink, paper and brightness"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.all))} />
                     <Button
                         dimmed={tools.attributeBrushType !== AttributeBrushType.ink}
                         icon="border_color"
-                        tooltip="Set ink color only (d)"
+                        hotkey="D"
+                        tooltip="Set ink color only"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.ink))} />
                     <Button
                         dimmed={tools.attributeBrushType !== AttributeBrushType.paper}
                         icon="check_box_outline_blank"
-                        tooltip="Set paper color only (f)"
+                        hotkey="F"
+                        tooltip="Set paper color only"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.paper))} />
                     <Button
                         dimmed={tools.attributeBrushType !== AttributeBrushType.bright}
                         icon="light_mode"
-                        tooltip="Set brightness only (g)"
+                        hotkey="G"
+                        tooltip="Set brightness only"
                         onClick={() => dispatch(setAttributeBrushType(AttributeBrushType.bright))} />
                 </Group>
                 <Group className="ManualAttributeGroup" title="Attribute color" disableClose={true}>
@@ -753,16 +663,19 @@ export const Toolbar = () => {
                     <Button
                         dimmed={tools.hideSourceImage}
                         icon="image"
+                        hotkey='B'
                         tooltip={tools.hideSourceImage ? 'Source image is hidden' : 'Source image is displayed'}
                         onClick={() => dispatch(setHideSourceImage(!tools.hideSourceImage))} />
                     <Button
                         dimmed={tools.hideManualPixels}
                         icon="gradient"
+                        hotkey='N'
                         tooltip={tools.hideManualPixels ? 'Manually drawn pixels are hidden' : 'Manually drawn pixels are displayed'}
                         onClick={() => dispatch(setHideManualPixels(!tools.hideManualPixels))} />
                     <Button
                         dimmed={tools.hideManualAttributes}
                         icon="palette"
+                        hotkey='M'
                         tooltip={tools.hideManualAttributes ? 'Manually drawn attributes are hidden' : 'Manually drawn attributes are displayed'}
                         onClick={() => dispatch(setHideManualAttributes(!tools.hideManualAttributes))} />
                     &nbsp;
@@ -773,7 +686,10 @@ export const Toolbar = () => {
                         onClick={() => dispatch(setHideAllAttributes(!tools.hideAllAttributes))} />
                     &nbsp;
                     <Input
-                        tooltip="Attribute grid visibility (v)"
+                        alt={tools.attributeGridOpacity.toString()}
+                        hotkey="V"
+                        hotkeyFunc={() => dispatch(changeAttributeOpacity())}
+                        tooltip="Attribute grid visibility"
                         style={{ width: "50px", position: 'relative', top: '-2px', color: 'white' }}
                         type="range"
                         min={0}

@@ -25,6 +25,28 @@ const getLayer = (state: LayersSliceState, action: ActionWithLayer): Layer => {
     return state.layers.find(layer => layer.id === layerId)!;
 }
 
+const removeLayerSourceImage = (state: LayersSliceState, layer: Layer) => {
+    const win = getWindow();
+
+    const otherLayersUsingSameImage = layer.imageId
+        ? state.layers.filter(l => l.id !== layer.id && l.imageId === layer.imageId).length
+        : 0;
+
+    if (!otherLayersUsingSameImage && layer.imageId) {
+        win[Keys.imageData] && delete win[Keys.imageData][layer.imageId];
+    }
+    win[Keys.adjustedPixels] && delete win[Keys.adjustedPixels][layer.id];
+    win[Keys.adjustedSpectrumPixels] && delete win[Keys.adjustedSpectrumPixels][layer.id];
+    win[Keys.adjustedSpectrumAttributes] && delete win[Keys.adjustedSpectrumAttributes][layer.id];
+
+    layer.imageId = null;
+    layer.originalHeight = undefined;
+    layer.originalWidth = undefined;
+    layer.requireAdjustedPixelsRefresh = true;
+    layer.requireSpectrumPixelsRefresh = true;
+
+}
+
 const initialState: LayersSliceState = {
     layers: [],
     background: -1
@@ -339,23 +361,20 @@ const layersSlice = createSlice({
             state.layers[action.payload.indexA] = b;
             state.layers[action.payload.indexB] = a;
         },
+        removeLayerImage: (state, action: LayerAction) => {
+            const layer = getLayer(state, action);
+            removeLayerSourceImage(state, layer);
+        },
         removeLayer: (state, action: LayerAction) => {
             const win = getWindow();
             const layer = action.payload.layer;
+
+            removeLayerSourceImage(state, layer);
+
             const layerId = layer.id;
 
-            const otherLayersUsingSameImage = layer.imageId
-                ? state.layers.filter(l => l.id !== layer.id && l.imageId === layer.imageId).length
-                : 0;
-
-            if (!otherLayersUsingSameImage && layer.imageId) {
-                win[Keys.imageData] && delete win[Keys.imageData][layer.imageId];
-            }
-            win[Keys.maskData] && delete win[Keys.maskData][layerId];
-            win[Keys.adjustedPixels] && delete win[Keys.adjustedPixels][layerId];
-            win[Keys.adjustedPixels] && delete win[Keys.adjustedPixels][layerId];
-            win[Keys.adjustedSpectrumAttributes] && delete win[Keys.adjustedSpectrumAttributes][layerId];
             win[Keys.patternCache] && delete win[Keys.patternCache][layerId];
+            win[Keys.maskData] && delete win[Keys.maskData][layerId];
             win[Keys.manualPixels] && delete win[Keys.manualPixels][layerId];
             win[Keys.manualAttributes] && delete win[Keys.manualAttributes][layerId];
 
@@ -437,6 +456,7 @@ export const {
     setLayerPixelateTargetColor,
     setLayerBrightnessThreshold,
     swapLayerPositions,
+    removeLayerImage,
     removeLayer,
     duplicateLayer,
     setLayerRequirePatternCacheRefresh,

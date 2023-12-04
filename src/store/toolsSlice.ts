@@ -82,6 +82,11 @@ const toolsSlice = createSlice({
         setAttributeGridOpacity: (state, action: PayloadAction<number>) => {
             state.attributeGridOpacity = action.payload;
         },
+        changeAttributeOpacity: (state) => {
+            state.attributeGridOpacity = state.attributeGridOpacity > 0.1
+                ? 0
+                : state.attributeGridOpacity + 0.05;
+        },
         setInvertExportedImage: (state, action: PayloadAction<boolean>) => {
             state.invertExportedImage = action.payload;
         },
@@ -133,6 +138,7 @@ export const {
     setMaskBrushType,
     setPixelBrushType,
     setAttributeBrushType,
+    changeAttributeOpacity,
     setBrushSize,
     setBrushShape,
     setManualAttribute,

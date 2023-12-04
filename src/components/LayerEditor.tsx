@@ -17,6 +17,7 @@ import {
     expandLayer,
     preserveLayerAspectRatio,
     removeLayer,
+    removeLayerImage,
     setActive,
     setLayerBlue,
     setLayerBlur,
@@ -56,6 +57,8 @@ import { Group } from './Group';
 import { Icon } from './Icon';
 
 export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
+
+    const dispatch = useAppDispatch();
 
     // for uploads
     const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -162,7 +165,12 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
         }
     }
 
-    const dispatch = useAppDispatch();
+    const removeUploadedImage = () => {
+        if (!confirm('Are you sure you want to remove the uploaded image? Your mask and manual pixels and attributes will not be deleted.')) {
+            return;
+        }
+        dispatch(removeLayerImage({ layer }));
+    }
 
     type LayerKey = keyof Layer;
     // any below is { layer: Layer; } & Partial<Layer>
@@ -242,7 +250,11 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
             </div>
 
             <div>
-                <Group title="Paste or upload image">
+                <Group title="Paste or upload image"
+                    className='ImageUploader'
+                    cornerIcon={layer.imageId ? "delete" : undefined}
+                    cornerIconTooltip={layer.imageId ? "Remove uploaded image" : undefined}
+                    cornerIconOnClick={layer.imageId ? removeUploadedImage : undefined}>
                     <div className="ImageUploaderIcon">
                         Paste (right-click) or click to upload image
                         <div className="IconPasteArea"
@@ -285,44 +297,46 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                         max={192}
                         allowOutOfBounds={true}
                     />
-                    <LayerPropertyEditor
-                        title="Width"
-                        layer={layer}
-                        fieldName="width"
-                        change={changeLayerAttribute(setLayerWidth)}
-                        reset={layer.originalWidth}
-                        min={1}
-                        max={safeZero(layer.originalWidth) * 2}
-                        allowOutOfBounds={true}
-                        extra={Math.round(safeDivide((safeZero(layer.width) * 1000), layer.originalWidth)) / 10 + "%"}
-                    />
-                    <div style={{ textAlign: "center" }}>
-                        <Button
-                            tooltip={layer.preserveLayerAspectRatio ? 'Preserve original aspect ratio' : 'Do not preserve aspect ratio'}
-                            icon={layer.preserveLayerAspectRatio ? 'lock' : 'lock_open_right'}
-                            onClick={() => changeLayerAttribute(preserveLayerAspectRatio)(layer, 'preserveLayerAspectRatio', !layer.preserveLayerAspectRatio)}
-                        ></Button>
-                    </div>
-                    <LayerPropertyEditor
-                        title="Height"
-                        layer={layer}
-                        fieldName="height"
-                        change={changeLayerAttribute(setLayerHeight)}
-                        reset={layer.originalHeight}
-                        min={1}
-                        max={safeZero(layer.originalHeight) * 2}
-                        allowOutOfBounds={true}
-                        extra={Math.round(safeDivide((safeZero(layer.height) * 1000), layer.originalHeight)) / 10 + "%"}
-                    />
-                    <LayerPropertyEditor
-                        title="Rotate"
-                        layer={layer}
-                        fieldName="rotate"
-                        change={changeLayerAttribute(setLayerRotate)}
-                        reset={0}
-                        min={-360}
-                        max={360}
-                    />
+                    {layer.imageId && <>
+                        <LayerPropertyEditor
+                            title="Width"
+                            layer={layer}
+                            fieldName="width"
+                            change={changeLayerAttribute(setLayerWidth)}
+                            reset={layer.originalWidth}
+                            min={1}
+                            max={safeZero(layer.originalWidth) * 2}
+                            allowOutOfBounds={true}
+                            extra={Math.round(safeDivide((safeZero(layer.width) * 1000), layer.originalWidth)) / 10 + "%"}
+                        />
+                        <div style={{ textAlign: "center" }}>
+                            <Button
+                                tooltip={layer.preserveLayerAspectRatio ? 'Preserve original aspect ratio' : 'Do not preserve aspect ratio'}
+                                icon={layer.preserveLayerAspectRatio ? 'lock' : 'lock_open_right'}
+                                onClick={() => changeLayerAttribute(preserveLayerAspectRatio)(layer, 'preserveLayerAspectRatio', !layer.preserveLayerAspectRatio)}
+                            ></Button>
+                        </div>
+                        <LayerPropertyEditor
+                            title="Height"
+                            layer={layer}
+                            fieldName="height"
+                            change={changeLayerAttribute(setLayerHeight)}
+                            reset={layer.originalHeight}
+                            min={1}
+                            max={safeZero(layer.originalHeight) * 2}
+                            allowOutOfBounds={true}
+                            extra={Math.round(safeDivide((safeZero(layer.height) * 1000), layer.originalHeight)) / 10 + "%"}
+                        />
+                        <LayerPropertyEditor
+                            title="Rotate"
+                            layer={layer}
+                            fieldName="rotate"
+                            change={changeLayerAttribute(setLayerRotate)}
+                            reset={0}
+                            min={-360}
+                            max={360}
+                        />
+                    </>}
                     <div style={{ paddingBottom: '10px', display: 'flex', justifyContent: 'space-evenly' }}>
                         <div>
                             Flip X:&nbsp;
@@ -549,6 +563,6 @@ export const LayerEditor: React.FC<{ layer: Layer }> = ({ layer }) => {
                 </Group>
             </div>
 
-        </div>
+        </div >
     );
 }
