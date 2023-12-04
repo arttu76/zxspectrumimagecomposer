@@ -144,12 +144,13 @@ export const Toolbar = () => {
         }
     }
 
-    const keysToBrushSize = [
-        [1, 1],
-        [2, 3],
-        [3, 10],
-        [4, 25],
-        [5, 50]
+    const brushSizesByHotkey = [
+        null,
+        1, // pressing 1 (index of the array) makes brush size 1
+        3,
+        10,
+        25,
+        50 // pressing 5 makes brush size 50
     ];
 
     const getExportedBitmapAndAttributes = (downloadBitmap: boolean, downloadAttributes: boolean): { bitmap: Uint8Array, attributes: Uint8Array } => {
@@ -440,6 +441,7 @@ export const Toolbar = () => {
                     <Button
                         dimmed={tools.pixelBrushType !== PixelBrushType.toggler}
                         icon="autorenew"
+                        hotkey="F"
                         tooltip="Use 1x1 brush that toggles pixel between ink and paper"
                         onClick={() => dispatch(setPixelBrushType(PixelBrushType.toggler))} />
                 </Group>
@@ -536,9 +538,10 @@ export const Toolbar = () => {
                         && <>
                             {[1, 2, 3, 4, 5, 10, 15, 20, 25, 50].map(newBrushSize => <Button
                                 key={newBrushSize}
+                                hotkey={brushSizesByHotkey.includes(newBrushSize) ? '' + brushSizesByHotkey.indexOf(newBrushSize) : undefined}
                                 dimmed={tools.brushSize !== newBrushSize}
-                                tooltip={`Use ${newBrushSize}x${newBrushSize} brush` + (keysToBrushSize[newBrushSize] ? ` (${newBrushSize})` : '')}
-                                onClick={() => dispatch(setBrushSize(newBrushSize))} >{newBrushSize}</Button>)}
+                                tooltip={`Use ${newBrushSize}x${newBrushSize} brush`}
+                                onClick={() => dispatch(setBrushSize(newBrushSize))}>{newBrushSize}</Button>)}
                         </>}
                 </Group>}
 
@@ -682,7 +685,8 @@ export const Toolbar = () => {
                     <Button
                         dimmed={!tools.hideAllAttributes}
                         icon="invert_colors_off"
-                        tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0 (x)' : 'Using attributes (x)'}
+                        hotkey="X"
+                        tooltip={tools.hideAllAttributes ? 'All attributes are ink:0 paper:7 bright:0' : 'Using attributes'}
                         onClick={() => dispatch(setHideAllAttributes(!tools.hideAllAttributes))} />
                     &nbsp;
                     <Input

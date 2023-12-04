@@ -23,8 +23,9 @@ export const Button: React.FC<
 
     useEffect(() => {
         if (!hotkey) return;
-
-        const handleKeyDown = (e: KeyboardEvent) => e.key.toLowerCase() === hotkey.toLowerCase() && buttonRef.current?.click();
+        const handleKeyDown = (e: KeyboardEvent) => {
+            e.key.toLowerCase() === hotkey.toLowerCase() && buttonRef.current?.click();
+        }
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
